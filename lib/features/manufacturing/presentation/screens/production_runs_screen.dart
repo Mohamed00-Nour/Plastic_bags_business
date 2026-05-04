@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -44,18 +45,19 @@ class _ProductionRunsScreenState extends State<ProductionRunsScreen> {
         }
       },
       builder: (context, state) {
+        final l10n = AppLocalizations.of(context)!;
         return Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              _buildSummary(state),
+              _buildSummary(context, state),
               const SizedBox(height: 12),
               Align(
                 alignment: Alignment.centerLeft,
                 child: ElevatedButton.icon(
                   onPressed: () => _showForm(context, null),
                   icon: const Icon(Icons.add),
-                  label: const Text('إضافة تشغيلة'),
+                  label: Text(l10n.mfgAddRun),
                 ),
               ),
               const SizedBox(height: 12),
@@ -67,27 +69,28 @@ class _ProductionRunsScreenState extends State<ProductionRunsScreen> {
     );
   }
 
-  Widget _buildSummary(ProductionRunState state) {
+  Widget _buildSummary(BuildContext context, ProductionRunState state) {
     if (state is! ProductionRunLoaded) return const SizedBox.shrink();
+    final l10n = AppLocalizations.of(context)!;
     return Row(
       children: [
         _StatCard(
-            label: 'إجمالي الإنتاج',
-            value: '${state.totalOutput.toStringAsFixed(1)} كجم',
+            label: l10n.mfgTotalOutput,
+            value: '${state.totalOutput.toStringAsFixed(1)} ${l10n.mfgKg}',
             color: AppTheme.successColor),
         const SizedBox(width: 8),
         _StatCard(
-            label: 'إجمالي الهالك',
-            value: '${state.totalWaste.toStringAsFixed(1)} كجم',
+            label: l10n.mfgTotalWaste,
+            value: '${state.totalWaste.toStringAsFixed(1)} ${l10n.mfgKg}',
             color: AppTheme.warningColor),
         const SizedBox(width: 8),
         _StatCard(
-            label: 'إجمالي التكلفة',
+            label: l10n.mfgTotalCost,
             value: '\$${state.totalCost.toStringAsFixed(2)}',
             color: AppTheme.dangerColor),
         const SizedBox(width: 8),
         _StatCard(
-            label: 'متوسط سعر الكيلو',
+            label: l10n.mfgAvgCostPerKg,
             value: '\$${state.averageCostPerKg.toStringAsFixed(2)}',
             color: AppTheme.infoColor),
       ],
@@ -95,13 +98,14 @@ class _ProductionRunsScreenState extends State<ProductionRunsScreen> {
   }
 
   Widget _buildList(BuildContext context, ProductionRunState state) {
+    final l10n = AppLocalizations.of(context)!;
     if (state is ProductionRunLoading) {
       return const Center(child: CircularProgressIndicator());
     }
     final runs =
         state is ProductionRunLoaded ? state.runs : <ProductionRunModel>[];
     if (runs.isEmpty) {
-      return const Center(child: Text('لا يوجد تشغيلات'));
+      return Center(child: Text(l10n.mfgNoRuns));
     }
     return ListView.builder(
       itemCount: runs.length,
@@ -121,7 +125,7 @@ class _ProductionRunsScreenState extends State<ProductionRunsScreen> {
                 style: const TextStyle(fontWeight: FontWeight.w600)),
             subtitle: Text(
               '${r.productName} | ${DateFormat('dd/MM/yyyy').format(r.date)}\n'
-              'دخل: ${r.inputKg.toStringAsFixed(1)} كجم | خرج: ${r.outputKg.toStringAsFixed(1)} كجم | هالك: ${r.wasteKg.toStringAsFixed(1)} كجم',
+              '${l10n.mfgInputLabel}: ${r.inputKg.toStringAsFixed(1)} ${l10n.mfgKg} | ${l10n.mfgOutputLabel}: ${r.outputKg.toStringAsFixed(1)} ${l10n.mfgKg} | ${l10n.mfgWasteLabel}: ${r.wasteKg.toStringAsFixed(1)} ${l10n.mfgKg}',
             ),
             isThreeLine: true,
             trailing: Row(
@@ -132,13 +136,13 @@ class _ProductionRunsScreenState extends State<ProductionRunsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      '\$${r.costPerKg.toStringAsFixed(2)} / كجم',
+                      '\$${r.costPerKg.toStringAsFixed(2)} / ${l10n.mfgKg}',
                       style: const TextStyle(
                           color: AppTheme.primaryColor,
                           fontWeight: FontWeight.bold),
                     ),
                     Text(
-                      'إجمالي: \$${r.totalCost.toStringAsFixed(2)}',
+                      '${l10n.mfgTotalLabel}: \$${r.totalCost.toStringAsFixed(2)}',
                       style: const TextStyle(fontSize: 12),
                     ),
                   ],
@@ -180,16 +184,16 @@ class _ProductionRunsScreenState extends State<ProductionRunsScreen> {
   }
 
   void _confirmDelete(BuildContext context, ProductionRunModel r) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('تأكيد الحذف'),
-        content: Text(
-            'هتحذف تشغيلة "${r.mixName}" بتاريخ ${DateFormat('dd/MM/yyyy').format(r.date)}؟'),
+        title: Text(l10n.mfgConfirmDelete),
+        content: Text(l10n.mfgDeleteConfirm(r.mixName)),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('إلغاء')),
+              child: Text(l10n.cancel)),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.dangerColor),
@@ -199,7 +203,7 @@ class _ProductionRunsScreenState extends State<ProductionRunsScreen> {
                   .add(ProductionRunDeleteRequested(id: r.id));
               Navigator.pop(ctx);
             },
-            child: const Text('حذف'),
+            child: Text(l10n.mfgDelete),
           ),
         ],
       ),
@@ -357,10 +361,11 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
       title: Text(widget.editing == null
-          ? 'إضافة تشغيلة'
-          : 'تعديل تشغيلة'),
+          ? l10n.mfgAddRun
+          : l10n.mfgEditRun),
       content: SizedBox(
         width: 560,
         child: SingleChildScrollView(
@@ -370,7 +375,7 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
               DropdownButtonFormField<ManufacturingMixModel>(
                 value: _selectedMix,
                 decoration:
-                    const InputDecoration(labelText: 'الخلطة'),
+                    InputDecoration(labelText: l10n.mfgMixLabel),
                 items: _mixes
                     .map((m) => DropdownMenuItem(
                         value: m, child: Text(m.name)))
@@ -388,7 +393,7 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
                     keyboardType: const TextInputType.numberWithOptions(
                         decimal: true),
                     decoration:
-                        const InputDecoration(labelText: 'كمية الدخل (كجم)'),
+                        InputDecoration(labelText: l10n.mfgInputQty),
                     onChanged: (_) => _recalculate(),
                   ),
                 ),
@@ -399,7 +404,7 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
                     keyboardType: const TextInputType.numberWithOptions(
                         decimal: true),
                     decoration:
-                        const InputDecoration(labelText: 'كمية الخرج (كجم)'),
+                        InputDecoration(labelText: l10n.mfgOutputQty),
                     onChanged: (_) => _recalculate(),
                   ),
                 ),
@@ -412,7 +417,7 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
                     keyboardType: const TextInputType.numberWithOptions(
                         decimal: true),
                     decoration:
-                        const InputDecoration(labelText: 'تكلفة الفني'),
+                        InputDecoration(labelText: l10n.mfgTechCost),
                     onChanged: (_) => _recalculate(),
                   ),
                 ),
@@ -423,7 +428,7 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
                     keyboardType: const TextInputType.numberWithOptions(
                         decimal: true),
                     decoration:
-                        const InputDecoration(labelText: 'تكلفة الكهرباء'),
+                        InputDecoration(labelText: l10n.mfgElecCost),
                     onChanged: (_) => _recalculate(),
                   ),
                 ),
@@ -448,7 +453,7 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
                       }
                     },
                     icon: const Icon(Icons.calendar_today, size: 16),
-                    label: const Text('اختر'),
+                    label: Text(l10n.mfgChooseDate),
                   ),
                 ],
               ),
@@ -456,7 +461,7 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
               TextField(
                 controller: _notesCtrl,
                 maxLines: 2,
-                decoration: const InputDecoration(labelText: 'ملاحظات'),
+                decoration: InputDecoration(labelText: l10n.mfgNotes),
               ),
               const Divider(height: 24),
               // Cost preview
@@ -469,14 +474,14 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
                 child: Column(
                   children: [
                     _CostRow(
-                        label: 'تكلفة الخامات',
+                        label: l10n.mfgRawMaterialCostLabel,
                         value: _rawMaterialCost),
                     _CostRow(
-                        label: 'إجمالي التكلفة',
+                        label: l10n.mfgTotalCost,
                         value: _totalCost,
                         bold: true),
                     _CostRow(
-                        label: 'سعر الكيلو',
+                        label: l10n.mfgCostPerKgLabel,
                         value: _costPerKg,
                         bold: true,
                         color: AppTheme.primaryColor),
@@ -490,7 +495,7 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
       actions: [
         TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('إلغاء')),
+            child: Text(l10n.cancel)),
         ElevatedButton(
           onPressed: () {
             if (_selectedMix == null) return;
@@ -523,7 +528,7 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
             widget.onSave(run);
             Navigator.pop(context);
           },
-          child: Text(widget.editing == null ? 'إضافة' : 'حفظ'),
+          child: Text(widget.editing == null ? l10n.mfgAddRun : l10n.mfgSave),
         ),
       ],
     );

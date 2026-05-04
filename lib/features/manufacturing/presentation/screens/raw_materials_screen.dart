@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common_widgets.dart';
@@ -44,6 +45,7 @@ class _RawMaterialsScreenState extends State<RawMaterialsScreen> {
         }
       },
       builder: (context, state) {
+        final l10n = AppLocalizations.of(context)!;
         return Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -53,9 +55,9 @@ class _RawMaterialsScreenState extends State<RawMaterialsScreen> {
                   Expanded(
                     child: TextField(
                       controller: _searchCtrl,
-                      decoration: const InputDecoration(
-                        hintText: 'بحث عن خامة...',
-                        prefixIcon: Icon(Icons.search),
+                      decoration: InputDecoration(
+                        hintText: l10n.mfgSearchMaterial,
+                        prefixIcon: const Icon(Icons.search),
                       ),
                       onChanged: (v) => context
                           .read<RawMaterialBloc>()
@@ -66,7 +68,7 @@ class _RawMaterialsScreenState extends State<RawMaterialsScreen> {
                   ElevatedButton.icon(
                     onPressed: () => _showForm(context, null),
                     icon: const Icon(Icons.add),
-                    label: const Text('إضافة خامة'),
+                    label: Text(l10n.mfgAddMaterial),
                   ),
                 ],
               ),
@@ -80,12 +82,13 @@ class _RawMaterialsScreenState extends State<RawMaterialsScreen> {
   }
 
   Widget _buildList(BuildContext context, RawMaterialState state) {
+    final l10n = AppLocalizations.of(context)!;
     if (state is RawMaterialLoading) {
       return const Center(child: CircularProgressIndicator());
     }
     final items = state is RawMaterialLoaded ? state.filtered : [];
     if (items.isEmpty) {
-      return const Center(child: Text('لا يوجد خامات'));
+      return Center(child: Text(l10n.mfgNoMaterials));
     }
     return ListView.builder(
       itemCount: items.length,
@@ -102,7 +105,7 @@ class _RawMaterialsScreenState extends State<RawMaterialsScreen> {
             ),
             title: Text(m.name,
                 style: const TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: Text('النوع: ${m.type}'),
+            subtitle: Text('${l10n.mfgTypePrefix}: ${m.type}'),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -122,7 +125,7 @@ class _RawMaterialsScreenState extends State<RawMaterialsScreen> {
                 ),
                 const SizedBox(width: 8),
                 StatusBadge(
-                  label: m.isActive ? 'نشط' : 'غير نشط',
+                  label: m.isActive ? l10n.mfgActive : l10n.mfgInactive,
                   color: m.isActive
                       ? AppTheme.successColor
                       : AppTheme.dangerColor,
@@ -146,6 +149,7 @@ class _RawMaterialsScreenState extends State<RawMaterialsScreen> {
   }
 
   void _showForm(BuildContext context, RawMaterialModel? editing) {
+    final l10n = AppLocalizations.of(context)!;
     final nameCtrl =
         TextEditingController(text: editing?.name ?? '');
     final typeCtrl =
@@ -162,8 +166,7 @@ class _RawMaterialsScreenState extends State<RawMaterialsScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDlgState) => AlertDialog(
-          title:
-              Text(editing == null ? 'إضافة خامة' : 'تعديل خامة'),
+          title: Text(editing == null ? l10n.mfgAddMaterial : l10n.mfgEditMaterial),
           content: SizedBox(
             width: 400,
             child: Column(
@@ -172,28 +175,28 @@ class _RawMaterialsScreenState extends State<RawMaterialsScreen> {
                 TextField(
                     controller: nameCtrl,
                     decoration:
-                        const InputDecoration(labelText: 'اسم الخامة')),
+                        InputDecoration(labelText: l10n.mfgMaterialName)),
                 const SizedBox(height: 12),
                 TextField(
                     controller: typeCtrl,
                     decoration:
-                        const InputDecoration(labelText: 'النوع')),
+                        InputDecoration(labelText: l10n.mfgTypeLabel)),
                 const SizedBox(height: 12),
                 TextField(
                     controller: priceCtrl,
                     keyboardType: const TextInputType.numberWithOptions(
                         decimal: true),
-                    decoration: const InputDecoration(
-                        labelText: 'السعر / كيلو')),
+                    decoration: InputDecoration(
+                        labelText: l10n.mfgPricePerKgLabel)),
                 const SizedBox(height: 12),
                 TextField(
                     controller: unitCtrl,
                     decoration:
-                        const InputDecoration(labelText: 'الوحدة')),
+                        InputDecoration(labelText: l10n.mfgUnitLabel)),
                 const SizedBox(height: 8),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('نشط'),
+                  title: Text(l10n.mfgActive),
                   value: isActive,
                   onChanged: (v) =>
                       setDlgState(() => isActive = v),
@@ -204,7 +207,7 @@ class _RawMaterialsScreenState extends State<RawMaterialsScreen> {
           actions: [
             TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('إلغاء')),
+                child: Text(l10n.cancel)),
             ElevatedButton(
               onPressed: () {
                 final price =
@@ -232,7 +235,7 @@ class _RawMaterialsScreenState extends State<RawMaterialsScreen> {
                 }
                 Navigator.pop(ctx);
               },
-              child: Text(editing == null ? 'إضافة' : 'حفظ'),
+              child: Text(editing == null ? l10n.mfgAddMaterial : l10n.mfgSave),
             ),
           ],
         ),
@@ -241,15 +244,16 @@ class _RawMaterialsScreenState extends State<RawMaterialsScreen> {
   }
 
   void _confirmDelete(BuildContext context, RawMaterialModel m) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('تأكيد الحذف'),
-        content: Text('هتحذف "${m.name}"؟'),
+        title: Text(l10n.mfgConfirmDelete),
+        content: Text(l10n.mfgDeleteConfirm(m.name)),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('إلغاء')),
+              child: Text(l10n.cancel)),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.dangerColor),
@@ -259,7 +263,7 @@ class _RawMaterialsScreenState extends State<RawMaterialsScreen> {
                   .add(RawMaterialDeleteRequested(id: m.id));
               Navigator.pop(ctx);
             },
-            child: const Text('حذف'),
+            child: Text(l10n.mfgDelete),
           ),
         ],
       ),

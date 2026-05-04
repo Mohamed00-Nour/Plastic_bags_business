@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common_widgets.dart';
@@ -47,6 +48,7 @@ class _MixesScreenState extends State<MixesScreen> {
         }
       },
       builder: (context, state) {
+        final l10n = AppLocalizations.of(context)!;
         return Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -56,9 +58,9 @@ class _MixesScreenState extends State<MixesScreen> {
                   Expanded(
                     child: TextField(
                       controller: _searchCtrl,
-                      decoration: const InputDecoration(
-                        hintText: 'بحث عن خلطة...',
-                        prefixIcon: Icon(Icons.search),
+                      decoration: InputDecoration(
+                        hintText: l10n.mfgSearchMix,
+                        prefixIcon: const Icon(Icons.search),
                       ),
                       onChanged: (v) => context
                           .read<ManufacturingMixBloc>()
@@ -69,7 +71,7 @@ class _MixesScreenState extends State<MixesScreen> {
                   ElevatedButton.icon(
                     onPressed: () => _showForm(context, null),
                     icon: const Icon(Icons.add),
-                    label: const Text('إضافة خلطة'),
+                    label: Text(l10n.mfgAddMix),
                   ),
                 ],
               ),
@@ -83,13 +85,14 @@ class _MixesScreenState extends State<MixesScreen> {
   }
 
   Widget _buildList(BuildContext context, ManufacturingMixState state) {
+    final l10n = AppLocalizations.of(context)!;
     if (state is ManufacturingMixLoading) {
       return const Center(child: CircularProgressIndicator());
     }
     final items =
         state is ManufacturingMixLoaded ? state.filtered : <ManufacturingMixModel>[];
     if (items.isEmpty) {
-      return const Center(child: Text('لا يوجد خلطات'));
+      return Center(child: Text(l10n.mfgNoMixes));
     }
     return ListView.builder(
       itemCount: items.length,
@@ -107,12 +110,12 @@ class _MixesScreenState extends State<MixesScreen> {
             title: Text(m.name,
                 style: const TextStyle(fontWeight: FontWeight.w600)),
             subtitle: Text(
-                'منتج: ${m.productName} | إجمالي: ${m.totalQuantityKg.toStringAsFixed(1)} كجم'),
+                '${l10n.mfgProductLabel}: ${m.productName} | ${l10n.mfgTotalLabel}: ${m.totalQuantityKg.toStringAsFixed(1)} ${l10n.mfgKg}'),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 StatusBadge(
-                  label: m.isActive ? 'نشط' : 'متوقف',
+                  label: m.isActive ? l10n.mfgActive : l10n.mfgStopped,
                   color: m.isActive
                       ? AppTheme.successColor
                       : AppTheme.dangerColor,
@@ -138,7 +141,7 @@ class _MixesScreenState extends State<MixesScreen> {
                 contentPadding: const EdgeInsets.fromLTRB(32, 0, 16, 0),
                 leading: const Icon(Icons.science_outlined, size: 18),
                 title: Text(c.materialName),
-                trailing: Text('${c.quantityKg} كجم ($pct%)'),
+                trailing: Text('${c.quantityKg} ${l10n.mfgKg} ($pct%)'),
               );
             }).toList(),
           ),
@@ -148,6 +151,7 @@ class _MixesScreenState extends State<MixesScreen> {
   }
 
   void _showForm(BuildContext context, ManufacturingMixModel? editing) {
+    final l10n = AppLocalizations.of(context)!;
     final nameCtrl =
         TextEditingController(text: editing?.name ?? '');
     final productCtrl =
@@ -170,7 +174,7 @@ class _MixesScreenState extends State<MixesScreen> {
 
           return AlertDialog(
             title: Text(
-                editing == null ? 'إضافة خلطة' : 'تعديل خلطة'),
+                editing == null ? l10n.mfgAddMix : l10n.mfgEditMix),
             content: SizedBox(
               width: 500,
               child: SingleChildScrollView(
@@ -180,24 +184,24 @@ class _MixesScreenState extends State<MixesScreen> {
                   children: [
                     TextField(
                         controller: nameCtrl,
-                        decoration: const InputDecoration(
-                            labelText: 'اسم الخلطة')),
+                        decoration: InputDecoration(
+                            labelText: l10n.mfgMixName)),
                     const SizedBox(height: 12),
                     TextField(
                         controller: productCtrl,
-                        decoration: const InputDecoration(
-                            labelText: 'اسم المنتج')),
+                        decoration: InputDecoration(
+                            labelText: l10n.mfgProductNameLabel)),
                     const SizedBox(height: 12),
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: const Text('نشط'),
+                      title: Text(l10n.mfgActive),
                       value: isActive,
                       onChanged: (v) =>
                           setDlgState(() => isActive = v),
                     ),
                     const Divider(),
-                    const Text('المكونات',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text(l10n.mfgComponents,
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     ...components.asMap().entries.map((entry) {
                       final idx = entry.key;
@@ -225,7 +229,7 @@ class _MixesScreenState extends State<MixesScreen> {
                             ));
                       },
                       icon: const Icon(Icons.add),
-                      label: const Text('إضافة مكون'),
+                      label: Text(l10n.mfgAddComponent),
                     ),
                   ],
                 ),
@@ -234,7 +238,7 @@ class _MixesScreenState extends State<MixesScreen> {
             actions: [
               TextButton(
                   onPressed: () => Navigator.pop(ctx),
-                  child: const Text('إلغاء')),
+                  child: Text(l10n.cancel)),
               ElevatedButton(
                 onPressed: () {
                   if (nameCtrl.text.trim().isEmpty ||
@@ -261,7 +265,7 @@ class _MixesScreenState extends State<MixesScreen> {
                   Navigator.pop(ctx);
                 },
                 child:
-                    Text(editing == null ? 'إضافة' : 'حفظ'),
+                    Text(editing == null ? l10n.mfgAddMix : l10n.mfgSave),
               ),
             ],
           );
@@ -272,15 +276,16 @@ class _MixesScreenState extends State<MixesScreen> {
 
   void _confirmDelete(
       BuildContext context, ManufacturingMixModel m) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('تأكيد الحذف'),
-        content: Text('هتحذف "${m.name}"؟'),
+        title: Text(l10n.mfgConfirmDelete),
+        content: Text(l10n.mfgDeleteConfirm(m.name)),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('إلغاء')),
+              child: Text(l10n.cancel)),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.dangerColor),
@@ -289,7 +294,7 @@ class _MixesScreenState extends State<MixesScreen> {
                   ManufacturingMixDeleteRequested(id: m.id));
               Navigator.pop(ctx);
             },
-            child: const Text('حذف'),
+            child: Text(l10n.mfgDelete),
           ),
         ],
       ),
@@ -340,8 +345,9 @@ class _ComponentRowState extends State<_ComponentRow> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     if (widget.materials.isEmpty) {
-      return const Text('لا يوجد خامات نشطة');
+      return Text(l10n.mfgNoActiveMaterials);
     }
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -352,7 +358,7 @@ class _ComponentRowState extends State<_ComponentRow> {
             child: DropdownButtonFormField<String>(
               value: _selectedId,
               decoration:
-                  const InputDecoration(labelText: 'الخامة'),
+                  InputDecoration(labelText: l10n.mfgMaterialLabel),
               items: widget.materials
                   .map((m) => DropdownMenuItem(
                       value: m.id, child: Text(m.name)))
@@ -377,7 +383,7 @@ class _ComponentRowState extends State<_ComponentRow> {
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
               decoration:
-                  const InputDecoration(labelText: 'الكمية (كجم)'),
+                  InputDecoration(labelText: l10n.mfgQtyKg),
               onChanged: (v) {
                 final qty = double.tryParse(v) ?? 0;
                 widget.onChanged(

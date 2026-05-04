@@ -81,7 +81,7 @@ class _AdminShellState extends State<AdminShell> {
         ),
       _NavItem(
         icon: Icons.precision_manufacturing_rounded,
-        label: 'التصنيع',
+        label: l10n.manufacturing,
         screen: const ManufacturingShell(),
       ),
     ];

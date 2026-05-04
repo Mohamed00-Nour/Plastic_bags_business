@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../bloc/raw_material_bloc.dart';
 import '../../bloc/raw_material_event.dart';
@@ -59,23 +60,20 @@ class _ManufacturingShellState extends State<ManufacturingShell>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
-        _buildSummaryBanner(),
+        _buildSummaryBanner(context, l10n),
         TabBar(
           controller: _tabController,
           isScrollable: true,
           tabAlignment: TabAlignment.start,
-          tabs: const [
-            Tab(icon: Icon(Icons.science_outlined), text: 'الخامات'),
-            Tab(icon: Icon(Icons.blender_outlined), text: 'الخلطات'),
-            Tab(
-                icon: Icon(Icons.precision_manufacturing_outlined),
-                text: 'التشغيل'),
-            Tab(icon: Icon(Icons.recycling_outlined), text: 'الخرازة'),
-            Tab(
-                icon: Icon(Icons.receipt_long_outlined),
-                text: 'المصاريف'),
+          tabs: [
+            Tab(icon: const Icon(Icons.science_outlined), text: l10n.mfgRawMaterialsTab),
+            Tab(icon: const Icon(Icons.blender_outlined), text: l10n.mfgMixesTab),
+            Tab(icon: const Icon(Icons.precision_manufacturing_outlined), text: l10n.mfgProductionTab),
+            Tab(icon: const Icon(Icons.recycling_outlined), text: l10n.mfgWasteTab),
+            Tab(icon: const Icon(Icons.receipt_long_outlined), text: l10n.mfgExpensesTab),
           ],
         ),
         Expanded(
@@ -94,7 +92,7 @@ class _ManufacturingShellState extends State<ManufacturingShell>
     );
   }
 
-  Widget _buildSummaryBanner() {
+  Widget _buildSummaryBanner(BuildContext context, AppLocalizations l10n) {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       padding: const EdgeInsets.all(16),
@@ -110,7 +108,7 @@ class _ManufacturingShellState extends State<ManufacturingShell>
               color: AppTheme.primaryColor, size: 20),
           const SizedBox(width: 8),
           Text(
-            'التصنيع',
+            l10n.manufacturing,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: AppTheme.primaryColor,
                   fontWeight: FontWeight.bold,
@@ -118,21 +116,23 @@ class _ManufacturingShellState extends State<ManufacturingShell>
           ),
           const Spacer(),
           BlocBuilder<ProductionRunBloc, ProductionRunState>(
-            builder: (_, state) {
+            builder: (ctx, state) {
+              final l10n = AppLocalizations.of(ctx)!;
               final runs =
                   state is ProductionRunLoaded ? state.runs.length : 0;
               return _SummaryChip(
-                  label: 'تشغيلات', value: '$runs', color: AppTheme.infoColor);
+                  label: l10n.mfgRunsChip, value: '$runs', color: AppTheme.infoColor);
             },
           ),
           const SizedBox(width: 8),
           BlocBuilder<ManufacturingExpenseBloc, ManufacturingExpenseState>(
-            builder: (_, state) {
+            builder: (ctx, state) {
+              final l10n = AppLocalizations.of(ctx)!;
               final total = state is ManufacturingExpenseLoaded
                   ? state.grandTotal
                   : 0.0;
               return _SummaryChip(
-                label: 'مصاريف',
+                label: l10n.mfgExpensesChip,
                 value: '\$${total.toStringAsFixed(0)}',
                 color: AppTheme.warningColor,
               );
@@ -140,11 +140,12 @@ class _ManufacturingShellState extends State<ManufacturingShell>
           ),
           const SizedBox(width: 8),
           BlocBuilder<WasteProcessingBloc, WasteProcessingState>(
-            builder: (_, state) {
+            builder: (ctx, state) {
+              final l10n = AppLocalizations.of(ctx)!;
               final runs =
                   state is WasteProcessingLoaded ? state.runs.length : 0;
               return _SummaryChip(
-                  label: 'خرازة',
+                  label: l10n.mfgWasteChip,
                   value: '$runs',
                   color: AppTheme.successColor);
             },

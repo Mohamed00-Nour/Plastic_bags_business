@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -48,6 +49,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
         }
       },
       builder: (context, state) {
+        final l10n = AppLocalizations.of(context)!;
         final loaded = state is ManufacturingExpenseLoaded ? state : null;
         final displayExpenses = loaded != null
             ? (_filterCategory != null
@@ -62,7 +64,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
           child: Column(
             children: [
               // Summary row
-              if (loaded != null) _buildSummary(loaded),
+              if (loaded != null) _buildSummary(context, loaded),
               const SizedBox(height: 12),
               // Filter + Add
               Row(
@@ -71,10 +73,10 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                     child: DropdownButtonFormField<String?>(
                       value: _filterCategory,
                       decoration:
-                          const InputDecoration(labelText: 'فلتر حسب الفئة'),
+                          InputDecoration(labelText: l10n.mfgFilterByCategory),
                       items: [
-                        const DropdownMenuItem(
-                            value: null, child: Text('الكل')),
+                        DropdownMenuItem(
+                            value: null, child: Text(l10n.mfgAll)),
                         ..._kCategories.map((c) =>
                             DropdownMenuItem(value: c, child: Text(c))),
                       ],
@@ -86,7 +88,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                   ElevatedButton.icon(
                     onPressed: () => _showForm(context, null),
                     icon: const Icon(Icons.add),
-                    label: const Text('إضافة مصروف'),
+                    label: Text(l10n.mfgAddExpense),
                   ),
                 ],
               ),
@@ -96,7 +98,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                 child: state is ManufacturingExpenseLoading
                     ? const Center(child: CircularProgressIndicator())
                     : displayExpenses.isEmpty
-                        ? const Center(child: Text('لا يوجد مصاريف'))
+                        ? Center(child: Text(l10n.mfgNoExpenses))
                         : ListView.builder(
                             itemCount: displayExpenses.length,
                             itemBuilder: (_, i) {
@@ -114,11 +116,14 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                                   title: Text(e.category,
                                       style: const TextStyle(
                                           fontWeight: FontWeight.w600)),
-                                  subtitle: Text(
-                                    '${DateFormat('dd/MM/yyyy').format(e.date)}'
-                                    '${e.description != null ? ' | ${e.description}' : ''}'
-                                    '${e.productionRunId != null ? ' | مرتبط بتشغيلة' : ''}',
-                                  ),
+                                  subtitle: Builder(builder: (bCtx) {
+                                    final l10n = AppLocalizations.of(bCtx)!;
+                                    return Text(
+                                      '${DateFormat('dd/MM/yyyy').format(e.date)}'
+                                      '${e.description != null ? ' | ${e.description}' : ''}'
+                                      '${e.productionRunId != null ? ' | ${l10n.mfgLinkedToRun}' : ''}',
+                                    );
+                                  }),
                                   trailing: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
@@ -132,20 +137,23 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                                       ),
                                       const SizedBox(width: 8),
                                       if (e.includeInCostPerKg)
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 6, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: AppTheme.infoColor
-                                                .withValues(alpha: 0.1),
-                                            borderRadius:
-                                                BorderRadius.circular(6),
-                                          ),
-                                          child: const Text('يدخل في التكلفة',
-                                              style: TextStyle(
-                                                  fontSize: 10,
-                                                  color: AppTheme.infoColor)),
-                                        ),
+                                        Builder(builder: (bCtx) {
+                                          final l10n = AppLocalizations.of(bCtx)!;
+                                          return Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: AppTheme.infoColor
+                                                  .withValues(alpha: 0.1),
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                            ),
+                                            child: Text(l10n.mfgIncludesInCostLabel,
+                                                style: const TextStyle(
+                                                    fontSize: 10,
+                                                    color: AppTheme.infoColor)),
+                                          );
+                                        }),
                                       const SizedBox(width: 8),
                                       IconButton(
                                         icon: const Icon(Icons.edit_outlined),
@@ -172,7 +180,8 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
     );
   }
 
-  Widget _buildSummary(ManufacturingExpenseLoaded state) {
+  Widget _buildSummary(BuildContext context, ManufacturingExpenseLoaded state) {
+    final l10n = AppLocalizations.of(context)!;
     final byCategory = state.totalByCategory;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -189,7 +198,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                   color: AppTheme.dangerColor),
               const SizedBox(width: 8),
               Text(
-                'الإجمالي: \$${state.grandTotal.toStringAsFixed(2)}',
+                '${l10n.mfgGrandTotal}: \$${state.grandTotal.toStringAsFixed(2)}',
                 style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     color: AppTheme.dangerColor,
@@ -224,6 +233,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
   }
 
   void _showForm(BuildContext context, ManufacturingExpenseModel? editing) {
+    final l10n = AppLocalizations.of(context)!;
     String selectedCategory = editing?.category ?? _kCategories.first;
     final amountCtrl = TextEditingController(
         text: editing != null ? editing.amount.toString() : '');
@@ -236,7 +246,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDlg) => AlertDialog(
-          title: Text(editing == null ? 'إضافة مصروف' : 'تعديل مصروف'),
+          title: Text(editing == null ? l10n.mfgAddExpense : l10n.mfgEditExpense),
           content: SizedBox(
             width: 400,
             child: Column(
@@ -245,7 +255,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                 DropdownButtonFormField<String>(
                   value: selectedCategory,
                   decoration:
-                      const InputDecoration(labelText: 'الفئة'),
+                      InputDecoration(labelText: l10n.mfgCategoryLabel),
                   items: _kCategories
                       .map((c) =>
                           DropdownMenuItem(value: c, child: Text(c)))
@@ -259,13 +269,13 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
                   decoration:
-                      const InputDecoration(labelText: 'المبلغ'),
+                      InputDecoration(labelText: l10n.mfgAmountLabel),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: descCtrl,
                   decoration:
-                      const InputDecoration(labelText: 'الوصف (اختياري)'),
+                      InputDecoration(labelText: l10n.mfgDescriptionOptional),
                 ),
                 const SizedBox(height: 12),
                 Row(
@@ -284,13 +294,13 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                         if (p != null) setDlg(() => date = p);
                       },
                       icon: const Icon(Icons.calendar_today, size: 16),
-                      label: const Text('اختر'),
+                      label: Text(l10n.mfgChooseDate),
                     ),
                   ],
                 ),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('يدخل في حساب سعر الكيلو'),
+                  title: Text(l10n.mfgIncludeInCostPerKg),
                   value: includeInCost,
                   onChanged: (v) =>
                       setDlg(() => includeInCost = v),
@@ -301,7 +311,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
           actions: [
             TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('إلغاء')),
+                child: Text(l10n.cancel)),
             ElevatedButton(
               onPressed: () {
                 final amount = double.tryParse(amountCtrl.text) ?? 0;
@@ -328,7 +338,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                 }
                 Navigator.pop(ctx);
               },
-              child: Text(editing == null ? 'إضافة' : 'حفظ'),
+              child: Text(editing == null ? l10n.mfgAddExpense : l10n.mfgSave),
             ),
           ],
         ),
@@ -338,16 +348,16 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
 
   void _confirmDelete(
       BuildContext context, ManufacturingExpenseModel e) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('تأكيد الحذف'),
-        content: Text(
-            'هتحذف مصروف "${e.category}" بقيمة \$${e.amount.toStringAsFixed(2)}؟'),
+        title: Text(l10n.mfgConfirmDelete),
+        content: Text(l10n.mfgDeleteConfirm(e.category)),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('إلغاء')),
+              child: Text(l10n.cancel)),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.dangerColor),
@@ -357,7 +367,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                   .add(ManufacturingExpenseDeleteRequested(id: e.id));
               Navigator.pop(ctx);
             },
-            child: const Text('حذف'),
+            child: Text(l10n.mfgDelete),
           ),
         ],
       ),
