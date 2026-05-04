@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "258070342745",
+    "project_id": "john-441b1",
+    "storage_bucket": "john-441b1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:258070342745:android:b932622eaed908d5f65548",
+        "android_client_info": {
+          "package_name": "com.example.store_manager"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCjYcFGoOhPTykE6NA7mUKvi1-Rov3ksJI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:258070342745:android:aa566c818fb9ad99f65548",
+        "android_client_info": {
+          "package_name": "com.store.mrjohn"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCjYcFGoOhPTykE6NA7mUKvi1-Rov3ksJI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
