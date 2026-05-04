@@ -18,6 +18,7 @@ import '../../features/transactions/presentation/screens/transactions_screen.dar
 import '../../features/reports/presentation/screens/reports_screen_new.dart';
 import '../../features/users/presentation/screens/users_screen.dart';
 import '../../features/stock_logs/presentation/screens/stock_logs_screen.dart';
+import '../../features/manufacturing/presentation/screens/manufacturing_shell.dart';
 
 class AdminShell extends StatefulWidget {
   const AdminShell({super.key});
@@ -78,6 +79,11 @@ class _AdminShellState extends State<AdminShell> {
           label: l10n.users,
           screen: const UsersScreen(),
         ),
+      _NavItem(
+        icon: Icons.precision_manufacturing_rounded,
+        label: 'التصنيع',
+        screen: const ManufacturingShell(),
+      ),
     ];
   }
 

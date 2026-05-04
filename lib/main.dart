@@ -30,6 +30,22 @@ import 'package:store_manager/features/orders/bloc/order_bloc.dart';
 import 'package:store_manager/features/transactions/bloc/transaction_bloc.dart';
 import 'package:store_manager/features/reports/bloc/report_bloc_new.dart';
 import 'package:store_manager/features/users/bloc/user_bloc.dart';
+import 'package:store_manager/data/repositories/raw_material_repository.dart';
+import 'package:store_manager/data/repositories/manufacturing_mix_repository.dart';
+import 'package:store_manager/data/repositories/production_run_repository.dart';
+import 'package:store_manager/data/repositories/waste_machine_repository.dart';
+import 'package:store_manager/data/repositories/waste_processing_repository.dart';
+import 'package:store_manager/data/repositories/manufacturing_expense_repository.dart';
+import 'package:store_manager/features/manufacturing/bloc/raw_material_bloc.dart';
+import 'package:store_manager/features/manufacturing/bloc/raw_material_event.dart';
+import 'package:store_manager/features/manufacturing/bloc/manufacturing_mix_bloc.dart';
+import 'package:store_manager/features/manufacturing/bloc/manufacturing_mix_event.dart';
+import 'package:store_manager/features/manufacturing/bloc/production_run_bloc.dart';
+import 'package:store_manager/features/manufacturing/bloc/production_run_event.dart';
+import 'package:store_manager/features/manufacturing/bloc/waste_processing_bloc.dart';
+import 'package:store_manager/features/manufacturing/bloc/waste_processing_event.dart';
+import 'package:store_manager/features/manufacturing/bloc/manufacturing_expense_bloc.dart';
+import 'package:store_manager/features/manufacturing/bloc/manufacturing_expense_event.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -54,6 +70,12 @@ class MyApp extends StatelessWidget {
     final transactionRepository = TransactionRepository();
     final stockLogRepository = StockLogRepository();
     final userRepository = UserRepository();
+    final rawMaterialRepository = RawMaterialRepository();
+    final manufacturingMixRepository = ManufacturingMixRepository();
+    final productionRunRepository = ProductionRunRepository();
+    final wasteMachineRepository = WasteMachineRepository();
+    final wasteProcessingRepository = WasteProcessingRepository();
+    final manufacturingExpenseRepository = ManufacturingExpenseRepository();
 
     return MultiRepositoryProvider(
       providers: [
@@ -65,6 +87,12 @@ class MyApp extends StatelessWidget {
         RepositoryProvider.value(value: transactionRepository),
         RepositoryProvider.value(value: stockLogRepository),
         RepositoryProvider.value(value: userRepository),
+        RepositoryProvider.value(value: rawMaterialRepository),
+        RepositoryProvider.value(value: manufacturingMixRepository),
+        RepositoryProvider.value(value: productionRunRepository),
+        RepositoryProvider.value(value: wasteMachineRepository),
+        RepositoryProvider.value(value: wasteProcessingRepository),
+        RepositoryProvider.value(value: manufacturingExpenseRepository),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -123,6 +151,33 @@ class MyApp extends StatelessWidget {
             create: (_) => UserManagementBloc(
               userRepository: userRepository,
               authRepository: authRepository,
+            ),
+          ),
+          BlocProvider<RawMaterialBloc>(
+            create: (_) => RawMaterialBloc(
+              repository: rawMaterialRepository,
+            ),
+          ),
+          BlocProvider<ManufacturingMixBloc>(
+            create: (_) => ManufacturingMixBloc(
+              repository: manufacturingMixRepository,
+            ),
+          ),
+          BlocProvider<ProductionRunBloc>(
+            create: (_) => ProductionRunBloc(
+              repository: productionRunRepository,
+            ),
+          ),
+          BlocProvider<WasteProcessingBloc>(
+            create: (_) => WasteProcessingBloc(
+              machineRepository: wasteMachineRepository,
+              processingRepository: wasteProcessingRepository,
+              materialRepository: rawMaterialRepository,
+            ),
+          ),
+          BlocProvider<ManufacturingExpenseBloc>(
+            create: (_) => ManufacturingExpenseBloc(
+              repository: manufacturingExpenseRepository,
             ),
           ),
         ],
