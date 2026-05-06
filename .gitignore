@@ -43,3 +43,8 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Service account credentials - never commit these
+assets/plastic-service-account.json
+**/service-account*.json
+**/*service-account*.json
