@@ -230,5 +230,8 @@
   "announcementHintTitle": "e.g. Summer Sale 20% Off",
   "announcementHintMessage": "Describe the offer or message to all shops...",
   "announcementLive": "Live",
-  "announcementCreatedAt": "Created"
+  "announcementCreatedAt": "Created",
+  "quickPush": "Quick Push",
+  "quickPushSubtitle": "Send a push notification directly to all shops without creating an announcement.",
+  "quickPushSent": "Push notification sent!"
 }

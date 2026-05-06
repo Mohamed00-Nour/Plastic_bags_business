@@ -16,6 +16,14 @@ class AnnouncementsScreen extends StatelessWidget {
         title: Text(l10n.announcements),
         backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            tooltip: l10n.quickPush,
+            icon: const Icon(Icons.send_to_mobile_rounded),
+            onPressed: () => _showQuickPushDialog(context, l10n),
+          ),
+          const SizedBox(width: 4),
+        ],
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
@@ -204,6 +212,13 @@ class AnnouncementsScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => _CreateAnnouncementDialog(l10n: l10n),
+    );
+  }
+
+  void _showQuickPushDialog(BuildContext context, AppLocalizations l10n) {
+    showDialog(
+      context: context,
+      builder: (ctx) => _QuickPushDialog(l10n: l10n),
     );
   }
 }
@@ -421,6 +436,159 @@ class _CreateAnnouncementDialogState
                 )
               : const Icon(Icons.send_rounded),
           label: Text(l10n.announcementSend),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.primaryColor,
+            foregroundColor: Colors.white,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Quick Push dialog ──────────────────────────────────────────────────────────
+
+class _QuickPushDialog extends StatefulWidget {
+  final AppLocalizations l10n;
+  const _QuickPushDialog({required this.l10n});
+
+  @override
+  State<_QuickPushDialog> createState() => _QuickPushDialogState();
+}
+
+class _QuickPushDialogState extends State<_QuickPushDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _titleCtrl = TextEditingController();
+  final _messageCtrl = TextEditingController();
+  bool _loading = false;
+
+  AppLocalizations get l10n => widget.l10n;
+
+  @override
+  void dispose() {
+    _titleCtrl.dispose();
+    _messageCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _send() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _loading = true);
+    try {
+      await FcmService.sendToTopic(
+        topic: 'announcements',
+        title: _titleCtrl.text.trim(),
+        body: _messageCtrl.text.trim(),
+      );
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.quickPushSent),
+            backgroundColor: AppTheme.successColor,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Row(
+        children: [
+          const Icon(Icons.send_to_mobile_rounded, color: AppTheme.primaryColor),
+          const SizedBox(width: 8),
+          Text(l10n.quickPush),
+        ],
+      ),
+      content: SizedBox(
+        width: 480,
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                      color: AppTheme.primaryColor.withValues(alpha: 0.2)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline,
+                        size: 16, color: AppTheme.primaryColor),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        l10n.quickPushSubtitle,
+                        style: TextStyle(
+                            fontSize: 12, color: AppTheme.primaryColor),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              TextFormField(
+                controller: _titleCtrl,
+                decoration: InputDecoration(
+                  labelText: l10n.announcementTitle,
+                  hintText: l10n.announcementHintTitle,
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.title),
+                ),
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? l10n.announcementTitle : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _messageCtrl,
+                maxLines: 4,
+                decoration: InputDecoration(
+                  labelText: l10n.announcementMessage,
+                  hintText: l10n.announcementHintMessage,
+                  border: const OutlineInputBorder(),
+                  alignLabelWithHint: true,
+                  prefixIcon: const Padding(
+                    padding: EdgeInsets.only(bottom: 60),
+                    child: Icon(Icons.message_outlined),
+                  ),
+                ),
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? l10n.announcementMessage : null,
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _loading ? null : () => Navigator.pop(context),
+          child: Text(l10n.cancel),
+        ),
+        ElevatedButton.icon(
+          onPressed: _loading ? null : _send,
+          icon: _loading
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white),
+                )
+              : const Icon(Icons.send_to_mobile_rounded),
+          label: Text(l10n.quickPush),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppTheme.primaryColor,
             foregroundColor: Colors.white,

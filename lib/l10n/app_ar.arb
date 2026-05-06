@@ -230,5 +230,8 @@
   "announcementHintTitle": "مثال: خصم 20% صيف",
   "announcementHintMessage": "اكتب تفاصيل العرض أو الرسالة لجميع المحلات...",
   "announcementLive": "مباشر",
-  "announcementCreatedAt": "تاريخ الإنشاء"
+  "announcementCreatedAt": "تاريخ الإنشاء",
+  "quickPush": "إرسال سريع",
+  "quickPushSubtitle": "إرسال إشعار فوري مباشرة لجميع المحلات بدون إنشاء إعلان.",
+  "quickPushSent": "تم إرسال الإشعار!"
 }
