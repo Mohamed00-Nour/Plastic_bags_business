@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/services/fcm_service.dart';
 
 class AnnouncementsScreen extends StatelessWidget {
   const AnnouncementsScreen({super.key});
@@ -106,7 +107,7 @@ class AnnouncementsScreen extends StatelessWidget {
                         children: [
                           // Toggle active/inactive
                           OutlinedButton.icon(
-                            onPressed: () => _toggleActive(doc.id, isActive),
+                            onPressed: () => _toggleActive(doc.id, isActive, data),
                             icon: Icon(
                               isActive
                                   ? Icons.pause_circle_outline
@@ -157,11 +158,21 @@ class AnnouncementsScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _toggleActive(String docId, bool current) async {
+  Future<void> _toggleActive(
+      String docId, bool current, Map<String, dynamic> data) async {
     await FirebaseFirestore.instance
         .collection('announcements')
         .doc(docId)
         .update({'active': !current});
+
+    // Send FCM push when re-activating an announcement
+    if (current == false) {
+      await FcmService.sendToTopic(
+        topic: 'announcements',
+        title: data['title'] as String? ?? '',
+        body: data['message'] as String? ?? '',
+      ).catchError((_) {}); // don't block UI on FCM errors
+    }
   }
 
   Future<void> _confirmDelete(
@@ -259,6 +270,7 @@ class _CreateAnnouncementDialogState
   final _titleCtrl = TextEditingController();
   final _messageCtrl = TextEditingController();
   bool _loading = false;
+  bool _sendPush = false;
 
   AppLocalizations get l10n => widget.l10n;
 
@@ -273,12 +285,29 @@ class _CreateAnnouncementDialogState
     if (!_formKey.currentState!.validate()) return;
     setState(() => _loading = true);
     try {
+      final title = _titleCtrl.text.trim();
+      final message = _messageCtrl.text.trim();
+
       await FirebaseFirestore.instance.collection('announcements').add({
-        'title': _titleCtrl.text.trim(),
-        'message': _messageCtrl.text.trim(),
+        'title': title,
+        'message': message,
         'active': true,
         'createdAt': FieldValue.serverTimestamp(),
       });
+      print('[Announcements] Firestore doc created. sendPush=$_sendPush');
+
+      if (_sendPush) {
+        print('[Announcements] Triggering FCM push...');
+        await FcmService.sendToTopic(
+          topic: 'announcements',
+          title: title,
+          body: message,
+        );
+        print('[Announcements] FCM push sent successfully.');
+      } else {
+        print('[Announcements] FCM push skipped by user choice.');
+      }
+
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -343,6 +372,35 @@ class _CreateAnnouncementDialogState
                 ),
                 validator: (v) =>
                     (v == null || v.trim().isEmpty) ? l10n.announcementMessage : null,
+              ),
+              const SizedBox(height: 12),
+              SwitchListTile(
+                value: _sendPush,
+                onChanged: (v) => setState(() => _sendPush = v),
+                title: const Text('Send push notification to all shops'),
+                subtitle: Text(
+                  _sendPush
+                      ? 'FCM notification will be sent to all subscribed devices'
+                      : 'Announcement saved to Firestore only',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: _sendPush
+                        ? AppTheme.successColor
+                        : Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.5),
+                  ),
+                ),
+                secondary: Icon(
+                  _sendPush
+                      ? Icons.notifications_active_rounded
+                      : Icons.notifications_off_outlined,
+                  color: _sendPush ? AppTheme.successColor : Colors.grey,
+                ),
+                contentPadding: EdgeInsets.zero,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
               ),
             ],
           ),

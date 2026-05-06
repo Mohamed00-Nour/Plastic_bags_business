@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import '../../../../core/services/notification_service.dart';
 import '../../../../core/bloc/locale_cubit.dart';
 import '../../../../core/bloc/theme_cubit.dart';
 import '../../../auth/bloc/auth_bloc.dart';
@@ -30,47 +32,27 @@ class _ShopAppShellState extends State<ShopAppShell> {
   }
 
   Future<void> _setupFcm() async {
+    // FCM topic subscription only works on Android and iOS
+    final platform = defaultTargetPlatform;
+    if (platform != TargetPlatform.android && platform != TargetPlatform.iOS) {
+      return;
+    }
+
     final messaging = FirebaseMessaging.instance;
 
-    // Request permission (required on iOS/web)
+    // Request permission (required on iOS)
     await messaging.requestPermission();
 
     // Subscribe to the topic that the admin targets
     await messaging.subscribeToTopic('announcements');
 
-    // Show in-app snackbar when a foreground message arrives
+    // Show OS-level notification when a foreground message arrives
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      if (!mounted) return;
       final notification = message.notification;
       if (notification != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.campaign_rounded, color: Colors.white),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (notification.title != null)
-                        Text(notification.title!,
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white)),
-                      if (notification.body != null)
-                        Text(notification.body!,
-                            style:
-                                const TextStyle(color: Colors.white70)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: const Color(0xFF3949AB),
-            duration: const Duration(seconds: 6),
-          ),
+        NotificationService.show(
+          title: notification.title ?? '',
+          body: notification.body ?? '',
         );
       }
     });

@@ -46,13 +46,22 @@ import 'package:store_manager/features/manufacturing/bloc/waste_processing_bloc.
 import 'package:store_manager/features/manufacturing/bloc/waste_processing_event.dart';
 import 'package:store_manager/features/manufacturing/bloc/manufacturing_expense_bloc.dart';
 import 'package:store_manager/features/manufacturing/bloc/manufacturing_expense_event.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:store_manager/core/services/notification_service.dart';
 import 'firebase_options.dart';
+
+/// Must be a top-level function — required by FCM for background messages.
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  await NotificationService.init();
   runApp(const MyApp());
 }
 
