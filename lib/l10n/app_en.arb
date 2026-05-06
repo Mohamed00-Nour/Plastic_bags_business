@@ -213,6 +213,13 @@
   "orderIdPrefix": "Order",
   "stockLabel": "Stock",
   "priceEach": "Price",
+  "tapProductToAdd": "Tap + to add a product to your order",
+  "outOfStock": "Out of stock",
+  "orderTotal": "Order Total",
+  "confirmOrder": "Confirm Order",
+  "confirmOrderMessage": "Are you ready to send this order?",
+  "goBack": "Go Back",
+  "yesPlaceOrder": "Yes, Order!",
 
   "announcements": "Announcements",
   "newAnnouncement": "New Announcement",

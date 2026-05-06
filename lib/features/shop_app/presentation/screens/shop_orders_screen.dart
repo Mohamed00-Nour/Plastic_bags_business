@@ -3,10 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
-import 'package:uuid/uuid.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../auth/bloc/auth_bloc.dart';
 import '../../../auth/bloc/auth_state.dart';
+import 'place_order_screen.dart';
 
 class ShopOrdersScreen extends StatelessWidget {
   const ShopOrdersScreen({super.key});
@@ -129,23 +129,22 @@ class ShopOrdersScreen extends StatelessWidget {
             },
           ),
           floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => _showCreateOrderDialog(context, shopId, shopName),
-            icon: const Icon(Icons.add),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => PlaceOrderScreen(
+                  shopId: shopId,
+                  shopName: shopName,
+                ),
+              ),
+            ),
+            icon: const Icon(Icons.add_shopping_cart_rounded),
             label: Text(l10n.newOrder),
+            backgroundColor: AppTheme.primaryColor,
+            foregroundColor: Colors.white,
           ),
         );
       },
-    );
-  }
-
-  void _showCreateOrderDialog(
-      BuildContext context, String shopId, String shopName) {
-    showDialog(
-      context: context,
-      builder: (ctx) => _CreateShopOrderDialog(
-        shopId: shopId,
-        shopName: shopName,
-      ),
     );
   }
 
@@ -174,242 +173,4 @@ class ShopOrdersScreen extends StatelessWidget {
         return Colors.orange;
     }
   }
-}
-
-class _CreateShopOrderDialog extends StatefulWidget {
-  final String shopId;
-  final String shopName;
-
-  const _CreateShopOrderDialog({
-    required this.shopId,
-    required this.shopName,
-  });
-
-  @override
-  State<_CreateShopOrderDialog> createState() => _CreateShopOrderDialogState();
-}
-
-class _CreateShopOrderDialogState extends State<_CreateShopOrderDialog> {
-  final List<_OrderItemEntry> _items = [];
-  final _notesCtrl = TextEditingController();
-  bool _submitting = false;
-
-  double get _total =>
-      _items.fold(0, (s, i) => s + (i.quantity * i.unitPrice));
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final numFmt = NumberFormat('#,##0.0');
-
-    return AlertDialog(
-      title: Text(l10n.placeNewOrder),
-      content: SizedBox(
-        width: 550,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Product picker
-              StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('products')
-                    .where('isActive', isEqualTo: true)
-                    .orderBy('name')
-                    .snapshots(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return const LinearProgressIndicator();
-                  }
-                  final products = snapshot.data!.docs;
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('${l10n.availableProducts}:',
-                          style: const TextStyle(fontWeight: FontWeight.w600)),
-                      const SizedBox(height: 8),
-                      ...products.map((doc) {
-                        final data = doc.data() as Map<String, dynamic>;
-                        final name = data['name'] ?? '';
-                        final size = data['size'] ?? '';
-                        final price = (data['price'] ?? 0).toDouble();
-                        final stock = (data['stockQuantity'] ?? 0).toInt();
-                        final alreadyAdded =
-                            _items.any((i) => i.productId == doc.id);
-                        return ListTile(
-                          dense: true,
-                          title: Text('$name ($size)'),
-                          subtitle: Text(
-                              '${l10n.priceEach}: ${numFmt.format(price)}  •  ${l10n.stockLabel}: $stock'),
-                          trailing: alreadyAdded
-                              ? const Icon(Icons.check,
-                                  color: AppTheme.successColor)
-                              : IconButton(
-                                  icon: const Icon(Icons.add_circle_outline,
-                                      color: AppTheme.primaryColor),
-                                  onPressed: stock <= 0
-                                      ? null
-                                      : () {
-                                          setState(() {
-                                            _items.add(_OrderItemEntry(
-                                              productId: doc.id,
-                                              productName: name,
-                                              productSize: size,
-                                              unitPrice: price,
-                                              quantity: 1,
-                                              maxStock: stock,
-                                            ));
-                                          });
-                                        },
-                                ),
-                        );
-                      }),
-                    ],
-                  );
-                },
-              ),
-              if (_items.isNotEmpty) ...[
-                const Divider(),
-                Text('${l10n.orderItems}:',
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
-                const SizedBox(height: 8),
-                ..._items.asMap().entries.map((entry) {
-                  final i = entry.key;
-                  final item = entry.value;
-                  return ListTile(
-                    dense: true,
-                    title: Text(item.productName),
-                    subtitle: Text(
-                        '${numFmt.format(item.unitPrice)} ${l10n.eachUnit}'),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.remove, size: 18),
-                          onPressed: item.quantity > 1
-                              ? () => setState(() => _items[i].quantity--)
-                              : null,
-                        ),
-                        Text('${item.quantity}',
-                            style:
-                                const TextStyle(fontWeight: FontWeight.bold)),
-                        IconButton(
-                          icon: const Icon(Icons.add, size: 18),
-                          onPressed: item.quantity < item.maxStock
-                              ? () => setState(() => _items[i].quantity++)
-                              : null,
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline,
-                              size: 18, color: AppTheme.dangerColor),
-                          onPressed: () =>
-                              setState(() => _items.removeAt(i)),
-                        ),
-                      ],
-                    ),
-                  );
-                }),
-                const Divider(),
-                Text(
-                  '${l10n.total}: ${numFmt.format(_total)}',
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold),
-                  textAlign: TextAlign.right,
-                ),
-              ],
-              const SizedBox(height: 12),
-              TextField(
-                controller: _notesCtrl,
-                decoration: InputDecoration(labelText: l10n.notesOptional),
-                maxLines: 2,
-              ),
-            ],
-          ),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(l10n.cancel),
-        ),
-        ElevatedButton(
-          onPressed: _items.isEmpty || _submitting ? null : _submitOrder,
-          child: _submitting
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Text(l10n.placeOrder),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _submitOrder() async {
-    final l10n = AppLocalizations.of(context)!;
-    setState(() => _submitting = true);
-    try {
-      final orderId = const Uuid().v4();
-      final now = DateTime.now();
-      await FirebaseFirestore.instance.collection('orders').doc(orderId).set({
-        'shopId': widget.shopId,
-        'shopName': widget.shopName,
-        'items': _items
-            .map((i) => {
-                  'productId': i.productId,
-                  'productName': i.productName,
-                  'productSize': i.productSize,
-                  'quantity': i.quantity,
-                  'unitPrice': i.unitPrice,
-                  'total': i.quantity * i.unitPrice,
-                })
-            .toList(),
-        'totalPrice': _total,
-        'status': 'pending',
-        'notes': _notesCtrl.text.isNotEmpty ? _notesCtrl.text : null,
-        'createdAt': Timestamp.fromDate(now),
-        'updatedAt': Timestamp.fromDate(now),
-      });
-      if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.orderPlacedSuccess),
-            backgroundColor: AppTheme.successColor,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: AppTheme.dangerColor,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _submitting = false);
-    }
-  }
-}
-
-class _OrderItemEntry {
-  final String productId;
-  final String productName;
-  final String productSize;
-  final double unitPrice;
-  int quantity;
-  final int maxStock;
-
-  _OrderItemEntry({
-    required this.productId,
-    required this.productName,
-    required this.productSize,
-    required this.unitPrice,
-    required this.quantity,
-    required this.maxStock,
-  });
 }

@@ -213,6 +213,13 @@
   "orderIdPrefix": "طلب",
   "stockLabel": "المخزون",
   "priceEach": "السعر",
+  "tapProductToAdd": "اضغط + لإضافة منتج للطلب",
+  "outOfStock": "نفد المخزون",
+  "orderTotal": "إجمالي الطلب",
+  "confirmOrder": "تأكيد الطلب",
+  "confirmOrderMessage": "هل أنت جاهز لإرسال هذا الطلب؟",
+  "goBack": "رجوع",
+  "yesPlaceOrder": "نعم، اطلب!",
 
   "announcements": "الإعلانات",
   "newAnnouncement": "إعلان جديد",
