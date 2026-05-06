@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../core/theme/app_theme.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../../../../core/bloc/locale_cubit.dart';
+import '../../../../core/bloc/theme_cubit.dart';
 import '../../../auth/bloc/auth_bloc.dart';
 import '../../../auth/bloc/auth_event.dart';
 import '../../../auth/bloc/auth_state.dart';
 import 'shop_dashboard_screen.dart';
 import 'shop_orders_screen.dart';
 import 'shop_products_screen.dart';
+import 'shop_purchases_screen.dart';
 import 'shop_transactions_screen.dart';
 
 class ShopAppShell extends StatefulWidget {
@@ -19,39 +22,65 @@ class ShopAppShell extends StatefulWidget {
 class _ShopAppShellState extends State<ShopAppShell> {
   int _selectedIndex = 0;
 
-  static const _screens = <_ShopNavItem>[
-    _ShopNavItem(
-      icon: Icons.dashboard_rounded,
-      label: 'Home',
-      screen: ShopDashboardScreen(),
-    ),
-    _ShopNavItem(
-      icon: Icons.inventory_2_rounded,
-      label: 'Products',
-      screen: ShopProductsScreen(),
-    ),
-    _ShopNavItem(
-      icon: Icons.receipt_long_rounded,
-      label: 'Orders',
-      screen: ShopOrdersScreen(),
-    ),
-    _ShopNavItem(
-      icon: Icons.account_balance_wallet_rounded,
-      label: 'Account',
-      screen: ShopTransactionsScreen(),
-    ),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final screens = <_ShopNavItem>[
+      _ShopNavItem(
+        icon: Icons.dashboard_rounded,
+        label: l10n.shopDashboard,
+        screen: const ShopDashboardScreen(),
+      ),
+      _ShopNavItem(
+        icon: Icons.inventory_2_rounded,
+        label: l10n.products,
+        screen: const ShopProductsScreen(),
+      ),
+      _ShopNavItem(
+        icon: Icons.receipt_long_rounded,
+        label: l10n.orders,
+        screen: const ShopOrdersScreen(),
+      ),
+      _ShopNavItem(
+        icon: Icons.shopping_bag_rounded,
+        label: l10n.myPurchases,
+        screen: const ShopPurchasesScreen(),
+      ),
+      _ShopNavItem(
+        icon: Icons.account_balance_wallet_rounded,
+        label: l10n.transactions,
+        screen: const ShopTransactionsScreen(),
+      ),
+    ];
+
+    if (_selectedIndex >= screens.length) _selectedIndex = 0;
+
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
         final user = state is AuthAuthenticated ? state.user : null;
 
         return Scaffold(
           appBar: AppBar(
-            title: Text(user?.shopName ?? 'My Shop'),
+            title: Text(user?.shopName ?? l10n.shopDashboard),
             actions: [
+              // Theme toggle
+              IconButton(
+                onPressed: () => context.read<ThemeCubit>().toggleTheme(),
+                icon: Icon(
+                  context.watch<ThemeCubit>().isDark
+                      ? Icons.light_mode_rounded
+                      : Icons.dark_mode_rounded,
+                  size: 22,
+                ),
+                tooltip: l10n.toggleTheme,
+              ),
+              // Locale toggle
+              IconButton(
+                onPressed: () => context.read<LocaleCubit>().toggleLocale(),
+                icon: const Icon(Icons.language_rounded, size: 22),
+                tooltip: l10n.toggleLanguage,
+              ),
+              // User menu
               PopupMenuButton<String>(
                 onSelected: (value) {
                   if (value == 'logout') {
@@ -73,13 +102,13 @@ class _ShopAppShellState extends State<ShopAppShell> {
                     ),
                   ),
                   const PopupMenuDivider(),
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'logout',
                     child: Row(
                       children: [
-                        Icon(Icons.logout, size: 20),
-                        SizedBox(width: 8),
-                        Text('Logout'),
+                        const Icon(Icons.logout, size: 20),
+                        const SizedBox(width: 8),
+                        Text(l10n.logout),
                       ],
                     ),
                   ),
@@ -87,15 +116,16 @@ class _ShopAppShellState extends State<ShopAppShell> {
               ),
             ],
           ),
-          body: _screens[_selectedIndex].screen,
-          bottomNavigationBar: BottomNavigationBar(
-            currentIndex: _selectedIndex,
-            onTap: (i) => setState(() => _selectedIndex = i),
-            type: BottomNavigationBarType.fixed,
-            selectedItemColor: AppTheme.primaryColor,
-            items: _screens
-                .map((s) =>
-                    BottomNavigationBarItem(icon: Icon(s.icon), label: s.label))
+          body: screens[_selectedIndex].screen,
+          bottomNavigationBar: NavigationBar(
+            selectedIndex: _selectedIndex,
+            onDestinationSelected: (i) => setState(() => _selectedIndex = i),
+            labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+            destinations: screens
+                .map((s) => NavigationDestination(
+                      icon: Icon(s.icon),
+                      label: s.label,
+                    ))
                 .toList(),
           ),
         );

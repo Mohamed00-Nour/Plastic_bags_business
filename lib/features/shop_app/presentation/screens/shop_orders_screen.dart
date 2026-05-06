@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
@@ -12,14 +13,17 @@ class ShopOrdersScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
         if (state is! AuthAuthenticated || state.user.shopId == null) {
-          return const Center(child: Text('No shop assigned.'));
+          return Center(child: Text(l10n.noShopAssigned));
         }
         final shopId = state.user.shopId!;
-        final shopName = state.user.shopName ?? 'My Shop';
+        final shopName = state.user.shopName ?? '';
         final dateFormat = DateFormat('MMM dd, yyyy');
+        final numFmt = NumberFormat('#,##0.0');
 
         return Scaffold(
           body: StreamBuilder<QuerySnapshot>(
@@ -34,7 +38,26 @@ class ShopOrdersScreen extends StatelessWidget {
               }
               final orders = snapshot.data!.docs;
               if (orders.isEmpty) {
-                return const Center(child: Text('No orders yet'));
+                return Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.receipt_long_outlined,
+                          size: 64,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.3)),
+                      const SizedBox(height: 16),
+                      Text(l10n.noOrdersYet,
+                          style: TextStyle(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withValues(alpha: 0.5))),
+                    ],
+                  ),
+                );
               }
 
               return ListView.builder(
@@ -48,22 +71,24 @@ class ShopOrdersScreen extends StatelessWidget {
                   final createdAt =
                       (data['createdAt'] as Timestamp?)?.toDate();
 
-                  return Card(
-                    child: ExpansionTile(
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Card(
+                      child: ExpansionTile(
                       leading: Icon(
                         _statusIcon(status),
                         color: _statusColor(status),
                       ),
                       title: Text(
-                        'Order #${orders[index].id.substring(0, 8)}',
+                        '${l10n.orderIdPrefix} #${orders[index].id.substring(0, 8).toUpperCase()}',
                         style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                       subtitle: Text(
-                        '$items items • ${status.toString().toUpperCase()}'
+                        '$items ${l10n.items} • ${status.toUpperCase()}'
                         '${createdAt != null ? ' • ${dateFormat.format(createdAt)}' : ''}',
                       ),
                       trailing: Text(
-                        total.toStringAsFixed(1),
+                        numFmt.format(total),
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -76,10 +101,10 @@ class ShopOrdersScreen extends StatelessWidget {
                             return ListTile(
                               dense: true,
                               title: Text(itemMap['productName'] ?? ''),
-                              subtitle:
-                                  Text('Size: ${itemMap['productSize'] ?? ''}'),
+                              subtitle: Text(
+                                  '${l10n.size}: ${itemMap['productSize'] ?? ''}'),
                               trailing: Text(
-                                '${itemMap['quantity']} × ${(itemMap['unitPrice'] ?? 0).toDouble().toStringAsFixed(1)}',
+                                '${itemMap['quantity']} × ${numFmt.format((itemMap['unitPrice'] ?? 0).toDouble())}',
                               ),
                             );
                           }),
@@ -97,6 +122,7 @@ class ShopOrdersScreen extends StatelessWidget {
                           ),
                       ],
                     ),
+                  ),
                   );
                 },
               );
@@ -105,7 +131,7 @@ class ShopOrdersScreen extends StatelessWidget {
           floatingActionButton: FloatingActionButton.extended(
             onPressed: () => _showCreateOrderDialog(context, shopId, shopName),
             icon: const Icon(Icons.add),
-            label: const Text('New Order'),
+            label: Text(l10n.newOrder),
           ),
         );
       },
@@ -173,8 +199,11 @@ class _CreateShopOrderDialogState extends State<_CreateShopOrderDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final numFmt = NumberFormat('#,##0.0');
+
     return AlertDialog(
-      title: const Text('Place New Order'),
+      title: Text(l10n.placeNewOrder),
       content: SizedBox(
         width: 550,
         child: SingleChildScrollView(
@@ -197,8 +226,8 @@ class _CreateShopOrderDialogState extends State<_CreateShopOrderDialog> {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Available Products:',
-                          style: TextStyle(fontWeight: FontWeight.w600)),
+                      Text('${l10n.availableProducts}:',
+                          style: const TextStyle(fontWeight: FontWeight.w600)),
                       const SizedBox(height: 8),
                       ...products.map((doc) {
                         final data = doc.data() as Map<String, dynamic>;
@@ -212,7 +241,7 @@ class _CreateShopOrderDialogState extends State<_CreateShopOrderDialog> {
                           dense: true,
                           title: Text('$name ($size)'),
                           subtitle: Text(
-                              'Price: \$${price.toStringAsFixed(2)} • Stock: $stock'),
+                              '${l10n.priceEach}: ${numFmt.format(price)}  •  ${l10n.stockLabel}: $stock'),
                           trailing: alreadyAdded
                               ? const Icon(Icons.check,
                                   color: AppTheme.successColor)
@@ -242,8 +271,8 @@ class _CreateShopOrderDialogState extends State<_CreateShopOrderDialog> {
               ),
               if (_items.isNotEmpty) ...[
                 const Divider(),
-                const Text('Order Items:',
-                    style: TextStyle(fontWeight: FontWeight.w600)),
+                Text('${l10n.orderItems}:',
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
                 const SizedBox(height: 8),
                 ..._items.asMap().entries.map((entry) {
                   final i = entry.key;
@@ -251,25 +280,24 @@ class _CreateShopOrderDialogState extends State<_CreateShopOrderDialog> {
                   return ListTile(
                     dense: true,
                     title: Text(item.productName),
-                    subtitle: Text('\$${item.unitPrice.toStringAsFixed(2)} each'),
+                    subtitle: Text(
+                        '${numFmt.format(item.unitPrice)} ${l10n.eachUnit}'),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
                           icon: const Icon(Icons.remove, size: 18),
                           onPressed: item.quantity > 1
-                              ? () => setState(
-                                  () => _items[i].quantity--)
+                              ? () => setState(() => _items[i].quantity--)
                               : null,
                         ),
                         Text('${item.quantity}',
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold)),
+                            style:
+                                const TextStyle(fontWeight: FontWeight.bold)),
                         IconButton(
                           icon: const Icon(Icons.add, size: 18),
                           onPressed: item.quantity < item.maxStock
-                              ? () => setState(
-                                  () => _items[i].quantity++)
+                              ? () => setState(() => _items[i].quantity++)
                               : null,
                         ),
                         IconButton(
@@ -284,7 +312,7 @@ class _CreateShopOrderDialogState extends State<_CreateShopOrderDialog> {
                 }),
                 const Divider(),
                 Text(
-                  'Total: \$${_total.toStringAsFixed(2)}',
+                  '${l10n.total}: ${numFmt.format(_total)}',
                   style: const TextStyle(
                       fontSize: 18, fontWeight: FontWeight.bold),
                   textAlign: TextAlign.right,
@@ -293,8 +321,7 @@ class _CreateShopOrderDialogState extends State<_CreateShopOrderDialog> {
               const SizedBox(height: 12),
               TextField(
                 controller: _notesCtrl,
-                decoration: const InputDecoration(
-                    labelText: 'Notes (optional)'),
+                decoration: InputDecoration(labelText: l10n.notesOptional),
                 maxLines: 2,
               ),
             ],
@@ -304,7 +331,7 @@ class _CreateShopOrderDialogState extends State<_CreateShopOrderDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(l10n.cancel),
         ),
         ElevatedButton(
           onPressed: _items.isEmpty || _submitting ? null : _submitOrder,
@@ -314,13 +341,14 @@ class _CreateShopOrderDialogState extends State<_CreateShopOrderDialog> {
                   height: 20,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Text('Place Order'),
+              : Text(l10n.placeOrder),
         ),
       ],
     );
   }
 
   Future<void> _submitOrder() async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() => _submitting = true);
     try {
       final orderId = const Uuid().v4();
@@ -347,8 +375,8 @@ class _CreateShopOrderDialogState extends State<_CreateShopOrderDialog> {
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Order placed successfully!'),
+          SnackBar(
+            content: Text(l10n.orderPlacedSuccess),
             backgroundColor: AppTheme.successColor,
           ),
         );

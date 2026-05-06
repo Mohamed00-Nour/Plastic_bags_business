@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -11,13 +12,16 @@ class ShopTransactionsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
         if (state is! AuthAuthenticated || state.user.shopId == null) {
-          return const Center(child: Text('No shop assigned.'));
+          return Center(child: Text(l10n.noShopAssigned));
         }
         final shopId = state.user.shopId!;
         final dateFormat = DateFormat('MMM dd, yyyy');
+        final numFmt = NumberFormat('#,##0.0');
 
         return StreamBuilder<QuerySnapshot>(
           stream: FirebaseFirestore.instance
@@ -31,7 +35,26 @@ class ShopTransactionsScreen extends StatelessWidget {
             }
             final transactions = snapshot.data!.docs;
             if (transactions.isEmpty) {
-              return const Center(child: Text('No transactions yet'));
+              return Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.account_balance_wallet_outlined,
+                        size: 64,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.3)),
+                    const SizedBox(height: 16),
+                    Text(l10n.noTransactionsYet,
+                        style: TextStyle(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.5))),
+                  ],
+                ),
+              );
             }
 
             return ListView.builder(
@@ -48,34 +71,37 @@ class ShopTransactionsScreen extends StatelessWidget {
                 final isCredit =
                     type == 'balanceCharge' || type == 'refund';
 
-                return Card(
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: isCredit
-                          ? AppTheme.successColor
-                          : Colors.orange,
-                      child: Icon(
-                        isCredit
-                            ? Icons.arrow_downward
-                            : Icons.arrow_upward,
-                        color: Colors.white,
-                      ),
-                    ),
-                    title: Text(
-                      _typeLabel(type),
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    subtitle: Text(
-                      createdAt != null ? dateFormat.format(createdAt) : '',
-                    ),
-                    trailing: Text(
-                      '${isCredit ? '+' : '-'}${amount.toStringAsFixed(1)}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: isCredit
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Card(
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: isCredit
                             ? AppTheme.successColor
-                            : AppTheme.dangerColor,
+                            : Colors.orange,
+                        child: Icon(
+                          isCredit
+                              ? Icons.arrow_downward
+                              : Icons.arrow_upward,
+                          color: Colors.white,
+                        ),
+                      ),
+                      title: Text(
+                        _typeLabel(type, l10n),
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: Text(
+                        createdAt != null ? dateFormat.format(createdAt) : '',
+                      ),
+                      trailing: Text(
+                        '${isCredit ? '+' : '-'}${numFmt.format(amount)}',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: isCredit
+                              ? AppTheme.successColor
+                              : AppTheme.dangerColor,
+                        ),
                       ),
                     ),
                   ),
@@ -88,16 +114,16 @@ class ShopTransactionsScreen extends StatelessWidget {
     );
   }
 
-  String _typeLabel(String type) {
+  String _typeLabel(String type, AppLocalizations l10n) {
     switch (type) {
       case 'balanceCharge':
-        return 'Balance Charge';
+        return l10n.transactionBalanceCharge;
       case 'purchase':
-        return 'Purchase';
+        return l10n.transactionPurchase;
       case 'refund':
-        return 'Refund';
+        return l10n.transactionRefund;
       case 'supplierPayment':
-        return 'Supplier Payment';
+        return l10n.transactionSupplierPayment;
       default:
         return type;
     }
