@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' as intl;
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/fcm_service.dart';
 
@@ -16,14 +16,7 @@ class AnnouncementsScreen extends StatelessWidget {
         title: Text(l10n.announcements),
         backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            tooltip: l10n.quickPush,
-            icon: const Icon(Icons.send_to_mobile_rounded),
-            onPressed: () => _showQuickPushDialog(context, l10n),
-          ),
-          const SizedBox(width: 4),
-        ],
+
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
@@ -65,11 +58,13 @@ class AnnouncementsScreen extends StatelessWidget {
               final doc = docs[i];
               final data = doc.data() as Map<String, dynamic>;
               final isActive = data['active'] == true;
-              final title = data['title'] as String? ?? '';
-              final message = data['message'] as String? ?? '';
+              final titleEn = data['titleEn'] as String? ?? data['title'] as String? ?? '';
+              final titleAr = data['titleAr'] as String? ?? titleEn;
+              final messageEn = data['messageEn'] as String? ?? data['message'] as String? ?? '';
+              final messageAr = data['messageAr'] as String? ?? messageEn;
               final createdAt =
                   (data['createdAt'] as Timestamp?)?.toDate();
-              final dateFmt = DateFormat('dd MMM yyyy, HH:mm');
+              final dateFmt = intl.DateFormat('dd MMM yyyy, HH:mm');
 
               return Card(
                 shape: RoundedRectangleBorder(
@@ -82,19 +77,62 @@ class AnnouncementsScreen extends StatelessWidget {
                       Row(
                         children: [
                           Expanded(
-                            child: Text(title,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleMedium
-                                    ?.copyWith(
-                                        fontWeight: FontWeight.bold)),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.language, size: 14, color: Colors.grey),
+                                    const SizedBox(width: 4),
+                                    const Text('EN', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w600)),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(titleEn,
+                                          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.language, size: 14, color: Colors.grey),
+                                    const SizedBox(width: 4),
+                                    const Text('AR', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w600)),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(titleAr,
+                                          textDirection: TextDirection.rtl,
+                                          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
                           _StatusBadge(isActive: isActive, l10n: l10n),
                         ],
                       ),
                       const SizedBox(height: 8),
-                      Text(message,
-                          style: Theme.of(context).textTheme.bodyMedium),
+                      // EN message
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('EN ', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w600)),
+                          Expanded(child: Text(messageEn, style: Theme.of(context).textTheme.bodyMedium)),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      // AR message
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('AR ', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w600)),
+                          Expanded(
+                            child: Text(messageAr,
+                                textDirection: TextDirection.rtl,
+                                style: Theme.of(context).textTheme.bodyMedium)),
+                        ],
+                      ),
                       if (createdAt != null) ...[
                         const SizedBox(height: 8),
                         Text(
@@ -156,12 +194,29 @@ class AnnouncementsScreen extends StatelessWidget {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showCreateDialog(context, l10n),
-        icon: const Icon(Icons.campaign_rounded),
-        label: Text(l10n.newAnnouncement),
-        backgroundColor: AppTheme.primaryColor,
-        foregroundColor: Colors.white,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          FloatingActionButton.extended(
+            heroTag: 'quickPushFab',
+            onPressed: () => _showQuickPushDialog(context, l10n),
+            icon: const Icon(Icons.send_to_mobile_rounded),
+            label: Text(l10n.quickPush),
+            backgroundColor: Colors.deepOrange,
+            foregroundColor: Colors.white,
+          ),
+          const SizedBox(height: 12),
+          FloatingActionButton.extended(
+            heroTag: 'newAnnouncementFab',
+            onPressed: () => _showCreateDialog(context, l10n),
+            icon: const Icon(Icons.campaign_rounded),
+            label: Text(l10n.newAnnouncement),
+            backgroundColor: AppTheme.primaryColor,
+            foregroundColor: Colors.white,
+          ),
+        ],
       ),
     );
   }
@@ -175,10 +230,16 @@ class AnnouncementsScreen extends StatelessWidget {
 
     // Send FCM push when re-activating an announcement
     if (current == false) {
+      final titleEn = data['titleEn'] as String? ?? data['title'] as String? ?? '';
+      final titleAr = data['titleAr'] as String? ?? titleEn;
+      final messageEn = data['messageEn'] as String? ?? data['message'] as String? ?? '';
+      final messageAr = data['messageAr'] as String? ?? messageEn;
       await FcmService.sendToTopic(
         topic: 'announcements',
-        title: data['title'] as String? ?? '',
-        body: data['message'] as String? ?? '',
+        title: titleEn,
+        body: messageEn,
+        titleAr: titleAr,
+        bodyAr: messageAr,
       ).catchError((_) {}); // don't block UI on FCM errors
     }
   }
@@ -282,8 +343,10 @@ class _CreateAnnouncementDialog extends StatefulWidget {
 class _CreateAnnouncementDialogState
     extends State<_CreateAnnouncementDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _titleCtrl = TextEditingController();
-  final _messageCtrl = TextEditingController();
+  final _titleEnCtrl = TextEditingController();
+  final _titleArCtrl = TextEditingController();
+  final _messageEnCtrl = TextEditingController();
+  final _messageArCtrl = TextEditingController();
   bool _loading = false;
   bool _sendPush = false;
 
@@ -291,8 +354,10 @@ class _CreateAnnouncementDialogState
 
   @override
   void dispose() {
-    _titleCtrl.dispose();
-    _messageCtrl.dispose();
+    _titleEnCtrl.dispose();
+    _titleArCtrl.dispose();
+    _messageEnCtrl.dispose();
+    _messageArCtrl.dispose();
     super.dispose();
   }
 
@@ -300,27 +365,31 @@ class _CreateAnnouncementDialogState
     if (!_formKey.currentState!.validate()) return;
     setState(() => _loading = true);
     try {
-      final title = _titleCtrl.text.trim();
-      final message = _messageCtrl.text.trim();
+      final titleEn = _titleEnCtrl.text.trim();
+      final titleAr = _titleArCtrl.text.trim();
+      final messageEn = _messageEnCtrl.text.trim();
+      final messageAr = _messageArCtrl.text.trim();
 
       await FirebaseFirestore.instance.collection('announcements').add({
-        'title': title,
-        'message': message,
+        'titleEn': titleEn,
+        'titleAr': titleAr,
+        'messageEn': messageEn,
+        'messageAr': messageAr,
+        // keep legacy fields for old clients
+        'title': titleEn,
+        'message': messageEn,
         'active': true,
         'createdAt': FieldValue.serverTimestamp(),
       });
-      print('[Announcements] Firestore doc created. sendPush=$_sendPush');
 
       if (_sendPush) {
-        print('[Announcements] Triggering FCM push...');
         await FcmService.sendToTopic(
           topic: 'announcements',
-          title: title,
-          body: message,
+          title: titleEn,
+          body: messageEn,
+          titleAr: titleAr,
+          bodyAr: messageAr,
         );
-        print('[Announcements] FCM push sent successfully.');
-      } else {
-        print('[Announcements] FCM push skipped by user choice.');
       }
 
       if (mounted) {
@@ -354,70 +423,98 @@ class _CreateAnnouncementDialogState
         ],
       ),
       content: SizedBox(
-        width: 480,
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: _titleCtrl,
-                decoration: InputDecoration(
-                  labelText: l10n.announcementTitle,
-                  hintText: l10n.announcementHintTitle,
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.title),
-                ),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? l10n.announcementTitle : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _messageCtrl,
-                maxLines: 4,
-                decoration: InputDecoration(
-                  labelText: l10n.announcementMessage,
-                  hintText: l10n.announcementHintMessage,
-                  border: const OutlineInputBorder(),
-                  alignLabelWithHint: true,
-                  prefixIcon: const Padding(
-                    padding: EdgeInsets.only(bottom: 60),
-                    child: Icon(Icons.message_outlined),
+        width: 520,
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _LangSectionHeader(flag: '🇬🇧', label: l10n.langEnglish),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _titleEnCtrl,
+                  decoration: InputDecoration(
+                    labelText: l10n.announcementTitle,
+                    hintText: l10n.announcementHintTitle,
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.title),
                   ),
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? l10n.announcementTitle : null,
                 ),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? l10n.announcementMessage : null,
-              ),
-              const SizedBox(height: 12),
-              SwitchListTile(
-                value: _sendPush,
-                onChanged: (v) => setState(() => _sendPush = v),
-                title: const Text('Send push notification to all shops'),
-                subtitle: Text(
-                  _sendPush
-                      ? 'FCM notification will be sent to all subscribed devices'
-                      : 'Announcement saved to Firestore only',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: _sendPush
-                        ? AppTheme.successColor
-                        : Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withValues(alpha: 0.5),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _messageEnCtrl,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    labelText: l10n.announcementMessage,
+                    hintText: l10n.announcementHintMessage,
+                    border: const OutlineInputBorder(),
+                    alignLabelWithHint: true,
                   ),
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? l10n.announcementMessage : null,
                 ),
-                secondary: Icon(
-                  _sendPush
-                      ? Icons.notifications_active_rounded
-                      : Icons.notifications_off_outlined,
-                  color: _sendPush ? AppTheme.successColor : Colors.grey,
+                const SizedBox(height: 20),
+                _LangSectionHeader(flag: '🇸🇦', label: l10n.langArabic),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _titleArCtrl,
+                  textDirection: TextDirection.rtl,
+                  decoration: InputDecoration(
+                    labelText: l10n.announcementTitle,
+                    hintText: l10n.announcementHintTitleAr,
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.title),
+                  ),
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? l10n.announcementTitle : null,
                 ),
-                contentPadding: EdgeInsets.zero,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
-              ),
-            ],
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _messageArCtrl,
+                  maxLines: 3,
+                  textDirection: TextDirection.rtl,
+                  decoration: InputDecoration(
+                    labelText: l10n.announcementMessage,
+                    hintText: l10n.announcementHintMessageAr,
+                    border: const OutlineInputBorder(),
+                    alignLabelWithHint: true,
+                  ),
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? l10n.announcementMessage : null,
+                ),
+                const SizedBox(height: 12),
+                SwitchListTile(
+                  value: _sendPush,
+                  onChanged: (v) => setState(() => _sendPush = v),
+                  title: Text(l10n.sendPushNotification),
+                  subtitle: Text(
+                    _sendPush
+                        ? l10n.sendPushNotificationHintOn
+                        : l10n.sendPushNotificationHintOff,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: _sendPush
+                          ? AppTheme.successColor
+                          : Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.5),
+                    ),
+                  ),
+                  secondary: Icon(
+                    _sendPush
+                        ? Icons.notifications_active_rounded
+                        : Icons.notifications_off_outlined,
+                    color: _sendPush ? AppTheme.successColor : Colors.grey,
+                  ),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -430,10 +527,8 @@ class _CreateAnnouncementDialogState
           onPressed: _loading ? null : _submit,
           icon: _loading
               ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
+                  width: 16, height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2))
               : const Icon(Icons.send_rounded),
           label: Text(l10n.announcementSend),
           style: ElevatedButton.styleFrom(
@@ -458,16 +553,20 @@ class _QuickPushDialog extends StatefulWidget {
 
 class _QuickPushDialogState extends State<_QuickPushDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _titleCtrl = TextEditingController();
-  final _messageCtrl = TextEditingController();
+  final _titleEnCtrl = TextEditingController();
+  final _titleArCtrl = TextEditingController();
+  final _messageEnCtrl = TextEditingController();
+  final _messageArCtrl = TextEditingController();
   bool _loading = false;
 
   AppLocalizations get l10n => widget.l10n;
 
   @override
   void dispose() {
-    _titleCtrl.dispose();
-    _messageCtrl.dispose();
+    _titleEnCtrl.dispose();
+    _titleArCtrl.dispose();
+    _messageEnCtrl.dispose();
+    _messageArCtrl.dispose();
     super.dispose();
   }
 
@@ -477,8 +576,10 @@ class _QuickPushDialogState extends State<_QuickPushDialog> {
     try {
       await FcmService.sendToTopic(
         topic: 'announcements',
-        title: _titleCtrl.text.trim(),
-        body: _messageCtrl.text.trim(),
+        title: _titleEnCtrl.text.trim(),
+        body: _messageEnCtrl.text.trim(),
+        titleAr: _titleArCtrl.text.trim(),
+        bodyAr: _messageArCtrl.text.trim(),
       );
       if (mounted) {
         Navigator.pop(context);
@@ -505,71 +606,96 @@ class _QuickPushDialogState extends State<_QuickPushDialog> {
     return AlertDialog(
       title: Row(
         children: [
-          const Icon(Icons.send_to_mobile_rounded, color: AppTheme.primaryColor),
+          const Icon(Icons.send_to_mobile_rounded, color: Colors.deepOrange),
           const SizedBox(width: 8),
           Text(l10n.quickPush),
         ],
       ),
       content: SizedBox(
-        width: 480,
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                      color: AppTheme.primaryColor.withValues(alpha: 0.2)),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.info_outline,
-                        size: 16, color: AppTheme.primaryColor),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        l10n.quickPushSubtitle,
-                        style: TextStyle(
-                            fontSize: 12, color: AppTheme.primaryColor),
+        width: 520,
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.deepOrange.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.deepOrange.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline, size: 16, color: Colors.deepOrange),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(l10n.quickPushSubtitle,
+                            style: const TextStyle(fontSize: 12, color: Colors.deepOrange)),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              TextFormField(
-                controller: _titleCtrl,
-                decoration: InputDecoration(
-                  labelText: l10n.announcementTitle,
-                  hintText: l10n.announcementHintTitle,
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.title),
-                ),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? l10n.announcementTitle : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _messageCtrl,
-                maxLines: 4,
-                decoration: InputDecoration(
-                  labelText: l10n.announcementMessage,
-                  hintText: l10n.announcementHintMessage,
-                  border: const OutlineInputBorder(),
-                  alignLabelWithHint: true,
-                  prefixIcon: const Padding(
-                    padding: EdgeInsets.only(bottom: 60),
-                    child: Icon(Icons.message_outlined),
+                    ],
                   ),
                 ),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? l10n.announcementMessage : null,
-              ),
-            ],
+                _LangSectionHeader(flag: '🇬🇧', label: l10n.langEnglish),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _titleEnCtrl,
+                  decoration: InputDecoration(
+                    labelText: l10n.announcementTitle,
+                    hintText: l10n.announcementHintTitle,
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.title),
+                  ),
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? l10n.announcementTitle : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _messageEnCtrl,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    labelText: l10n.announcementMessage,
+                    hintText: l10n.announcementHintMessage,
+                    border: const OutlineInputBorder(),
+                    alignLabelWithHint: true,
+                  ),
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? l10n.announcementMessage : null,
+                ),
+                const SizedBox(height: 20),
+                _LangSectionHeader(flag: '🇸🇦', label: l10n.langArabic),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _titleArCtrl,
+                  textDirection: TextDirection.rtl,
+                  decoration: InputDecoration(
+                    labelText: l10n.announcementTitle,
+                    hintText: l10n.announcementHintTitleAr,
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.title),
+                  ),
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? l10n.announcementTitle : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _messageArCtrl,
+                  maxLines: 3,
+                  textDirection: TextDirection.rtl,
+                  decoration: InputDecoration(
+                    labelText: l10n.announcementMessage,
+                    hintText: l10n.announcementHintMessageAr,
+                    border: const OutlineInputBorder(),
+                    alignLabelWithHint: true,
+                  ),
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? l10n.announcementMessage : null,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -582,18 +708,40 @@ class _QuickPushDialogState extends State<_QuickPushDialog> {
           onPressed: _loading ? null : _send,
           icon: _loading
               ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                      strokeWidth: 2, color: Colors.white),
-                )
+                  width: 16, height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
               : const Icon(Icons.send_to_mobile_rounded),
           label: Text(l10n.quickPush),
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.primaryColor,
+            backgroundColor: Colors.deepOrange,
             foregroundColor: Colors.white,
           ),
         ),
+      ],
+    );
+  }
+}
+
+// ── Language section header ────────────────────────────────────────────────────
+
+class _LangSectionHeader extends StatelessWidget {
+  final String flag;
+  final String label;
+  const _LangSectionHeader({required this.flag, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(flag, style: const TextStyle(fontSize: 18)),
+        const SizedBox(width: 8),
+        Text(label,
+            style: Theme.of(context)
+                .textTheme
+                .labelLarge
+                ?.copyWith(fontWeight: FontWeight.bold)),
+        const SizedBox(width: 8),
+        Expanded(child: Divider(color: Theme.of(context).dividerColor)),
       ],
     );
   }

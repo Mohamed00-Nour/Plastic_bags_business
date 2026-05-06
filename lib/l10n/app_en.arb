@@ -233,5 +233,12 @@
   "announcementCreatedAt": "Created",
   "quickPush": "Quick Push",
   "quickPushSubtitle": "Send a push notification directly to all shops without creating an announcement.",
-  "quickPushSent": "Push notification sent!"
+  "quickPushSent": "Push notification sent!",
+  "langEnglish": "English",
+  "langArabic": "Arabic",
+  "announcementHintTitleAr": "مثال: خصم 20% صيف",
+  "announcementHintMessageAr": "اكتب تفاصيل العرض أو الرسالة لجميع المحلات...",
+  "sendPushNotification": "Send push notification to all shops",
+  "sendPushNotificationHintOn": "FCM notification will be sent to all subscribed devices",
+  "sendPushNotificationHintOff": "Announcement saved to Firestore only"
 }

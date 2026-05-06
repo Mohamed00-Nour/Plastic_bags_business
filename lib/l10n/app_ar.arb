@@ -233,5 +233,12 @@
   "announcementCreatedAt": "تاريخ الإنشاء",
   "quickPush": "إرسال سريع",
   "quickPushSubtitle": "إرسال إشعار فوري مباشرة لجميع المحلات بدون إنشاء إعلان.",
-  "quickPushSent": "تم إرسال الإشعار!"
+  "quickPushSent": "تم إرسال الإشعار!",
+  "langEnglish": "English",
+  "langArabic": "العربية",
+  "announcementHintTitleAr": "مثال: خصم 20% صيف",
+  "announcementHintMessageAr": "اكتب تفاصيل العرض أو الرسالة لجميع المحلات...",
+  "sendPushNotification": "إرسال إشعار لجميع المحلات",
+  "sendPushNotificationHintOn": "سيتم إرسال إشعار FCM لجميع الأجهزة المشتركة",
+  "sendPushNotificationHintOff": "سيتم حفظ الإعلان في Firestore فقط"
 }

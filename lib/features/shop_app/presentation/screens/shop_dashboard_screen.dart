@@ -415,11 +415,16 @@ class _AnnouncementBanner extends StatelessWidget {
         final docs = snap.data?.docs ?? [];
         if (docs.isEmpty) return const SizedBox.shrink();
 
+        final isArabic = Localizations.localeOf(context).languageCode == 'ar';
         return Column(
           children: docs.map((doc) {
             final data = doc.data() as Map<String, dynamic>;
-            final title = data['title'] as String? ?? '';
-            final message = data['message'] as String? ?? '';
+            final titleEn = data['titleEn'] as String? ?? data['title'] as String? ?? '';
+            final titleAr = data['titleAr'] as String? ?? titleEn;
+            final messageEn = data['messageEn'] as String? ?? data['message'] as String? ?? '';
+            final messageAr = data['messageAr'] as String? ?? messageEn;
+            final title = isArabic ? titleAr : titleEn;
+            final message = isArabic ? messageAr : messageEn;
             return _AnnouncementCard(title: title, message: message);
           }).toList(),
         );

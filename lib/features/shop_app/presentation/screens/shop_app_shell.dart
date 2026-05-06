@@ -48,13 +48,21 @@ class _ShopAppShellState extends State<ShopAppShell> {
 
     // Show OS-level notification when a foreground message arrives
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      final notification = message.notification;
-      if (notification != null) {
-        NotificationService.show(
-          title: notification.title ?? '',
-          body: notification.body ?? '',
-        );
-      }
+      // Pick the locale-appropriate title/body from data payload if available
+      final data = message.data;
+      final isArabic = mounted
+          ? context.read<LocaleCubit>().state.languageCode == 'ar'
+          : false;
+
+      final titleEn = data['titleEn'] ?? message.notification?.title ?? '';
+      final titleAr = data['titleAr'] ?? titleEn;
+      final bodyEn = data['bodyEn'] ?? message.notification?.body ?? '';
+      final bodyAr = data['bodyAr'] ?? bodyEn;
+
+      NotificationService.show(
+        title: isArabic ? titleAr : titleEn,
+        body: isArabic ? bodyAr : bodyEn,
+      );
     });
   }
 

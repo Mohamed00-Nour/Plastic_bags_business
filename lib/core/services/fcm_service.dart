@@ -9,11 +9,14 @@ class FcmService {
   static const _projectId = 'john-441b1';
   static const _fcmScope = 'https://www.googleapis.com/auth/firebase.messaging';
 
-  /// Sends an FCM notification to the [topic] with [title] and [body].
+  /// Sends a bilingual FCM notification to [topic].
+  /// The device picks [titleEn]/[bodyEn] or [titleAr]/[bodyAr] from the data payload.
   static Future<void> sendToTopic({
     required String topic,
     required String title,
     required String body,
+    String? titleAr,
+    String? bodyAr,
     Map<String, String>? data,
   }) async {
     print('[FcmService] Loading service account credentials from assets...');
@@ -25,6 +28,15 @@ class FcmService {
     print('[FcmService] Access token obtained successfully.');
 
     try {
+      // Merge bilingual data into the data payload so the client can pick the right language
+      final bilingualData = <String, String>{
+        'titleEn': title,
+        'bodyEn': body,
+        if (titleAr != null) 'titleAr': titleAr,
+        if (bodyAr != null) 'bodyAr': bodyAr,
+        ...?data,
+      };
+
       final payload = {
         'message': {
           'topic': topic,
@@ -32,7 +44,7 @@ class FcmService {
             'title': title,
             'body': body,
           },
-          if (data != null) 'data': data,
+          'data': bilingualData,
           'android': {
             'priority': 'high',
             'notification': {
