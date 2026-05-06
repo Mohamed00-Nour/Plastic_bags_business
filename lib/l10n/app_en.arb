@@ -212,5 +212,23 @@
   "eachUnit": "each",
   "orderIdPrefix": "Order",
   "stockLabel": "Stock",
-  "priceEach": "Price"
+  "priceEach": "Price",
+
+  "announcements": "Announcements",
+  "newAnnouncement": "New Announcement",
+  "announcementTitle": "Title",
+  "announcementMessage": "Message",
+  "announcementActive": "Active",
+  "announcementInactive": "Inactive",
+  "announcementSend": "Send Announcement",
+  "announcementDeactivate": "Turn Off",
+  "announcementActivate": "Turn On",
+  "announcementDelete": "Delete",
+  "announcementDeleteConfirm": "Delete this announcement?",
+  "noAnnouncements": "No announcements yet",
+  "announcementSent": "Announcement sent!",
+  "announcementHintTitle": "e.g. Summer Sale 20% Off",
+  "announcementHintMessage": "Describe the offer or message to all shops...",
+  "announcementLive": "Live",
+  "announcementCreatedAt": "Created"
 }

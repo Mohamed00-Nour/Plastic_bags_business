@@ -212,5 +212,23 @@
   "eachUnit": "للوحدة",
   "orderIdPrefix": "طلب",
   "stockLabel": "المخزون",
-  "priceEach": "السعر"
+  "priceEach": "السعر",
+
+  "announcements": "الإعلانات",
+  "newAnnouncement": "إعلان جديد",
+  "announcementTitle": "العنوان",
+  "announcementMessage": "الرسالة",
+  "announcementActive": "نشط",
+  "announcementInactive": "غير نشط",
+  "announcementSend": "إرسال الإعلان",
+  "announcementDeactivate": "إيقاف",
+  "announcementActivate": "تفعيل",
+  "announcementDelete": "حذف",
+  "announcementDeleteConfirm": "حذف هذا الإعلان؟",
+  "noAnnouncements": "لا يوجد إعلانات بعد",
+  "announcementSent": "تم إرسال الإعلان!",
+  "announcementHintTitle": "مثال: خصم 20% صيف",
+  "announcementHintMessage": "اكتب تفاصيل العرض أو الرسالة لجميع المحلات...",
+  "announcementLive": "مباشر",
+  "announcementCreatedAt": "تاريخ الإنشاء"
 }
