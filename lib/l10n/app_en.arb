@@ -214,6 +214,7 @@
   "stockLabel": "Stock",
   "priceEach": "Price",
   "tapProductToAdd": "Tap + to add a product to your order",
+  "tapToOrder": "Tap to place an order",
   "outOfStock": "Out of stock",
   "orderTotal": "Order Total",
   "confirmOrder": "Confirm Order",

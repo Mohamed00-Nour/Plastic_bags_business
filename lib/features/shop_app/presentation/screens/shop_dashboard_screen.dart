@@ -7,6 +7,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../auth/bloc/auth_bloc.dart';
 import '../../../auth/bloc/auth_state.dart';
 import 'shop_tier_widget.dart';
+import 'place_order_screen.dart';
 
 class ShopDashboardScreen extends StatelessWidget {
   const ShopDashboardScreen({super.key});
@@ -85,7 +86,10 @@ class ShopDashboardScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // ── Active announcements ────────────────────────────
-                      _AnnouncementBanner(),
+                      _AnnouncementBanner(
+                        shopId: shopId,
+                        shopName: user.shopName ?? '',
+                      ),
                       // ── Welcome header ──────────────────────────────────
                       _WelcomeBanner(
                         name: user.name,
@@ -401,7 +405,9 @@ class _RecentOrderTile extends StatelessWidget {
 // ── Announcement Banner ────────────────────────────────────────────────────────
 
 class _AnnouncementBanner extends StatelessWidget {
-  const _AnnouncementBanner();
+  final String shopId;
+  final String shopName;
+  const _AnnouncementBanner({required this.shopId, required this.shopName});
 
   @override
   Widget build(BuildContext context) {
@@ -425,7 +431,12 @@ class _AnnouncementBanner extends StatelessWidget {
             final messageAr = data['messageAr'] as String? ?? messageEn;
             final title = isArabic ? titleAr : titleEn;
             final message = isArabic ? messageAr : messageEn;
-            return _AnnouncementCard(title: title, message: message);
+            return _AnnouncementCard(
+              title: title,
+              message: message,
+              shopId: shopId,
+              shopName: shopName,
+            );
           }).toList(),
         );
       },
@@ -436,8 +447,15 @@ class _AnnouncementBanner extends StatelessWidget {
 class _AnnouncementCard extends StatefulWidget {
   final String title;
   final String message;
+  final String shopId;
+  final String shopName;
 
-  const _AnnouncementCard({required this.title, required this.message});
+  const _AnnouncementCard({
+    required this.title,
+    required this.message,
+    required this.shopId,
+    required this.shopName,
+  });
 
   @override
   State<_AnnouncementCard> createState() => _AnnouncementCardState();
@@ -469,47 +487,75 @@ class _AnnouncementCardState extends State<_AnnouncementCard> {
       ),
       child: Material(
         color: Colors.transparent,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.campaign_rounded,
-                    color: Colors.white, size: 22),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => PlaceOrderScreen(
+                shopId: widget.shopId,
+                shopName: widget.shopName,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.campaign_rounded,
+                      color: Colors.white, size: 22),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      widget.message,
-                      style: const TextStyle(
-                          color: Colors.white, fontSize: 13, height: 1.4),
-                    ),
-                  ],
+                      const SizedBox(height: 4),
+                      Text(
+                        widget.message,
+                        style: const TextStyle(
+                            color: Colors.white, fontSize: 13, height: 1.4),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(Icons.shopping_cart_rounded,
+                              color: Colors.white70, size: 14),
+                          const SizedBox(width: 4),
+                          Text(
+                            AppLocalizations.of(context)!.tapToOrder,
+                            style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              GestureDetector(
-                onTap: () => setState(() => _dismissed = true),
-                child: const Icon(Icons.close, color: Colors.white70, size: 18),
-              ),
-            ],
+                GestureDetector(
+                  onTap: () => setState(() => _dismissed = true),
+                  child:
+                      const Icon(Icons.close, color: Colors.white70, size: 18),
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -214,6 +214,7 @@
   "stockLabel": "المخزون",
   "priceEach": "السعر",
   "tapProductToAdd": "اضغط + لإضافة منتج للطلب",
+  "tapToOrder": "اضغط لتقديم طلب",
   "outOfStock": "نفد المخزون",
   "orderTotal": "إجمالي الطلب",
   "confirmOrder": "تأكيد الطلب",
