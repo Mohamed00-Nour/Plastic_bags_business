@@ -39,6 +39,9 @@ import 'package:store_manager/data/repositories/production_run_repository.dart';
 import 'package:store_manager/data/repositories/waste_machine_repository.dart';
 import 'package:store_manager/data/repositories/waste_processing_repository.dart';
 import 'package:store_manager/data/repositories/manufacturing_expense_repository.dart';
+import 'package:store_manager/data/repositories/material_supplier_repository.dart';
+import 'package:store_manager/data/repositories/material_stock_log_repository.dart';
+import 'package:store_manager/data/repositories/damaged_inventory_repository.dart';
 import 'package:store_manager/features/manufacturing/bloc/raw_material_bloc.dart';
 import 'package:store_manager/features/manufacturing/bloc/raw_material_event.dart';
 import 'package:store_manager/features/manufacturing/bloc/manufacturing_mix_bloc.dart';
@@ -49,6 +52,8 @@ import 'package:store_manager/features/manufacturing/bloc/waste_processing_bloc.
 import 'package:store_manager/features/manufacturing/bloc/waste_processing_event.dart';
 import 'package:store_manager/features/manufacturing/bloc/manufacturing_expense_bloc.dart';
 import 'package:store_manager/features/manufacturing/bloc/manufacturing_expense_event.dart';
+import 'package:store_manager/features/manufacturing/bloc/material_supplier_bloc.dart';
+import 'package:store_manager/features/manufacturing/bloc/material_supplier_event.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:store_manager/core/services/firebase_desktop_init.dart';
 import 'package:store_manager/core/services/notification_service.dart';
@@ -97,6 +102,9 @@ class MyApp extends StatelessWidget {
     final wasteMachineRepository = WasteMachineRepository();
     final wasteProcessingRepository = WasteProcessingRepository();
     final manufacturingExpenseRepository = ManufacturingExpenseRepository();
+    final materialSupplierRepository = MaterialSupplierRepository();
+    final materialStockLogRepository = MaterialStockLogRepository();
+    final damagedInventoryRepository = DamagedInventoryRepository();
 
     return MultiRepositoryProvider(
       providers: [
@@ -114,6 +122,9 @@ class MyApp extends StatelessWidget {
         RepositoryProvider.value(value: wasteMachineRepository),
         RepositoryProvider.value(value: wasteProcessingRepository),
         RepositoryProvider.value(value: manufacturingExpenseRepository),
+        RepositoryProvider.value(value: materialSupplierRepository),
+        RepositoryProvider.value(value: materialStockLogRepository),
+        RepositoryProvider.value(value: damagedInventoryRepository),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -177,16 +188,24 @@ class MyApp extends StatelessWidget {
           BlocProvider<RawMaterialBloc>(
             create: (_) => RawMaterialBloc(
               repository: rawMaterialRepository,
+              stockLogRepository: materialStockLogRepository,
             ),
           ),
           BlocProvider<ManufacturingMixBloc>(
             create: (_) => ManufacturingMixBloc(
               repository: manufacturingMixRepository,
+              materialRepository: rawMaterialRepository,
             ),
           ),
           BlocProvider<ProductionRunBloc>(
             create: (_) => ProductionRunBloc(
               repository: productionRunRepository,
+              damagedRepository: damagedInventoryRepository,
+            ),
+          ),
+          BlocProvider<MaterialSupplierBloc>(
+            create: (_) => MaterialSupplierBloc(
+              repository: materialSupplierRepository,
             ),
           ),
           BlocProvider<WasteProcessingBloc>(

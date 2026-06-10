@@ -29,3 +29,25 @@ class ProductionRunDeleteRequested extends ProductionRunEvent {
   @override
   List<Object?> get props => [id];
 }
+
+class ProductionRunExecuteRequested extends ProductionRunEvent {
+  final ProductionRunModel run;
+  const ProductionRunExecuteRequested({required this.run});
+  @override
+  List<Object?> get props => [run];
+}
+
+enum RunFilterPeriod { all, today, thisWeek, thisMonth, custom }
+
+class ProductionRunFilterRequested extends ProductionRunEvent {
+  final RunFilterPeriod period;
+  final DateTime? customStart;
+  final DateTime? customEnd;
+  const ProductionRunFilterRequested({
+    required this.period,
+    this.customStart,
+    this.customEnd,
+  });
+  @override
+  List<Object?> get props => [period, customStart, customEnd];
+}

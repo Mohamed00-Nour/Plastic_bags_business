@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import '../../../data/models/production_run_model.dart';
+import 'production_run_event.dart';
 
 abstract class ProductionRunState extends Equatable {
   const ProductionRunState();
@@ -13,22 +14,32 @@ class ProductionRunLoading extends ProductionRunState {}
 
 class ProductionRunLoaded extends ProductionRunState {
   final List<ProductionRunModel> runs;
+  final List<ProductionRunModel> filteredRuns;
+  final RunFilterPeriod activePeriod;
+  final DateTime? customStart;
+  final DateTime? customEnd;
 
-  const ProductionRunLoaded({required this.runs});
+  const ProductionRunLoaded({
+    required this.runs,
+    List<ProductionRunModel>? filteredRuns,
+    this.activePeriod = RunFilterPeriod.all,
+    this.customStart,
+    this.customEnd,
+  }) : filteredRuns = filteredRuns ?? runs;
 
   double get totalOutput =>
-      runs.fold(0, (s, r) => s + r.outputKg);
+      filteredRuns.fold(0, (s, r) => s + r.effectiveOutputKg);
   double get totalWaste =>
-      runs.fold(0, (s, r) => s + r.wasteKg);
+      filteredRuns.fold(0, (s, r) => s + r.wasteKg);
   double get totalCost =>
-      runs.fold(0, (s, r) => s + r.totalCost);
+      filteredRuns.fold(0, (s, r) => s + r.totalCost);
   double get averageCostPerKg {
     if (totalOutput == 0) return 0;
     return totalCost / totalOutput;
   }
 
   @override
-  List<Object?> get props => [runs];
+  List<Object?> get props => [runs, filteredRuns, activePeriod];
 }
 
 class ProductionRunOperationSuccess extends ProductionRunState {

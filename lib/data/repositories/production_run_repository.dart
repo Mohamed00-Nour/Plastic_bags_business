@@ -27,13 +27,22 @@ class ProductionRunRepository {
   }
 
   Future<void> add(ProductionRunModel run) async {
-    await _col.doc(run.id).set(run.toFirestore());
+    final data = run.toFirestore();
+    data['createdBy'] = CurrentUserService.instance.userName;
+    await _col.doc(run.id).set(data);
   }
 
   Future<void> update(ProductionRunModel run) async {
     final data = run.toFirestore();
     data['modifiedBy'] = CurrentUserService.instance.userName;
     await _col.doc(run.id).update(data);
+  }
+
+  Future<void> executeRun(String runId) async {
+    await _col.doc(runId).update({
+      'status': 'executed',
+      'modifiedBy': CurrentUserService.instance.userName,
+    });
   }
 
   Future<void> delete(String id) async {

@@ -5,8 +5,8 @@ import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/services/current_user_service.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/widgets/common_widgets.dart';
 import '../../../../data/models/additional_cost.dart';
+import '../../../../data/models/custom_run_field.dart';
 import '../../../../data/models/manufacturing_mix_model.dart';
 import '../../../../data/models/production_run_model.dart';
 import '../../../../data/models/raw_material_model.dart';
@@ -43,6 +43,9 @@ class _ProductionRunsScreenState extends State<ProductionRunsScreen> {
             content: Text(state.message),
             backgroundColor: AppTheme.dangerColor,
           ));
+          context
+              .read<ProductionRunBloc>()
+              .add(ProductionRunLoadRequested());
         }
       },
       builder: (context, state) {
@@ -52,6 +55,8 @@ class _ProductionRunsScreenState extends State<ProductionRunsScreen> {
           child: Column(
             children: [
               _buildSummary(context, state),
+              const SizedBox(height: 12),
+              _buildFilterBar(context, state),
               const SizedBox(height: 12),
               Align(
                 alignment: Alignment.centerLeft,
@@ -68,6 +73,77 @@ class _ProductionRunsScreenState extends State<ProductionRunsScreen> {
         );
       },
     );
+  }
+
+  Widget _buildFilterBar(BuildContext context, ProductionRunState state) {
+    final l10n = AppLocalizations.of(context)!;
+    final activePeriod = state is ProductionRunLoaded
+        ? state.activePeriod
+        : RunFilterPeriod.all;
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _FilterChip(
+            label: l10n.mfgAll,
+            selected: activePeriod == RunFilterPeriod.all,
+            onTap: () => context.read<ProductionRunBloc>().add(
+                const ProductionRunFilterRequested(
+                    period: RunFilterPeriod.all)),
+          ),
+          const SizedBox(width: 8),
+          _FilterChip(
+            label: l10n.rangeToday,
+            selected: activePeriod == RunFilterPeriod.today,
+            onTap: () => context.read<ProductionRunBloc>().add(
+                const ProductionRunFilterRequested(
+                    period: RunFilterPeriod.today)),
+          ),
+          const SizedBox(width: 8),
+          _FilterChip(
+            label: l10n.rangeThisWeek,
+            selected: activePeriod == RunFilterPeriod.thisWeek,
+            onTap: () => context.read<ProductionRunBloc>().add(
+                const ProductionRunFilterRequested(
+                    period: RunFilterPeriod.thisWeek)),
+          ),
+          const SizedBox(width: 8),
+          _FilterChip(
+            label: l10n.rangeThisMonth,
+            selected: activePeriod == RunFilterPeriod.thisMonth,
+            onTap: () => context.read<ProductionRunBloc>().add(
+                const ProductionRunFilterRequested(
+                    period: RunFilterPeriod.thisMonth)),
+          ),
+          const SizedBox(width: 8),
+          _FilterChip(
+            label: l10n.customRange,
+            selected: activePeriod == RunFilterPeriod.custom,
+            onTap: () => _pickCustomRange(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickCustomRange(BuildContext context) async {
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+      initialDateRange: DateTimeRange(
+        start: DateTime.now().subtract(const Duration(days: 7)),
+        end: DateTime.now(),
+      ),
+    );
+    if (picked != null && context.mounted) {
+      context.read<ProductionRunBloc>().add(ProductionRunFilterRequested(
+        period: RunFilterPeriod.custom,
+        customStart: picked.start,
+        customEnd: picked.end,
+      ));
+    }
   }
 
   Widget _buildSummary(BuildContext context, ProductionRunState state) {
@@ -104,7 +180,7 @@ class _ProductionRunsScreenState extends State<ProductionRunsScreen> {
       return const Center(child: CircularProgressIndicator());
     }
     final runs =
-        state is ProductionRunLoaded ? state.runs : <ProductionRunModel>[];
+        state is ProductionRunLoaded ? state.filteredRuns : <ProductionRunModel>[];
     if (runs.isEmpty) {
       return Center(child: Text(l10n.mfgNoRuns));
     }
@@ -117,16 +193,62 @@ class _ProductionRunsScreenState extends State<ProductionRunsScreen> {
           child: ListTile(
             leading: CircleAvatar(
               backgroundColor:
-                  AppTheme.primaryColor.withValues(alpha: 0.1),
-              child: const Icon(
-                  Icons.precision_manufacturing_outlined,
-                  color: AppTheme.primaryColor),
+                  (r.isExecuted ? AppTheme.successColor : AppTheme.warningColor)
+                      .withValues(alpha: 0.1),
+              child: Icon(
+                  r.isExecuted
+                      ? Icons.check_circle_outline
+                      : Icons.pending_outlined,
+                  color: r.isExecuted
+                      ? AppTheme.successColor
+                      : AppTheme.warningColor),
             ),
-            title: Text(r.mixName,
-                style: const TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: Text(
-              '${r.productName} | ${DateFormat('dd/MM/yyyy').format(r.date)}\n'
-              '${l10n.mfgInputLabel}: ${r.inputKg.toStringAsFixed(1)} ${l10n.mfgKg} | ${l10n.mfgOutputLabel}: ${r.outputKg.toStringAsFixed(1)} ${l10n.mfgKg} | ${l10n.mfgWasteLabel}: ${r.wasteKg.toStringAsFixed(1)} ${l10n.mfgKg}',
+            title: Row(
+              children: [
+                Expanded(
+                  child: Text(r.mixName,
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: (r.isExecuted
+                            ? AppTheme.successColor
+                            : AppTheme.warningColor)
+                        .withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    r.isExecuted ? l10n.mfgStatusExecuted : l10n.mfgStatusDraft,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: r.isExecuted
+                          ? AppTheme.successColor
+                          : AppTheme.warningColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${r.productName} | ${DateFormat('dd/MM/yyyy').format(r.date)}',
+                ),
+                Text(
+                  '${l10n.mfgInputLabel}: ${r.inputKg.toStringAsFixed(1)} ${l10n.mfgKg}'
+                  ' | ${l10n.mfgOutputLabel}: ${r.effectiveOutputKg.toStringAsFixed(1)} ${l10n.mfgKg}'
+                  ' | ${l10n.mfgDamagedLabel}: ${r.calculatedDamagedKg.toStringAsFixed(1)} ${l10n.mfgKg}',
+                ),
+                if (r.createdBy.isNotEmpty)
+                  Text(
+                    '${l10n.createdByLabel}: ${r.createdBy}${r.modifiedBy.isNotEmpty ? ' | ${l10n.modifiedByLabel}: ${r.modifiedBy}' : ''}',
+                    style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                  ),
+              ],
             ),
             isThreeLine: true,
             trailing: Row(
@@ -150,12 +272,17 @@ class _ProductionRunsScreenState extends State<ProductionRunsScreen> {
                 ),
                 const SizedBox(width: 8),
                 IconButton(
+                  icon: const Icon(Icons.edit_outlined),
+                  onPressed: () => _showForm(context, r),
+                ),
+                IconButton(
                   icon: const Icon(Icons.delete_outline,
                       color: AppTheme.dangerColor),
                   onPressed: () => _confirmDelete(context, r),
                 ),
               ],
             ),
+            onTap: () => _showForm(context, r),
           ),
         );
       },
@@ -179,6 +306,11 @@ class _ProductionRunsScreenState extends State<ProductionRunsScreen> {
                 .read<ProductionRunBloc>()
                 .add(ProductionRunUpdateRequested(run: run));
           }
+        },
+        onExecute: (run) {
+          context
+              .read<ProductionRunBloc>()
+              .add(ProductionRunExecuteRequested(run: run));
         },
       ),
     );
@@ -207,6 +339,43 @@ class _ProductionRunsScreenState extends State<ProductionRunsScreen> {
             child: Text(l10n.mfgDelete),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  const _FilterChip(
+      {required this.label, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: selected
+              ? AppTheme.primaryColor
+              : AppTheme.primaryColor.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected
+                ? AppTheme.primaryColor
+                : AppTheme.primaryColor.withValues(alpha: 0.3),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: selected ? Colors.white : AppTheme.primaryColor,
+          ),
+        ),
       ),
     );
   }
@@ -247,18 +416,20 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-// ——— Dialog with live cost calculator ———
+// --- Dialog with incremental entry + execute ---
 class _ProductionRunDialog extends StatefulWidget {
   final ProductionRunModel? editing;
   final ManufacturingMixState mixState;
   final RawMaterialState materialState;
   final ValueChanged<ProductionRunModel> onSave;
+  final ValueChanged<ProductionRunModel> onExecute;
 
   const _ProductionRunDialog({
     required this.editing,
     required this.mixState,
     required this.materialState,
     required this.onSave,
+    required this.onExecute,
   });
 
   @override
@@ -275,11 +446,15 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
   final _notesCtrl = TextEditingController();
   DateTime _date = DateTime.now();
   final List<AdditionalCost> _additionalCosts = [];
+  final List<CustomRunField> _customFields = [];
 
-  // live calc
   double _rawMaterialCost = 0;
   double _totalCost = 0;
   double _costPerKg = 0;
+  double _damagedKg = 0;
+
+  bool get _isExecuted =>
+      widget.editing?.status == ProductionRunStatus.executed;
 
   @override
   void initState() {
@@ -287,12 +462,13 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
     final e = widget.editing;
     if (e != null) {
       _inputCtrl.text = e.inputKg.toString();
-      _outputCtrl.text = e.outputKg.toString();
+      _outputCtrl.text = e.outputKg?.toString() ?? '';
       _techCtrl.text = e.technicianCost.toString();
       _elecCtrl.text = e.electricityCost.toString();
       _notesCtrl.text = e.notes ?? '';
       _date = e.date;
       _additionalCosts.addAll(e.additionalCosts);
+      _customFields.addAll(e.customFields);
       final mixes = widget.mixState is ManufacturingMixLoaded
           ? (widget.mixState as ManufacturingMixLoaded).all
           : <ManufacturingMixModel>[];
@@ -306,6 +482,7 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
           : <ManufacturingMixModel>[];
       if (mixes.isNotEmpty) _selectedMix = mixes.first;
     }
+    _recalculate();
   }
 
   @override
@@ -323,8 +500,9 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
     final outputKg = double.tryParse(_outputCtrl.text) ?? 0;
     final tech = double.tryParse(_techCtrl.text) ?? 0;
     final elec = double.tryParse(_elecCtrl.text) ?? 0;
-    final addl =
-        _additionalCosts.fold(0.0, (s, c) => s + c.amount);
+    final addl = _additionalCosts.fold(0.0, (s, c) => s + c.amount);
+    final customCost =
+        _customFields.fold(0.0, (s, f) => s + f.value);
 
     double rawCost = 0;
     if (_selectedMix != null && inputKg > 0) {
@@ -345,9 +523,13 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
       }
     }
 
-    final total = rawCost + tech + elec + addl;
+    // damaged = input - output
+    final damaged = inputKg - outputKg;
+
+    final total = rawCost + tech + elec + addl + customCost;
     setState(() {
       _rawMaterialCost = rawCost;
+      _damagedKg = damaged > 0 ? damaged : 0;
       _totalCost = total;
       _costPerKg = outputKg > 0 ? total / outputKg : 0;
     });
@@ -360,6 +542,47 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
     return [];
   }
 
+  double get _inputKg => double.tryParse(_inputCtrl.text) ?? 0;
+  double get _outputKg => double.tryParse(_outputCtrl.text) ?? 0;
+
+  bool get _canExecute =>
+      _outputCtrl.text.isNotEmpty &&
+      _outputKg > 0 &&
+      !_isExecuted;
+
+  ProductionRunModel _buildRun() {
+    final now = DateTime.now();
+    final inputKg = double.tryParse(_inputCtrl.text) ?? 0;
+    final outputKg = double.tryParse(_outputCtrl.text);
+
+    return ProductionRunModel(
+      id: widget.editing?.id ?? const Uuid().v4(),
+      mixId: _selectedMix!.id,
+      mixName: _selectedMix!.name,
+      productName: _selectedMix!.productName,
+      inputKg: inputKg,
+      outputKg: outputKg,
+      damagedKg: _damagedKg > 0 ? _damagedKg : null,
+      technicianCost: double.tryParse(_techCtrl.text) ?? 0,
+      electricityCost: double.tryParse(_elecCtrl.text) ?? 0,
+      additionalCosts: _additionalCosts,
+      customFields: _customFields,
+      rawMaterialCost: _rawMaterialCost,
+      totalCost: _totalCost,
+      costPerKg: _costPerKg,
+      status: widget.editing?.status ?? ProductionRunStatus.draft,
+      notes:
+          _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+      date: _date,
+      createdBy: widget.editing?.createdBy ??
+          CurrentUserService.instance.userName,
+      modifiedBy: widget.editing != null
+          ? CurrentUserService.instance.userName
+          : '',
+      createdAt: widget.editing?.createdAt ?? now,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -368,11 +591,35 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
           ? l10n.mfgAddRun
           : l10n.mfgEditRun),
       content: SizedBox(
-        width: 560,
+        width: 600,
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (_isExecuted)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.successColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                        color: AppTheme.successColor.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.check_circle,
+                          color: AppTheme.successColor, size: 18),
+                      const SizedBox(width: 8),
+                      Text(l10n.mfgExecutedNote,
+                          style: const TextStyle(
+                              color: AppTheme.successColor,
+                              fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                ),
               DropdownButtonFormField<ManufacturingMixModel>(
                 value: _selectedMix,
                 decoration:
@@ -381,35 +628,67 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
                     .map((m) => DropdownMenuItem(
                         value: m, child: Text(m.name)))
                     .toList(),
-                onChanged: (v) {
-                  setState(() => _selectedMix = v);
-                  _recalculate();
-                },
+                onChanged: _isExecuted
+                    ? null
+                    : (v) {
+                        setState(() => _selectedMix = v);
+                        _recalculate();
+                      },
               ),
               const SizedBox(height: 12),
-              Row(children: [
-                Expanded(
-                  child: TextField(
-                    controller: _inputCtrl,
-                    keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true),
-                    decoration:
-                        InputDecoration(labelText: l10n.mfgInputQty),
-                    onChanged: (_) => _recalculate(),
+              TextField(
+                controller: _inputCtrl,
+                keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true),
+                decoration:
+                    InputDecoration(labelText: l10n.mfgInputQty),
+                onChanged: (_) => _recalculate(),
+                readOnly: _isExecuted,
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _outputCtrl,
+                keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true),
+                decoration:
+                    InputDecoration(labelText: l10n.mfgOutputQty),
+                onChanged: (_) => _recalculate(),
+                readOnly: _isExecuted,
+              ),
+              const SizedBox(height: 12),
+              // Auto-calculated damaged display
+              if (_inputKg > 0 && _outputKg > 0)
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppTheme.warningColor.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                        color: AppTheme.warningColor.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.warning_amber,
+                          size: 18, color: AppTheme.warningColor),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${l10n.mfgDamagedLabel}: ${_damagedKg.toStringAsFixed(1)} ${l10n.mfgKg}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.warningColor,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        '(${l10n.mfgInputLabel} - ${l10n.mfgOutputLabel})',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(
-                    controller: _outputCtrl,
-                    keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true),
-                    decoration:
-                        InputDecoration(labelText: l10n.mfgOutputQty),
-                    onChanged: (_) => _recalculate(),
-                  ),
-                ),
-              ]),
               const SizedBox(height: 12),
               Row(children: [
                 Expanded(
@@ -420,6 +699,7 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
                     decoration:
                         InputDecoration(labelText: l10n.mfgTechCost),
                     onChanged: (_) => _recalculate(),
+                    readOnly: _isExecuted,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -431,31 +711,36 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
                     decoration:
                         InputDecoration(labelText: l10n.mfgElecCost),
                     onChanged: (_) => _recalculate(),
+                    readOnly: _isExecuted,
                   ),
                 ),
               ]),
+              const SizedBox(height: 12),
+              // Custom fields section
+              _buildCustomFieldsSection(l10n),
               const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
                     child: Text(
-                        'التاريخ: ${DateFormat('dd/MM/yyyy').format(_date)}'),
+                        '${l10n.date}: ${DateFormat('dd/MM/yyyy').format(_date)}'),
                   ),
-                  TextButton.icon(
-                    onPressed: () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate: _date,
-                        firstDate: DateTime(2020),
-                        lastDate: DateTime(2100),
-                      );
-                      if (picked != null) {
-                        setState(() => _date = picked);
-                      }
-                    },
-                    icon: const Icon(Icons.calendar_today, size: 16),
-                    label: Text(l10n.mfgChooseDate),
-                  ),
+                  if (!_isExecuted)
+                    TextButton.icon(
+                      onPressed: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: _date,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime(2100),
+                        );
+                        if (picked != null) {
+                          setState(() => _date = picked);
+                        }
+                      },
+                      icon: const Icon(Icons.calendar_today, size: 16),
+                      label: Text(l10n.mfgChooseDate),
+                    ),
                 ],
               ),
               const SizedBox(height: 12),
@@ -463,6 +748,7 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
                 controller: _notesCtrl,
                 maxLines: 2,
                 decoration: InputDecoration(labelText: l10n.mfgNotes),
+                readOnly: _isExecuted,
               ),
               const Divider(height: 24),
               // Cost preview
@@ -497,41 +783,133 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
         TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(l10n.cancel)),
-        ElevatedButton(
-          onPressed: () {
-            if (_selectedMix == null) return;
-            final inputKg = double.tryParse(_inputCtrl.text) ?? 0;
-            final outputKg = double.tryParse(_outputCtrl.text) ?? 0;
-            if (inputKg <= 0 || outputKg <= 0) return;
-            final now = DateTime.now();
-            final run = ProductionRunModel(
-              id: widget.editing?.id ?? const Uuid().v4(),
-              mixId: _selectedMix!.id,
-              mixName: _selectedMix!.name,
-              productName: _selectedMix!.productName,
-              inputKg: inputKg,
-              outputKg: outputKg,
-              technicianCost:
-                  double.tryParse(_techCtrl.text) ?? 0,
-              electricityCost:
-                  double.tryParse(_elecCtrl.text) ?? 0,
-              additionalCosts: _additionalCosts,
-              rawMaterialCost: _rawMaterialCost,
-              totalCost: _totalCost,
-              costPerKg: _costPerKg,
-              notes: _notesCtrl.text.trim().isEmpty
-                  ? null
-                  : _notesCtrl.text.trim(),
-              date: _date,
-              createdBy: CurrentUserService.instance.userName,
-              createdAt: widget.editing?.createdAt ?? now,
-            );
-            widget.onSave(run);
-            Navigator.pop(context);
-          },
-          child: Text(widget.editing == null ? l10n.mfgAddRun : l10n.mfgSave),
-        ),
+        if (!_isExecuted)
+          ElevatedButton(
+            onPressed: () {
+              if (_selectedMix == null) return;
+              if (_inputKg <= 0) return;
+              widget.onSave(_buildRun());
+              Navigator.pop(context);
+            },
+            child:
+                Text(widget.editing == null ? l10n.mfgAddRun : l10n.mfgSave),
+          ),
+        if (!_isExecuted && widget.editing != null && _canExecute)
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.successColor,
+            ),
+            onPressed: () {
+              widget.onExecute(_buildRun());
+              Navigator.pop(context);
+            },
+            child: Text(l10n.mfgExecuteBtn),
+          ),
       ],
+    );
+  }
+
+
+  Widget _buildCustomFieldsSection(AppLocalizations l10n) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(l10n.mfgCustomFields,
+                style: const TextStyle(fontWeight: FontWeight.w600)),
+            const Spacer(),
+            if (!_isExecuted)
+              TextButton.icon(
+                onPressed: _addCustomField,
+                icon: const Icon(Icons.add, size: 16),
+                label: Text(l10n.add),
+              ),
+          ],
+        ),
+        ..._customFields.asMap().entries.map((entry) {
+          final i = entry.key;
+          final f = entry.value;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: Text(f.label,
+                      style: const TextStyle(fontSize: 13)),
+                ),
+                Expanded(
+                  child: Text(
+                    '\$${f.value.toStringAsFixed(2)}',
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ),
+                if (!_isExecuted)
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 16),
+                    onPressed: () {
+                      setState(() => _customFields.removeAt(i));
+                      _recalculate();
+                    },
+                  ),
+              ],
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  void _addCustomField() {
+    final labelCtrl = TextEditingController();
+    final valueCtrl = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        final l10n = AppLocalizations.of(ctx)!;
+        return AlertDialog(
+          title: Text(l10n.mfgAddCustomField),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: labelCtrl,
+                decoration: InputDecoration(labelText: l10n.mfgFieldLabel),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: valueCtrl,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(labelText: l10n.mfgFieldValue),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(l10n.cancel)),
+            ElevatedButton(
+              onPressed: () {
+                final label = labelCtrl.text.trim();
+                final value = double.tryParse(valueCtrl.text) ?? 0;
+                if (label.isEmpty || value <= 0) return;
+                setState(() {
+                  _customFields.add(CustomRunField(
+                    label: label,
+                    value: value,
+                  ));
+                });
+                _recalculate();
+                Navigator.pop(ctx);
+              },
+              child: Text(l10n.add),
+            ),
+          ],
+        );
+      },
     );
   }
 }

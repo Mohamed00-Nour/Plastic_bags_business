@@ -4,7 +4,6 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../bloc/raw_material_bloc.dart';
 import '../../bloc/raw_material_event.dart';
-import '../../bloc/raw_material_state.dart';
 import '../../bloc/manufacturing_mix_bloc.dart';
 import '../../bloc/manufacturing_mix_event.dart';
 import '../../bloc/production_run_bloc.dart';
@@ -16,11 +15,15 @@ import '../../bloc/manufacturing_expense_event.dart';
 import '../../bloc/manufacturing_expense_state.dart';
 import '../../bloc/production_run_state.dart';
 import '../../bloc/waste_processing_state.dart';
+import '../../bloc/material_supplier_bloc.dart';
+import '../../bloc/material_supplier_event.dart';
 import 'raw_materials_screen.dart';
 import 'mixes_screen.dart';
 import 'production_runs_screen.dart';
 import 'waste_processing_screen.dart';
 import 'expenses_screen.dart';
+import 'material_suppliers_screen.dart';
+import 'damaged_inventory_screen.dart';
 
 class ManufacturingShell extends StatefulWidget {
   const ManufacturingShell({super.key});
@@ -36,7 +39,7 @@ class _ManufacturingShellState extends State<ManufacturingShell>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(length: 7, vsync: this);
     context.read<RawMaterialBloc>().add(RawMaterialLoadRequested());
     context
         .read<ManufacturingMixBloc>()
@@ -50,6 +53,9 @@ class _ManufacturingShellState extends State<ManufacturingShell>
     context
         .read<ManufacturingExpenseBloc>()
         .add(ManufacturingExpenseLoadRequested());
+    context
+        .read<MaterialSupplierBloc>()
+        .add(MaterialSupplierLoadRequested());
   }
 
   @override
@@ -74,6 +80,8 @@ class _ManufacturingShellState extends State<ManufacturingShell>
             Tab(icon: const Icon(Icons.precision_manufacturing_outlined), text: l10n.mfgProductionTab),
             Tab(icon: const Icon(Icons.recycling_outlined), text: l10n.mfgWasteTab),
             Tab(icon: const Icon(Icons.receipt_long_outlined), text: l10n.mfgExpensesTab),
+            Tab(icon: const Icon(Icons.local_shipping_outlined), text: l10n.mfgMaterialSuppliersTab),
+            Tab(icon: const Icon(Icons.broken_image_outlined), text: l10n.mfgDamagedInventoryTab),
           ],
         ),
         Expanded(
@@ -85,6 +93,8 @@ class _ManufacturingShellState extends State<ManufacturingShell>
               ProductionRunsScreen(),
               WasteProcessingScreen(),
               ExpensesScreen(),
+              MaterialSuppliersScreen(),
+              DamagedInventoryScreen(),
             ],
           ),
         ),

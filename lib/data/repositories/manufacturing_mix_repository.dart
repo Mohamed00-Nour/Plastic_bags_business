@@ -20,6 +20,12 @@ class ManufacturingMixRepository {
     return s.docs.map(ManufacturingMixModel.fromFirestore).toList();
   }
 
+  Future<ManufacturingMixModel?> getById(String id) async {
+    final doc = await _col.doc(id).get();
+    if (!doc.exists) return null;
+    return ManufacturingMixModel.fromFirestore(doc);
+  }
+
   Future<void> add(ManufacturingMixModel mix) async {
     final data = mix.toFirestore();
     data['createdBy'] = CurrentUserService.instance.userName;
