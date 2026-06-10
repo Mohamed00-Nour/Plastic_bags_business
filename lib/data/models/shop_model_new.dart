@@ -10,6 +10,8 @@ class ShopModel extends Equatable {
   final bool isActive;
   final String? loginEmail;
   final String? loginPassword;
+  final String createdBy;
+  final String modifiedBy;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -22,6 +24,8 @@ class ShopModel extends Equatable {
     this.isActive = true,
     this.loginEmail,
     this.loginPassword,
+    this.createdBy = '',
+    this.modifiedBy = '',
     required this.createdAt,
     required this.updatedAt,
   });
@@ -37,6 +41,8 @@ class ShopModel extends Equatable {
       isActive: data['isActive'] ?? true,
       loginEmail: data['loginEmail'],
       loginPassword: data['loginPassword'],
+      createdBy: data['createdBy'] ?? '',
+      modifiedBy: data['modifiedBy'] ?? '',
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
@@ -50,6 +56,8 @@ class ShopModel extends Equatable {
         'isActive': isActive,
         'loginEmail': loginEmail,
         'loginPassword': loginPassword,
+        'createdBy': createdBy,
+        'modifiedBy': modifiedBy,
         'createdAt': Timestamp.fromDate(createdAt),
         'updatedAt': Timestamp.fromDate(updatedAt),
       };
@@ -63,6 +71,8 @@ class ShopModel extends Equatable {
     bool? isActive,
     String? loginEmail,
     String? loginPassword,
+    String? createdBy,
+    String? modifiedBy,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -75,6 +85,8 @@ class ShopModel extends Equatable {
       isActive: isActive ?? this.isActive,
       loginEmail: loginEmail ?? this.loginEmail,
       loginPassword: loginPassword ?? this.loginPassword,
+      createdBy: createdBy ?? this.createdBy,
+      modifiedBy: modifiedBy ?? this.modifiedBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

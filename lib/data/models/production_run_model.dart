@@ -18,6 +18,7 @@ class ProductionRunModel extends Equatable {
   final String? notes;
   final DateTime date;
   final String createdBy;
+  final String modifiedBy;
   final DateTime createdAt;
 
   const ProductionRunModel({
@@ -36,6 +37,7 @@ class ProductionRunModel extends Equatable {
     this.notes,
     required this.date,
     required this.createdBy,
+    this.modifiedBy = '',
     required this.createdAt,
   });
 
@@ -66,6 +68,7 @@ class ProductionRunModel extends Equatable {
       notes: data['notes'],
       date: (data['date'] as Timestamp?)?.toDate() ?? DateTime.now(),
       createdBy: data['createdBy'] ?? '',
+      modifiedBy: data['modifiedBy'] ?? '',
       createdAt:
           (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
@@ -87,6 +90,7 @@ class ProductionRunModel extends Equatable {
         'notes': notes,
         'date': Timestamp.fromDate(date),
         'createdBy': createdBy,
+        'modifiedBy': modifiedBy,
         'createdAt': Timestamp.fromDate(createdAt),
       };
 
@@ -106,6 +110,7 @@ class ProductionRunModel extends Equatable {
     String? notes,
     DateTime? date,
     String? createdBy,
+    String? modifiedBy,
     DateTime? createdAt,
   }) {
     return ProductionRunModel(
@@ -124,6 +129,7 @@ class ProductionRunModel extends Equatable {
       notes: notes ?? this.notes,
       date: date ?? this.date,
       createdBy: createdBy ?? this.createdBy,
+      modifiedBy: modifiedBy ?? this.modifiedBy,
       createdAt: createdAt ?? this.createdAt,
     );
   }

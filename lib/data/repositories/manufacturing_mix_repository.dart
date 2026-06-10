@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../core/services/current_user_service.dart';
 import '../models/manufacturing_mix_model.dart';
 
 class ManufacturingMixRepository {
@@ -20,11 +21,15 @@ class ManufacturingMixRepository {
   }
 
   Future<void> add(ManufacturingMixModel mix) async {
-    await _col.doc(mix.id).set(mix.toFirestore());
+    final data = mix.toFirestore();
+    data['createdBy'] = CurrentUserService.instance.userName;
+    await _col.doc(mix.id).set(data);
   }
 
   Future<void> update(ManufacturingMixModel mix) async {
-    await _col.doc(mix.id).update(mix.toFirestore());
+    final data = mix.toFirestore();
+    data['modifiedBy'] = CurrentUserService.instance.userName;
+    await _col.doc(mix.id).update(data);
   }
 
   Future<void> delete(String id) async {

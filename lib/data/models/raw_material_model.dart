@@ -8,6 +8,8 @@ class RawMaterialModel extends Equatable {
   final double pricePerKg;
   final String unit;
   final bool isActive;
+  final String createdBy;
+  final String modifiedBy;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -18,6 +20,8 @@ class RawMaterialModel extends Equatable {
     required this.pricePerKg,
     this.unit = 'kg',
     this.isActive = true,
+    this.createdBy = '',
+    this.modifiedBy = '',
     required this.createdAt,
     required this.updatedAt,
   });
@@ -31,6 +35,8 @@ class RawMaterialModel extends Equatable {
       pricePerKg: (data['pricePerKg'] ?? 0).toDouble(),
       unit: data['unit'] ?? 'kg',
       isActive: data['isActive'] ?? true,
+      createdBy: data['createdBy'] ?? '',
+      modifiedBy: data['modifiedBy'] ?? '',
       createdAt:
           (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt:
@@ -44,6 +50,8 @@ class RawMaterialModel extends Equatable {
         'pricePerKg': pricePerKg,
         'unit': unit,
         'isActive': isActive,
+        'createdBy': createdBy,
+        'modifiedBy': modifiedBy,
         'createdAt': Timestamp.fromDate(createdAt),
         'updatedAt': Timestamp.fromDate(updatedAt),
       };
@@ -55,6 +63,8 @@ class RawMaterialModel extends Equatable {
     double? pricePerKg,
     String? unit,
     bool? isActive,
+    String? createdBy,
+    String? modifiedBy,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -65,6 +75,8 @@ class RawMaterialModel extends Equatable {
       pricePerKg: pricePerKg ?? this.pricePerKg,
       unit: unit ?? this.unit,
       isActive: isActive ?? this.isActive,
+      createdBy: createdBy ?? this.createdBy,
+      modifiedBy: modifiedBy ?? this.modifiedBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

@@ -10,6 +10,7 @@ class ManufacturingExpenseModel extends Equatable {
   final String? productionRunId;
   final bool includeInCostPerKg;
   final String createdBy;
+  final String modifiedBy;
   final DateTime createdAt;
 
   const ManufacturingExpenseModel({
@@ -21,6 +22,7 @@ class ManufacturingExpenseModel extends Equatable {
     this.productionRunId,
     this.includeInCostPerKg = false,
     required this.createdBy,
+    this.modifiedBy = '',
     required this.createdAt,
   });
 
@@ -35,6 +37,7 @@ class ManufacturingExpenseModel extends Equatable {
       productionRunId: data['productionRunId'],
       includeInCostPerKg: data['includeInCostPerKg'] ?? false,
       createdBy: data['createdBy'] ?? '',
+      modifiedBy: data['modifiedBy'] ?? '',
       createdAt:
           (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
@@ -48,6 +51,7 @@ class ManufacturingExpenseModel extends Equatable {
         'productionRunId': productionRunId,
         'includeInCostPerKg': includeInCostPerKg,
         'createdBy': createdBy,
+        'modifiedBy': modifiedBy,
         'createdAt': Timestamp.fromDate(createdAt),
       };
 
@@ -60,6 +64,7 @@ class ManufacturingExpenseModel extends Equatable {
     String? productionRunId,
     bool? includeInCostPerKg,
     String? createdBy,
+    String? modifiedBy,
     DateTime? createdAt,
   }) {
     return ManufacturingExpenseModel(
@@ -71,6 +76,7 @@ class ManufacturingExpenseModel extends Equatable {
       productionRunId: productionRunId ?? this.productionRunId,
       includeInCostPerKg: includeInCostPerKg ?? this.includeInCostPerKg,
       createdBy: createdBy ?? this.createdBy,
+      modifiedBy: modifiedBy ?? this.modifiedBy,
       createdAt: createdAt ?? this.createdAt,
     );
   }

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../../core/services/current_user_service.dart';
 import '../../../data/repositories/auth_repository.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
@@ -52,17 +53,21 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     if (event.user == null) {
+      CurrentUserService.instance.clear();
       emit(AuthUnauthenticated());
       return;
     }
     try {
       final userModel = await _authRepository.getCurrentUserProfile();
       if (userModel != null && userModel.isActive) {
+        CurrentUserService.instance.set(userModel.id, userModel.name);
         emit(AuthAuthenticated(user: userModel));
       } else {
+        CurrentUserService.instance.clear();
         emit(AuthUnauthenticated());
       }
     } catch (_) {
+      CurrentUserService.instance.clear();
       emit(AuthUnauthenticated());
     }
   }
@@ -77,6 +82,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         event.email.trim(),
         event.password,
       );
+      CurrentUserService.instance.set(user.id, user.name);
       emit(AuthAuthenticated(user: user));
     } on FirebaseAuthException catch (e) {
       emit(AuthError(message: _mapFirebaseError(e.code)));
@@ -90,6 +96,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     await _authRepository.signOut();
+    CurrentUserService.instance.clear();
     emit(AuthUnauthenticated());
   }
 
@@ -119,6 +126,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         password: event.password,
         name: event.name.trim(),
       );
+      CurrentUserService.instance.set(user.id, user.name);
       emit(AuthAuthenticated(user: user));
     } on FirebaseAuthException catch (e) {
       emit(AuthError(message: _mapFirebaseError(e.code)));

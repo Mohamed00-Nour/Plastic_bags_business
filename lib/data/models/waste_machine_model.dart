@@ -5,12 +5,16 @@ class WasteMachineModel extends Equatable {
   final String id;
   final String name;
   final bool isActive;
+  final String createdBy;
+  final String modifiedBy;
   final DateTime createdAt;
 
   const WasteMachineModel({
     required this.id,
     required this.name,
     this.isActive = true,
+    this.createdBy = '',
+    this.modifiedBy = '',
     required this.createdAt,
   });
 
@@ -20,6 +24,8 @@ class WasteMachineModel extends Equatable {
       id: doc.id,
       name: data['name'] ?? '',
       isActive: data['isActive'] ?? true,
+      createdBy: data['createdBy'] ?? '',
+      modifiedBy: data['modifiedBy'] ?? '',
       createdAt:
           (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
@@ -28,6 +34,8 @@ class WasteMachineModel extends Equatable {
   Map<String, dynamic> toFirestore() => {
         'name': name,
         'isActive': isActive,
+        'createdBy': createdBy,
+        'modifiedBy': modifiedBy,
         'createdAt': Timestamp.fromDate(createdAt),
       };
 
@@ -35,12 +43,16 @@ class WasteMachineModel extends Equatable {
     String? id,
     String? name,
     bool? isActive,
+    String? createdBy,
+    String? modifiedBy,
     DateTime? createdAt,
   }) {
     return WasteMachineModel(
       id: id ?? this.id,
       name: name ?? this.name,
       isActive: isActive ?? this.isActive,
+      createdBy: createdBy ?? this.createdBy,
+      modifiedBy: modifiedBy ?? this.modifiedBy,
       createdAt: createdAt ?? this.createdAt,
     );
   }

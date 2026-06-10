@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
+import '../../../../core/services/current_user_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../../../data/models/supplier_model_new.dart';
@@ -123,6 +124,8 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                 DataColumn(label: Text(l10n.address)),
                 DataColumn(label: Text(l10n.balance), numeric: true),
                 DataColumn(label: Text(l10n.totalSupplied), numeric: true),
+                DataColumn(label: Text(l10n.createdByLabel)),
+                DataColumn(label: Text(l10n.modifiedByLabel)),
                 DataColumn(label: Text(l10n.actions)),
               ],
               rows: state.filteredSuppliers.map((supplier) {
@@ -140,6 +143,8 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                     ),
                   )),
                   DataCell(Text(currFmt.format(supplier.totalSupplied))),
+                  DataCell(Text(supplier.createdBy.isNotEmpty ? supplier.createdBy : '-')),
+                  DataCell(Text(supplier.modifiedBy.isNotEmpty ? supplier.modifiedBy : '-')),
                   DataCell(Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -345,7 +350,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                       description: descCtrl.text.isNotEmpty
                           ? descCtrl.text
                           : l10n.paymentToSupplier,
-                      createdBy: 'admin',
+                      createdBy: CurrentUserService.instance.userName,
                       createdAt: DateTime.now(),
                     ));
 

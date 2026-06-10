@@ -468,5 +468,16 @@
   "createAdminAccount": "Create Admin Account",
   "notifications": "Notifications",
   "paymentToSupplier": "Payment to supplier",
-  "splashTitle": "Mr.John's dashboard"
+  "splashTitle": "Mr.John's dashboard",
+  "createdByLabel": "Created By",
+  "modifiedByLabel": "Modified By",
+  "exportPdf": "Export PDF",
+  "exportImage": "Save as Image",
+  "exportOrder": "Export Order",
+  "orderDetails": "Order Details",
+  "unitPrice": "Unit Price",
+  "subtotal": "Subtotal",
+  "orderSummary": "Order Summary",
+  "exportSuccess": "File saved successfully",
+  "exportFailed": "Export failed"
 }

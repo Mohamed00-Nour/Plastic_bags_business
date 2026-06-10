@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../core/services/current_user_service.dart';
 import '../models/production_run_model.dart';
 
 class ProductionRunRepository {
@@ -30,7 +31,9 @@ class ProductionRunRepository {
   }
 
   Future<void> update(ProductionRunModel run) async {
-    await _col.doc(run.id).update(run.toFirestore());
+    final data = run.toFirestore();
+    data['modifiedBy'] = CurrentUserService.instance.userName;
+    await _col.doc(run.id).update(data);
   }
 
   Future<void> delete(String id) async {

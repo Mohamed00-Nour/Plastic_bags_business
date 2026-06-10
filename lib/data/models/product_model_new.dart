@@ -12,6 +12,8 @@ class ProductModel extends Equatable {
   final String? supplierName;
   final int lowStockThreshold;
   final bool isActive;
+  final String createdBy;
+  final String modifiedBy;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -26,6 +28,8 @@ class ProductModel extends Equatable {
     this.supplierName,
     this.lowStockThreshold = 10,
     this.isActive = true,
+    this.createdBy = '',
+    this.modifiedBy = '',
     required this.createdAt,
     required this.updatedAt,
   });
@@ -46,6 +50,8 @@ class ProductModel extends Equatable {
       supplierName: data['supplierName'],
       lowStockThreshold: (data['lowStockThreshold'] ?? 10).toInt(),
       isActive: data['isActive'] ?? true,
+      createdBy: data['createdBy'] ?? '',
+      modifiedBy: data['modifiedBy'] ?? '',
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
@@ -61,6 +67,8 @@ class ProductModel extends Equatable {
         'supplierName': supplierName,
         'lowStockThreshold': lowStockThreshold,
         'isActive': isActive,
+        'createdBy': createdBy,
+        'modifiedBy': modifiedBy,
         'createdAt': Timestamp.fromDate(createdAt),
         'updatedAt': Timestamp.fromDate(updatedAt),
       };
@@ -76,6 +84,8 @@ class ProductModel extends Equatable {
     String? supplierName,
     int? lowStockThreshold,
     bool? isActive,
+    String? createdBy,
+    String? modifiedBy,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -90,6 +100,8 @@ class ProductModel extends Equatable {
       supplierName: supplierName ?? this.supplierName,
       lowStockThreshold: lowStockThreshold ?? this.lowStockThreshold,
       isActive: isActive ?? this.isActive,
+      createdBy: createdBy ?? this.createdBy,
+      modifiedBy: modifiedBy ?? this.modifiedBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

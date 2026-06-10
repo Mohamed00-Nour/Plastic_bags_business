@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
+import '../../../../core/services/current_user_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../../../data/models/waste_machine_model.dart';
@@ -569,7 +570,7 @@ class _RunsTab extends StatelessWidget {
                             : 'هالك مخروز - ${selectedMachine!.name}'
                         : null,
                     date: date,
-                    createdBy: 'admin',
+                    createdBy: CurrentUserService.instance.userName,
                     createdAt: editing?.createdAt ?? now,
                   );
                   if (editing == null) {

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
+import '../../../core/services/current_user_service.dart';
 import '../../../data/models/product_model_new.dart';
 import '../../../data/models/stock_log_model.dart';
 import '../../../data/repositories/product_repository.dart';
@@ -128,7 +129,7 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
         note: event.note,
         supplierId: event.supplierId,
         supplierName: event.supplierName,
-        createdBy: 'admin',
+        createdBy: CurrentUserService.instance.userName,
         createdAt: DateTime.now(),
       ));
       emit(const ProductOperationSuccess(
@@ -156,7 +157,7 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
         stockBefore: stockBefore,
         stockAfter: stockBefore - event.amount,
         note: event.note,
-        createdBy: 'admin',
+        createdBy: CurrentUserService.instance.userName,
         createdAt: DateTime.now(),
       ));
       emit(const ProductOperationSuccess(

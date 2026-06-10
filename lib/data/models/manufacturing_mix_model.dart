@@ -48,6 +48,8 @@ class ManufacturingMixModel extends Equatable {
   final String productName;
   final List<MixComponent> components;
   final bool isActive;
+  final String createdBy;
+  final String modifiedBy;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -57,6 +59,8 @@ class ManufacturingMixModel extends Equatable {
     required this.productName,
     required this.components,
     this.isActive = true,
+    this.createdBy = '',
+    this.modifiedBy = '',
     required this.createdAt,
     required this.updatedAt,
   });
@@ -75,6 +79,8 @@ class ManufacturingMixModel extends Equatable {
           .map((c) => MixComponent.fromMap(c as Map<String, dynamic>))
           .toList(),
       isActive: data['isActive'] ?? true,
+      createdBy: data['createdBy'] ?? '',
+      modifiedBy: data['modifiedBy'] ?? '',
       createdAt:
           (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt:
@@ -87,6 +93,8 @@ class ManufacturingMixModel extends Equatable {
         'productName': productName,
         'components': components.map((c) => c.toMap()).toList(),
         'isActive': isActive,
+        'createdBy': createdBy,
+        'modifiedBy': modifiedBy,
         'createdAt': Timestamp.fromDate(createdAt),
         'updatedAt': Timestamp.fromDate(updatedAt),
       };
@@ -97,6 +105,8 @@ class ManufacturingMixModel extends Equatable {
     String? productName,
     List<MixComponent>? components,
     bool? isActive,
+    String? createdBy,
+    String? modifiedBy,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -106,6 +116,8 @@ class ManufacturingMixModel extends Equatable {
       productName: productName ?? this.productName,
       components: components ?? this.components,
       isActive: isActive ?? this.isActive,
+      createdBy: createdBy ?? this.createdBy,
+      modifiedBy: modifiedBy ?? this.modifiedBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../core/services/current_user_service.dart';
 import '../models/waste_processing_run_model.dart';
 
 class WasteProcessingRepository {
@@ -39,7 +40,9 @@ class WasteProcessingRepository {
   }
 
   Future<void> update(WasteProcessingRunModel run) async {
-    await _col.doc(run.id).update(run.toFirestore());
+    final data = run.toFirestore();
+    data['modifiedBy'] = CurrentUserService.instance.userName;
+    await _col.doc(run.id).update(data);
   }
 
   Future<void> delete(String id) async {

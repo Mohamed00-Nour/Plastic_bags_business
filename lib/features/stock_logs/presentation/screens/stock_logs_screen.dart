@@ -115,6 +115,7 @@ class _StockLogsScreenState extends State<StockLogsScreen> {
                           DataColumn(
                               label: Text(l10n.after), numeric: true),
                           DataColumn(label: Text(l10n.note)),
+                          DataColumn(label: Text(l10n.createdByLabel)),
                         ],
                         rows: logs.map((log) {
                           Color typeColor;
@@ -145,6 +146,7 @@ class _StockLogsScreenState extends State<StockLogsScreen> {
                             DataCell(Text('${log.stockBefore}')),
                             DataCell(Text('${log.stockAfter}')),
                             DataCell(Text(log.note ?? '-')),
+                            DataCell(Text(log.createdBy.isNotEmpty ? log.createdBy : '-')),
                           ]);
                         }).toList(),
                       ),

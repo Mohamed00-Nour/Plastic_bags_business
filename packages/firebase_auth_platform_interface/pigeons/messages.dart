@@ -611,7 +611,7 @@ class InternalTotpSecret {
   final String secretKey;
 }
 
-@HostApi(dartHostTestHandler: 'TestMultiFactoResolverHostApi')
+@HostApi(dartHostTestHandler: 'TestMultiFactorTotpHostApi')
 abstract class MultiFactorTotpHostApi {
   @async
   InternalTotpSecret generateSecret(
@@ -631,7 +631,7 @@ abstract class MultiFactorTotpHostApi {
   );
 }
 
-@HostApi(dartHostTestHandler: 'TestMultiFactoResolverHostApi')
+@HostApi(dartHostTestHandler: 'TestMultiFactorTotpSecretHostApi')
 abstract class MultiFactorTotpSecretHostApi {
   @async
   String generateQrCodeUrl(

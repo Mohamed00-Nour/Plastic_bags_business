@@ -104,6 +104,8 @@ class _UsersScreenState extends State<UsersScreen> {
                 DataColumn(label: Text(l10n.role)),
                 DataColumn(label: Text(l10n.shop)),
                 DataColumn(label: Text(l10n.status)),
+                DataColumn(label: Text(l10n.createdByLabel)),
+                DataColumn(label: Text(l10n.modifiedByLabel)),
                 DataColumn(label: Text(l10n.actions)),
               ],
               rows: state.users.map((user) {
@@ -119,6 +121,8 @@ class _UsersScreenState extends State<UsersScreen> {
                         ? AppTheme.successColor
                         : AppTheme.textSecondary,
                   )),
+                  DataCell(Text(user.createdBy.isNotEmpty ? user.createdBy : '-')),
+                  DataCell(Text(user.modifiedBy.isNotEmpty ? user.modifiedBy : '-')),
                   DataCell(Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [

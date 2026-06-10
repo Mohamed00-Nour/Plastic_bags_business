@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../core/services/current_user_service.dart';
 import '../models/user_model.dart';
 
 class AuthRepository {
@@ -125,9 +126,10 @@ class AuthRepository {
       );
       
       try {
-        await _firestore.collection('users').doc(user.id).set(user.toFirestore());
+        final data = user.toFirestore();
+        data['createdBy'] = CurrentUserService.instance.userName;
+        await _firestore.collection('users').doc(user.id).set(data);
       } catch (e) {
-        // If Firestore write fails, rollback user creation in Firebase Auth
         await credential.user?.delete();
         throw Exception('Failed to add user to Firestore: $e');
       }
@@ -207,7 +209,9 @@ class AuthRepository {
     );
     
     try {
-      await _firestore.collection('users').doc(user.id).set(user.toFirestore());
+      final data = user.toFirestore();
+      data['createdBy'] = name;
+      await _firestore.collection('users').doc(user.id).set(data);
     } catch (e) {
       await credential.user?.delete();
       throw Exception('Failed to save admin to Firestore: $e');

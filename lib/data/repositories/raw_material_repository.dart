@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../core/services/current_user_service.dart';
 import '../models/raw_material_model.dart';
 
 class RawMaterialRepository {
@@ -19,11 +20,15 @@ class RawMaterialRepository {
   }
 
   Future<void> add(RawMaterialModel material) async {
-    await _col.doc(material.id).set(material.toFirestore());
+    final data = material.toFirestore();
+    data['createdBy'] = CurrentUserService.instance.userName;
+    await _col.doc(material.id).set(data);
   }
 
   Future<void> update(RawMaterialModel material) async {
-    await _col.doc(material.id).update(material.toFirestore());
+    final data = material.toFirestore();
+    data['modifiedBy'] = CurrentUserService.instance.userName;
+    await _col.doc(material.id).update(data);
   }
 
   Future<void> delete(String id) async {

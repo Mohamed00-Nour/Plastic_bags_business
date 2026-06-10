@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../core/services/current_user_service.dart';
 import '../models/waste_machine_model.dart';
 
 class WasteMachineRepository {
@@ -13,11 +14,15 @@ class WasteMachineRepository {
   }
 
   Future<void> add(WasteMachineModel machine) async {
-    await _col.doc(machine.id).set(machine.toFirestore());
+    final data = machine.toFirestore();
+    data['createdBy'] = CurrentUserService.instance.userName;
+    await _col.doc(machine.id).set(data);
   }
 
   Future<void> update(WasteMachineModel machine) async {
-    await _col.doc(machine.id).update(machine.toFirestore());
+    final data = machine.toFirestore();
+    data['modifiedBy'] = CurrentUserService.instance.userName;
+    await _col.doc(machine.id).update(data);
   }
 
   Future<void> delete(String id) async {

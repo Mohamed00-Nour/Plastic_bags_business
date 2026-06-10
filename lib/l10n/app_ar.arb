@@ -468,5 +468,16 @@
   "createAdminAccount": "إنشاء حساب مشرف",
   "notifications": "الإشعارات",
   "paymentToSupplier": "دفعة للمورد",
-  "splashTitle": "لوحة تحكم مستر جون"
+  "splashTitle": "لوحة تحكم مستر جون",
+  "createdByLabel": "أنشئ بواسطة",
+  "modifiedByLabel": "عُدل بواسطة",
+  "exportPdf": "تصدير PDF",
+  "exportImage": "حفظ كصورة",
+  "exportOrder": "تصدير الطلب",
+  "orderDetails": "تفاصيل الطلب",
+  "unitPrice": "سعر الوحدة",
+  "subtotal": "المجموع الفرعي",
+  "orderSummary": "ملخص الطلب",
+  "exportSuccess": "تم حفظ الملف بنجاح",
+  "exportFailed": "فشل التصدير"
 }

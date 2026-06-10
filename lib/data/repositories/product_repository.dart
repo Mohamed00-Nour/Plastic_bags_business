@@ -1,4 +1,8 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
+import '../../core/services/current_user_service.dart';
 import '../models/product_model_new.dart';
 
 class ProductRepository {
@@ -21,16 +25,21 @@ class ProductRepository {
   }
 
   Future<void> addProduct(ProductModel product) async {
-    await _collection.doc(product.id).set(product.toFirestore());
+    final data = product.toFirestore();
+    data['createdBy'] = CurrentUserService.instance.userName;
+    await _collection.doc(product.id).set(data);
   }
 
   Future<void> updateProduct(ProductModel product) async {
-    await _collection.doc(product.id).update(product.toFirestore());
+    final data = product.toFirestore();
+    data['modifiedBy'] = CurrentUserService.instance.userName;
+    await _collection.doc(product.id).update(data);
   }
 
   Future<void> deleteProduct(String id) async {
     await _collection.doc(id).update({
       'isActive': false,
+      'modifiedBy': CurrentUserService.instance.userName,
       'updatedAt': FieldValue.serverTimestamp(),
     });
   }
@@ -38,6 +47,7 @@ class ProductRepository {
   Future<void> updateStock(String productId, int newQuantity) async {
     await _collection.doc(productId).update({
       'stockQuantity': newQuantity,
+      'modifiedBy': CurrentUserService.instance.userName,
       'updatedAt': FieldValue.serverTimestamp(),
     });
   }
@@ -45,23 +55,44 @@ class ProductRepository {
   Future<void> incrementStock(String productId, int amount) async {
     await _collection.doc(productId).update({
       'stockQuantity': FieldValue.increment(amount),
+      'modifiedBy': CurrentUserService.instance.userName,
       'updatedAt': FieldValue.serverTimestamp(),
     });
   }
 
   Future<void> decrementStock(String productId, int amount) async {
-    await _firestore.runTransaction((transaction) async {
-      final doc = _collection.doc(productId);
-      final snapshot = await transaction.get(doc);
+    final isDesktop =
+        !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
+
+    if (isDesktop) {
+      final snapshot = await _collection.doc(productId).get();
       final currentStock =
-          (snapshot.data() as Map<String, dynamic>)['stockQuantity'] ?? 0;
-      final newStock = (currentStock as int) - amount;
+          ((snapshot.data() as Map<String, dynamic>)['stockQuantity'] ?? 0 as num)
+              .toInt();
+      final newStock = currentStock - amount;
       if (newStock < 0) throw Exception('Insufficient stock');
-      transaction.update(doc, {
+      await _collection.doc(productId).update({
         'stockQuantity': newStock,
-        'updatedAt': FieldValue.serverTimestamp(),
+        'modifiedBy': CurrentUserService.instance.userName,
+        'updatedAt': Timestamp.now(),
       });
-    });
+    } else {
+      await _firestore.runTransaction((transaction) async {
+        final doc = _collection.doc(productId);
+        final snapshot = await transaction.get(doc);
+        final currentStock =
+            ((snapshot.data() as Map<String, dynamic>)['stockQuantity'] ?? 0
+                    as num)
+                .toInt();
+        final newStock = currentStock - amount;
+        if (newStock < 0) throw Exception('Insufficient stock');
+        transaction.update(doc, {
+          'stockQuantity': newStock,
+          'modifiedBy': CurrentUserService.instance.userName,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      });
+    }
   }
 
   Future<List<ProductModel>> getLowStockProducts() async {

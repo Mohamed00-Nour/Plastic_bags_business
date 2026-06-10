@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
+import '../../../../core/services/current_user_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../data/models/manufacturing_expense_model.dart';
 import '../../bloc/manufacturing_expense_bloc.dart';
@@ -326,7 +327,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                       ? null
                       : descCtrl.text.trim(),
                   includeInCostPerKg: includeInCost,
-                  createdBy: 'admin',
+                  createdBy: CurrentUserService.instance.userName,
                   createdAt: editing?.createdAt ?? now,
                 );
                 if (editing == null) {

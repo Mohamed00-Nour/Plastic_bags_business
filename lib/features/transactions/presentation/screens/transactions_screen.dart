@@ -99,6 +99,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 DataColumn(label: Text(l10n.amount), numeric: true),
                 DataColumn(label: Text(l10n.balanceAfter), numeric: true),
                 DataColumn(label: Text(l10n.description)),
+                DataColumn(label: Text(l10n.createdByLabel)),
               ],
               rows: state.filteredTransactions.map((t) {
                 return DataRow(cells: [
@@ -118,6 +119,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                   DataCell(Text(currFmt.format(t.balanceAfter))),
                   DataCell(Text(t.description ?? '-',
                       style: const TextStyle(fontSize: 12))),
+                  DataCell(Text(t.createdBy.isNotEmpty ? t.createdBy : '-')),
                 ]);
               }).toList(),
             ),

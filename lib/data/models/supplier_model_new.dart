@@ -9,6 +9,8 @@ class SupplierModel extends Equatable {
   final double balance;
   final double totalSupplied;
   final bool isActive;
+  final String createdBy;
+  final String modifiedBy;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -20,6 +22,8 @@ class SupplierModel extends Equatable {
     this.balance = 0,
     this.totalSupplied = 0,
     this.isActive = true,
+    this.createdBy = '',
+    this.modifiedBy = '',
     required this.createdAt,
     required this.updatedAt,
   });
@@ -34,6 +38,8 @@ class SupplierModel extends Equatable {
       balance: (data['balance'] ?? 0).toDouble(),
       totalSupplied: (data['totalSupplied'] ?? 0).toDouble(),
       isActive: data['isActive'] ?? true,
+      createdBy: data['createdBy'] ?? '',
+      modifiedBy: data['modifiedBy'] ?? '',
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
@@ -46,6 +52,8 @@ class SupplierModel extends Equatable {
         'balance': balance,
         'totalSupplied': totalSupplied,
         'isActive': isActive,
+        'createdBy': createdBy,
+        'modifiedBy': modifiedBy,
         'createdAt': Timestamp.fromDate(createdAt),
         'updatedAt': Timestamp.fromDate(updatedAt),
       };
@@ -58,6 +66,8 @@ class SupplierModel extends Equatable {
     double? balance,
     double? totalSupplied,
     bool? isActive,
+    String? createdBy,
+    String? modifiedBy,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -69,6 +79,8 @@ class SupplierModel extends Equatable {
       balance: balance ?? this.balance,
       totalSupplied: totalSupplied ?? this.totalSupplied,
       isActive: isActive ?? this.isActive,
+      createdBy: createdBy ?? this.createdBy,
+      modifiedBy: modifiedBy ?? this.modifiedBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

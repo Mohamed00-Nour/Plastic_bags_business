@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../core/services/current_user_service.dart';
 import '../models/order_model.dart';
 
 class OrderRepository {
@@ -40,7 +41,9 @@ class OrderRepository {
   }
 
   Future<void> createOrder(OrderModel order) async {
-    await _collection.doc(order.id).set(order.toFirestore());
+    final data = order.toFirestore();
+    data['createdBy'] = CurrentUserService.instance.userName;
+    await _collection.doc(order.id).set(data);
   }
 
   Future<void> updateOrderStatus(
@@ -51,6 +54,7 @@ class OrderRepository {
   }) async {
     final updates = <String, dynamic>{
       'status': status.name,
+      'modifiedBy': CurrentUserService.instance.userName,
       'updatedAt': FieldValue.serverTimestamp(),
     };
     if (approvedBy != null) updates['approvedBy'] = approvedBy;

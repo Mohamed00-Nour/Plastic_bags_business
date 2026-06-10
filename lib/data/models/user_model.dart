@@ -37,6 +37,8 @@ class UserModel extends Equatable {
   final String? shopId;
   final String? shopName;
   final bool isActive;
+  final String createdBy;
+  final String modifiedBy;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -48,6 +50,8 @@ class UserModel extends Equatable {
     this.shopId,
     this.shopName,
     this.isActive = true,
+    this.createdBy = '',
+    this.modifiedBy = '',
     required this.createdAt,
     required this.updatedAt,
   });
@@ -65,6 +69,8 @@ class UserModel extends Equatable {
       shopId: data['shopId'],
       shopName: data['shopName'],
       isActive: data['isActive'] ?? true,
+      createdBy: data['createdBy'] ?? '',
+      modifiedBy: data['modifiedBy'] ?? '',
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
@@ -77,6 +83,8 @@ class UserModel extends Equatable {
         'shopId': shopId,
         'shopName': shopName,
         'isActive': isActive,
+        'createdBy': createdBy,
+        'modifiedBy': modifiedBy,
         'createdAt': Timestamp.fromDate(createdAt),
         'updatedAt': Timestamp.fromDate(updatedAt),
       };
@@ -89,6 +97,8 @@ class UserModel extends Equatable {
     String? shopId,
     String? shopName,
     bool? isActive,
+    String? createdBy,
+    String? modifiedBy,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -100,6 +110,8 @@ class UserModel extends Equatable {
       shopId: shopId ?? this.shopId,
       shopName: shopName ?? this.shopName,
       isActive: isActive ?? this.isActive,
+      createdBy: createdBy ?? this.createdBy,
+      modifiedBy: modifiedBy ?? this.modifiedBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

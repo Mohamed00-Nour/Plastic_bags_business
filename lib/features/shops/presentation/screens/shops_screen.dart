@@ -129,6 +129,8 @@ class _ShopsScreenState extends State<ShopsScreen> {
                 DataColumn(label: Text(l10n.phone)),
                 DataColumn(label: Text(l10n.loginEmail)),
                 DataColumn(label: Text(l10n.totalPurchasesLabel), numeric: true),
+                DataColumn(label: Text(l10n.createdByLabel)),
+                DataColumn(label: Text(l10n.modifiedByLabel)),
                 DataColumn(label: Text(l10n.actions)),
               ],
               rows:
@@ -149,6 +151,8 @@ class _ShopsScreenState extends State<ShopsScreen> {
                           ),
                         ),
                         DataCell(Text(currFmt.format(shop.totalPurchases))),
+                        DataCell(Text(shop.createdBy.isNotEmpty ? shop.createdBy : '-')),
+                        DataCell(Text(shop.modifiedBy.isNotEmpty ? shop.modifiedBy : '-')),
                         DataCell(
                           Row(
                             mainAxisSize: MainAxisSize.min,

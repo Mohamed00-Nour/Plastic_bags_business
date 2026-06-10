@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../core/services/current_user_service.dart';
 import '../models/manufacturing_expense_model.dart';
 
 class ManufacturingExpenseRepository {
@@ -39,7 +40,9 @@ class ManufacturingExpenseRepository {
   }
 
   Future<void> update(ManufacturingExpenseModel expense) async {
-    await _col.doc(expense.id).update(expense.toFirestore());
+    final data = expense.toFirestore();
+    data['modifiedBy'] = CurrentUserService.instance.userName;
+    await _col.doc(expense.id).update(data);
   }
 
   Future<void> delete(String id) async {

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../core/services/current_user_service.dart';
 import '../models/shop_model_new.dart';
 
 class ShopRepository {
@@ -20,16 +21,21 @@ class ShopRepository {
   }
 
   Future<void> addShop(ShopModel shop) async {
-    await _collection.doc(shop.id).set(shop.toFirestore());
+    final data = shop.toFirestore();
+    data['createdBy'] = CurrentUserService.instance.userName;
+    await _collection.doc(shop.id).set(data);
   }
 
   Future<void> updateShop(ShopModel shop) async {
-    await _collection.doc(shop.id).update(shop.toFirestore());
+    final data = shop.toFirestore();
+    data['modifiedBy'] = CurrentUserService.instance.userName;
+    await _collection.doc(shop.id).update(data);
   }
 
   Future<void> deleteShop(String id) async {
     await _collection.doc(id).update({
       'isActive': false,
+      'modifiedBy': CurrentUserService.instance.userName,
       'updatedAt': FieldValue.serverTimestamp(),
     });
   }
@@ -37,6 +43,7 @@ class ShopRepository {
   Future<void> addToTotalPurchases(String shopId, double amount) async {
     await _collection.doc(shopId).update({
       'totalPurchases': FieldValue.increment(amount),
+      'modifiedBy': CurrentUserService.instance.userName,
       'updatedAt': FieldValue.serverTimestamp(),
     });
   }

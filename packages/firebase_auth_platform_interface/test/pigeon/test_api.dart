@@ -1594,7 +1594,7 @@ abstract class TestMultiFactoResolverHostApi {
   }
 }
 
-abstract class TestMultiFactoResolverHostApi {
+abstract class TestMultiFactorTotpHostApi {
   static TestDefaultBinaryMessengerBinding? get _testBinaryMessengerBinding =>
       TestDefaultBinaryMessengerBinding.instance;
   static const MessageCodec<Object?> pigeonChannelCodec = _PigeonCodec();
@@ -1608,7 +1608,7 @@ abstract class TestMultiFactoResolverHostApi {
       String enrollmentId, String oneTimePassword);
 
   static void setUp(
-    TestMultiFactoResolverHostApi? api, {
+    TestMultiFactorTotpHostApi? api, {
     BinaryMessenger? binaryMessenger,
     String messageChannelSuffix = '',
   }) {
@@ -1700,7 +1700,7 @@ abstract class TestMultiFactoResolverHostApi {
   }
 }
 
-abstract class TestMultiFactoResolverHostApi {
+abstract class TestMultiFactorTotpSecretHostApi {
   static TestDefaultBinaryMessengerBinding? get _testBinaryMessengerBinding =>
       TestDefaultBinaryMessengerBinding.instance;
   static const MessageCodec<Object?> pigeonChannelCodec = _PigeonCodec();
@@ -1711,7 +1711,7 @@ abstract class TestMultiFactoResolverHostApi {
   Future<void> openInOtpApp(String secretKey, String qrCodeUrl);
 
   static void setUp(
-    TestMultiFactoResolverHostApi? api, {
+    TestMultiFactorTotpSecretHostApi? api, {
     BinaryMessenger? binaryMessenger,
     String messageChannelSuffix = '',
   }) {

@@ -69,6 +69,8 @@ class OrderModel extends Equatable {
   final String? approvedBy;
   final String? rejectionReason;
   final String? notes;
+  final String createdBy;
+  final String modifiedBy;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -82,6 +84,8 @@ class OrderModel extends Equatable {
     this.approvedBy,
     this.rejectionReason,
     this.notes,
+    this.createdBy = '',
+    this.modifiedBy = '',
     required this.createdAt,
     required this.updatedAt,
   });
@@ -104,6 +108,8 @@ class OrderModel extends Equatable {
       approvedBy: data['approvedBy'],
       rejectionReason: data['rejectionReason'],
       notes: data['notes'],
+      createdBy: data['createdBy'] ?? '',
+      modifiedBy: data['modifiedBy'] ?? '',
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
@@ -118,6 +124,8 @@ class OrderModel extends Equatable {
         'approvedBy': approvedBy,
         'rejectionReason': rejectionReason,
         'notes': notes,
+        'createdBy': createdBy,
+        'modifiedBy': modifiedBy,
         'createdAt': Timestamp.fromDate(createdAt),
         'updatedAt': Timestamp.fromDate(updatedAt),
       };
@@ -132,6 +140,8 @@ class OrderModel extends Equatable {
     String? approvedBy,
     String? rejectionReason,
     String? notes,
+    String? createdBy,
+    String? modifiedBy,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -145,6 +155,8 @@ class OrderModel extends Equatable {
       approvedBy: approvedBy ?? this.approvedBy,
       rejectionReason: rejectionReason ?? this.rejectionReason,
       notes: notes ?? this.notes,
+      createdBy: createdBy ?? this.createdBy,
+      modifiedBy: modifiedBy ?? this.modifiedBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

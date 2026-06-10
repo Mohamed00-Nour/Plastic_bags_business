@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
+import '../../../core/services/current_user_service.dart';
 import '../../../data/models/order_model.dart';
 import '../../../data/models/stock_log_model.dart';
 import '../../../data/models/transaction_model.dart';
@@ -166,7 +167,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
             stockAfter: product.stockQuantity - item.quantity,
             referenceId: order.id,
             note: 'Order delivered - ${order.shopName}',
-            createdBy: 'system',
+            createdBy: CurrentUserService.instance.userName,
             createdAt: DateTime.now(),
           ),
         );
@@ -185,7 +186,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
           balanceAfter: 0,
           orderId: order.id,
           description: 'Order # Delivered (Payment Received)',
-          createdBy: 'system',
+          createdBy: CurrentUserService.instance.userName,
           createdAt: DateTime.now(),
         ),
       );

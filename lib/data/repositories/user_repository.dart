@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../core/services/current_user_service.dart';
 import '../models/user_model.dart';
 
 class UserRepository {
@@ -31,6 +32,7 @@ class UserRepository {
   Future<void> updateRole(String userId, UserRole role) async {
     await _collection.doc(userId).update({
       'role': role.name,
+      'modifiedBy': CurrentUserService.instance.userName,
       'updatedAt': FieldValue.serverTimestamp(),
     });
   }
@@ -38,6 +40,7 @@ class UserRepository {
   Future<void> toggleActive(String userId, bool isActive) async {
     await _collection.doc(userId).update({
       'isActive': isActive,
+      'modifiedBy': CurrentUserService.instance.userName,
       'updatedAt': FieldValue.serverTimestamp(),
     });
   }

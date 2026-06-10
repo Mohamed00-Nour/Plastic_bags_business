@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
+import '../../../../core/services/order_export_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../../../data/models/order_model.dart';
@@ -143,6 +144,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 DataColumn(label: Text(l10n.total), numeric: true),
                 DataColumn(label: Text(l10n.status)),
                 DataColumn(label: Text(l10n.date)),
+                DataColumn(label: Text(l10n.createdByLabel)),
+                DataColumn(label: Text(l10n.modifiedByLabel)),
                 DataColumn(label: Text(l10n.actions)),
               ],
               rows:
@@ -165,6 +168,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
                             style: const TextStyle(fontSize: 12),
                           ),
                         ),
+                        DataCell(Text(order.createdBy.isNotEmpty ? order.createdBy : '-')),
+                        DataCell(Text(order.modifiedBy.isNotEmpty ? order.modifiedBy : '-')),
                         DataCell(
                           Row(
                             mainAxisSize: MainAxisSize.min,
@@ -195,7 +200,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                       confirmLabel: l10n.approve,
                                       confirmColor: AppTheme.successColor,
                                     );
-                                    if (confirmed == true && mounted) {
+                                    if (confirmed == true && context.mounted) {
                                       context.read<OrderBloc>().add(
                                         OrderApproveRequested(
                                           orderId: order.id,
@@ -265,100 +270,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 
   void _showOrderDetails(BuildContext context, OrderModel order) {
-    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
-      builder:
-          (ctx) => AlertDialog(
-            title: Text('Order #${order.id.substring(0, 8)}'),
-            content: SizedBox(
-              width: 500,
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _detailRow(l10n.shop, order.shopName),
-                    _detailRow(l10n.status, _localizedOrderStatus(l10n, order.status)),
-                    _detailRow(
-                      l10n.total,
-                      '\$${order.totalPrice.toStringAsFixed(2)}',
-                    ),
-                    _detailRow(
-                      l10n.date,
-                      DateFormat('MMM dd, yyyy HH:mm').format(order.createdAt),
-                    ),
-                    if (order.approvedBy != null)
-                      _detailRow(l10n.approvedBy, order.approvedBy!),
-                    if (order.rejectionReason != null)
-                      _detailRow(l10n.rejectionReason, order.rejectionReason!),
-                    if (order.notes != null) _detailRow(l10n.notes, order.notes!),
-                    const Divider(),
-                    Text(
-                      '${l10n.items}:',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    ...order.items.map(
-                      (item) => Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                '${item.productName} (${item.productSize})',
-                              ),
-                            ),
-                            Text('x${item.quantity}'),
-                            const SizedBox(width: 16),
-                            Text(
-                              '\$${item.total.toStringAsFixed(2)}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: Text(l10n.close),
-              ),
-            ],
-          ),
-    );
-  }
-
-  Widget _detailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: const TextStyle(
-                color: AppTheme.textSecondary,
-                fontSize: 13,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(fontWeight: FontWeight.w500),
-            ),
-          ),
-        ],
-      ),
+      builder: (ctx) => _OrderDetailsDialog(order: order),
     );
   }
 
@@ -714,6 +628,281 @@ class _CreateOrderDialogState extends State<_CreateOrderDialog> {
 
     context.read<OrderBloc>().add(OrderCreateRequested(order: order));
     Navigator.pop(context);
+  }
+}
+
+class _OrderDetailsDialog extends StatefulWidget {
+  final OrderModel order;
+
+  const _OrderDetailsDialog({required this.order});
+
+  @override
+  State<_OrderDetailsDialog> createState() => _OrderDetailsDialogState();
+}
+
+class _OrderDetailsDialogState extends State<_OrderDetailsDialog> {
+  final GlobalKey _boundaryKey = GlobalKey();
+  bool _exporting = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final order = widget.order;
+    final dateFmt = DateFormat('MMM dd, yyyy HH:mm');
+
+    return AlertDialog(
+      title: Row(
+        children: [
+          Expanded(child: Text('${l10n.orderIdPrefix} #${order.id.substring(0, 8)}')),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.download_outlined),
+            tooltip: l10n.exportOrder,
+            onSelected: (value) => _handleExport(value, order),
+            itemBuilder: (ctx) => [
+              PopupMenuItem(
+                value: 'pdf',
+                child: Row(
+                  children: [
+                    const Icon(Icons.picture_as_pdf_outlined,
+                        size: 20, color: AppTheme.dangerColor),
+                    const SizedBox(width: 8),
+                    Text(l10n.exportPdf),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'image',
+                child: Row(
+                  children: [
+                    const Icon(Icons.image_outlined,
+                        size: 20, color: AppTheme.infoColor),
+                    const SizedBox(width: 8),
+                    Text(l10n.exportImage),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+      content: SizedBox(
+        width: 550,
+        child: _exporting
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
+                child: RepaintBoundary(
+                  key: _boundaryKey,
+                  child: Container(
+                    color: Theme.of(context).dialogTheme.backgroundColor ??
+                        Theme.of(context).colorScheme.surface,
+                    padding: const EdgeInsets.all(4),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _infoRow(l10n.shop, order.shopName),
+                        _infoRow(l10n.status,
+                            _localizedOrderStatus(l10n, order.status)),
+                        _infoRow(l10n.total,
+                            '\$${order.totalPrice.toStringAsFixed(2)}'),
+                        _infoRow(
+                          l10n.date,
+                          dateFmt.format(order.createdAt),
+                        ),
+                        if (order.createdBy.isNotEmpty)
+                          _infoRow(l10n.createdByLabel, order.createdBy),
+                        if (order.modifiedBy.isNotEmpty)
+                          _infoRow(l10n.modifiedByLabel, order.modifiedBy),
+                        if (order.approvedBy != null)
+                          _infoRow(l10n.approvedBy, order.approvedBy!),
+                        if (order.rejectionReason != null)
+                          _infoRow(
+                              l10n.rejectionReason, order.rejectionReason!),
+                        if (order.notes != null)
+                          _infoRow(l10n.notes, order.notes!),
+                        const Divider(),
+                        Text(
+                          '${l10n.items}:',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 8),
+                        // Items table
+                        Table(
+                          columnWidths: const {
+                            0: FlexColumnWidth(3),
+                            1: FixedColumnWidth(50),
+                            2: FlexColumnWidth(1.5),
+                            3: FlexColumnWidth(1.5),
+                          },
+                          children: [
+                            TableRow(
+                              decoration: BoxDecoration(
+                                color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              children: [
+                                _tableHeader(l10n.product),
+                                _tableHeader(l10n.qty),
+                                _tableHeader(l10n.unitPrice),
+                                _tableHeader(l10n.subtotal),
+                              ],
+                            ),
+                            ...order.items.map(
+                              (item) => TableRow(
+                                children: [
+                                  _tableCell(
+                                      '${item.productName} (${item.productSize})'),
+                                  _tableCell('${item.quantity}'),
+                                  _tableCell(
+                                      '\$${item.unitPrice.toStringAsFixed(2)}'),
+                                  _tableCell(
+                                    '\$${item.total.toStringAsFixed(2)}',
+                                    bold: true,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Align(
+                          alignment: AlignmentDirectional.centerEnd,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryColor.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '${l10n.totalColon}\$${order.totalPrice.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.primaryColor,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.close),
+        ),
+      ],
+    );
+  }
+
+  Widget _infoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 130,
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: AppTheme.textSecondary,
+                fontSize: 13,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _tableHeader(String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      child: Text(
+        text,
+        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+      ),
+    );
+  }
+
+  Widget _tableCell(String text, {bool bold = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: bold ? FontWeight.w600 : FontWeight.normal,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleExport(String type, OrderModel order) async {
+    final l10n = AppLocalizations.of(context)!;
+    final locale = Localizations.localeOf(context).languageCode;
+
+    setState(() => _exporting = true);
+
+    try {
+      String? filePath;
+
+      if (type == 'pdf') {
+        filePath = await OrderExportService.savePdfToFile(
+          order,
+          locale: locale,
+        );
+      } else if (type == 'image') {
+        await Future.delayed(const Duration(milliseconds: 100));
+        setState(() => _exporting = false);
+        await Future.delayed(const Duration(milliseconds: 200));
+        filePath = await OrderExportService.captureWidgetAsImage(
+          _boundaryKey,
+          order.id,
+        );
+      }
+
+      if (!mounted) return;
+      setState(() => _exporting = false);
+
+      if (filePath != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${l10n.exportSuccess}: $filePath'),
+            backgroundColor: AppTheme.successColor,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.exportFailed),
+            backgroundColor: AppTheme.dangerColor,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _exporting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${l10n.exportFailed}: $e'),
+            backgroundColor: AppTheme.dangerColor,
+          ),
+        );
+      }
+    }
   }
 }
 

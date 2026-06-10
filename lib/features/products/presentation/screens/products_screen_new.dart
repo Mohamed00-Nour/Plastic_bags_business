@@ -114,6 +114,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 DataColumn(label: Text(l10n.price), numeric: true),
                 DataColumn(label: Text(l10n.stock), numeric: true),
                 DataColumn(label: Text(l10n.supplier)),
+                DataColumn(label: Text(l10n.createdByLabel)),
+                DataColumn(label: Text(l10n.modifiedByLabel)),
                 DataColumn(label: Text(l10n.actions)),
               ],
               rows:
@@ -161,6 +163,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
                           ),
                         ),
                         DataCell(Text(product.supplierName ?? '-')),
+                        DataCell(Text(product.createdBy.isNotEmpty ? product.createdBy : '-')),
+                        DataCell(Text(product.modifiedBy.isNotEmpty ? product.modifiedBy : '-')),
                         DataCell(
                           Row(
                             mainAxisSize: MainAxisSize.min,
