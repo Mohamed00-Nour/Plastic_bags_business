@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common_widgets.dart';
@@ -18,6 +19,7 @@ class _StockLogsScreenState extends State<StockLogsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final dateFmt = DateFormat('MMM dd, yyyy HH:mm');
 
     return Padding(
@@ -29,7 +31,7 @@ class _StockLogsScreenState extends State<StockLogsScreen> {
             children: [
               Expanded(
                 child: SearchField(
-                  hint: 'Search by product name...',
+                  hint: l10n.searchByProductName,
                   onChanged: (query) =>
                       setState(() => _searchQuery = query.toLowerCase()),
                 ),
@@ -43,7 +45,7 @@ class _StockLogsScreenState extends State<StockLogsScreen> {
             child: Row(
               children: [
                 FilterChip(
-                  label: const Text('All'),
+                  label: Text(l10n.all),
                   selected: _typeFilter == null,
                   onSelected: (_) => setState(() => _typeFilter = null),
                 ),
@@ -51,7 +53,7 @@ class _StockLogsScreenState extends State<StockLogsScreen> {
                 ...StockMovementType.values.map((type) => Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: FilterChip(
-                        label: Text(type.label),
+                        label: Text(_localizedStockType(l10n, type)),
                         selected: _typeFilter == type,
                         onSelected: (_) =>
                             setState(() => _typeFilter = type),
@@ -90,10 +92,10 @@ class _StockLogsScreenState extends State<StockLogsScreen> {
                 }
 
                 if (logs.isEmpty) {
-                  return const EmptyStateWidget(
+                  return EmptyStateWidget(
                     icon: Icons.history,
-                    title: 'No stock logs found',
-                    subtitle: 'Stock movement history will appear here',
+                    title: l10n.noStockLogsFound,
+                    subtitle: l10n.stockMovementHistory,
                   );
                 }
 
@@ -102,17 +104,17 @@ class _StockLogsScreenState extends State<StockLogsScreen> {
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: DataTable(
-                        columns: const [
-                          DataColumn(label: Text('Date')),
-                          DataColumn(label: Text('Product')),
-                          DataColumn(label: Text('Type')),
+                        columns: [
+                          DataColumn(label: Text(l10n.date)),
+                          DataColumn(label: Text(l10n.product)),
+                          DataColumn(label: Text(l10n.type)),
                           DataColumn(
-                              label: Text('Qty'), numeric: true),
+                              label: Text(l10n.qty), numeric: true),
                           DataColumn(
-                              label: Text('Before'), numeric: true),
+                              label: Text(l10n.before), numeric: true),
                           DataColumn(
-                              label: Text('After'), numeric: true),
-                          DataColumn(label: Text('Note')),
+                              label: Text(l10n.after), numeric: true),
+                          DataColumn(label: Text(l10n.note)),
                         ],
                         rows: logs.map((log) {
                           Color typeColor;
@@ -131,7 +133,7 @@ class _StockLogsScreenState extends State<StockLogsScreen> {
                                 style: const TextStyle(
                                     fontWeight: FontWeight.w500))),
                             DataCell(StatusBadge(
-                                label: log.type.label,
+                                label: _localizedStockType(l10n, log.type),
                                 color: typeColor)),
                             DataCell(Text(
                               '${log.type == StockMovementType.incoming ? '+' : '-'}${log.quantity}',
@@ -155,5 +157,16 @@ class _StockLogsScreenState extends State<StockLogsScreen> {
         ],
       ),
     );
+  }
+
+  String _localizedStockType(AppLocalizations l10n, StockMovementType type) {
+    switch (type) {
+      case StockMovementType.incoming:
+        return l10n.stockIncoming;
+      case StockMovementType.outgoing:
+        return l10n.stockOutgoing;
+      case StockMovementType.adjustment:
+        return l10n.stockAdjustment;
+    }
   }
 }

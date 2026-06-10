@@ -14,6 +14,19 @@ import '../../bloc/order_bloc.dart';
 import '../../bloc/order_event.dart';
 import '../../bloc/order_state.dart';
 
+String _localizedOrderStatus(AppLocalizations l10n, OrderStatus status) {
+  switch (status) {
+    case OrderStatus.pending:
+      return l10n.statusPending;
+    case OrderStatus.approved:
+      return l10n.statusApproved;
+    case OrderStatus.rejected:
+      return l10n.statusRejected;
+    case OrderStatus.delivered:
+      return l10n.statusDelivered;
+  }
+}
+
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
 
@@ -66,7 +79,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   SizedBox(
                     width: 300,
                     child: SearchField(
-                      hint: 'Search orders...',
+                      hint: l10n.searchOrders,
                       onChanged:
                           (query) => context.read<OrderBloc>().add(
                             OrderSearchRequested(query: query),
@@ -77,7 +90,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   ...OrderStatus.values.map((status) {
                     final isSelected = _selectedFilter == status;
                     return FilterChip(
-                      label: Text(status.label),
+                      label: Text(_localizedOrderStatus(l10n, status)),
                       selected: isSelected,
                       onSelected: (selected) {
                         setState(() {
@@ -92,7 +105,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   ElevatedButton.icon(
                     onPressed: () => _showCreateOrderDialog(context),
                     icon: const Icon(Icons.add, size: 18),
-                    label: const Text('New Order'),
+                    label: Text(l10n.newOrder),
                   ),
                 ],
               ),
@@ -138,14 +151,14 @@ class _OrdersScreenState extends State<OrdersScreen> {
                       cells: [
                         DataCell(Text('#${order.id.substring(0, 8)}')),
                         DataCell(Text(order.shopName)),
-                        DataCell(Text('${order.items.length} items')),
+                        DataCell(Text(l10n.itemsCount(order.items.length))),
                         DataCell(
                           Text(
                             '\$${order.totalPrice.toStringAsFixed(2)}',
                             style: const TextStyle(fontWeight: FontWeight.w500),
                           ),
                         ),
-                        DataCell(_buildStatusBadge(order.status)),
+                        DataCell(_buildStatusBadge(l10n, order.status)),
                         DataCell(
                           Text(
                             dateFmt.format(order.createdAt),
@@ -162,7 +175,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                   size: 20,
                                   color: AppTheme.primaryColor,
                                 ),
-                                tooltip: 'View Details',
+                                tooltip: l10n.viewDetails,
                                 onPressed:
                                     () => _showOrderDetails(context, order),
                               ),
@@ -173,14 +186,13 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                     size: 20,
                                     color: AppTheme.successColor,
                                   ),
-                                  tooltip: 'Approve',
+                                  tooltip: l10n.approve,
                                   onPressed: () async {
                                     final confirmed = await ConfirmationDialog.show(
                                       context,
-                                      title: 'Approve Order',
-                                      message:
-                                          'This will deduct stock and charge the shop balance.',
-                                      confirmLabel: 'Approve',
+                                      title: l10n.approveOrder,
+                                      message: l10n.approveOrderMessage,
+                                      confirmLabel: l10n.approve,
                                       confirmColor: AppTheme.successColor,
                                     );
                                     if (confirmed == true && mounted) {
@@ -199,7 +211,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                     size: 20,
                                     color: AppTheme.dangerColor,
                                   ),
-                                  tooltip: 'Reject',
+                                  tooltip: l10n.reject,
                                   onPressed:
                                       () =>
                                           _showRejectDialog(context, order.id),
@@ -212,7 +224,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                     size: 20,
                                     color: AppTheme.infoColor,
                                   ),
-                                  tooltip: 'Mark Delivered',
+                                  tooltip: l10n.markDelivered,
                                   onPressed: () {
                                     context.read<OrderBloc>().add(
                                       OrderMarkDelivered(orderId: order.id),
@@ -233,7 +245,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     return const SizedBox.shrink();
   }
 
-  Widget _buildStatusBadge(OrderStatus status) {
+  Widget _buildStatusBadge(AppLocalizations l10n, OrderStatus status) {
     Color color;
     switch (status) {
       case OrderStatus.pending:
@@ -249,10 +261,11 @@ class _OrdersScreenState extends State<OrdersScreen> {
         color = AppTheme.infoColor;
         break;
     }
-    return StatusBadge(label: status.label, color: color);
+    return StatusBadge(label: _localizedOrderStatus(l10n, status), color: color);
   }
 
   void _showOrderDetails(BuildContext context, OrderModel order) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder:
@@ -265,25 +278,25 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _detailRow('Shop', order.shopName),
-                    _detailRow('Status', order.status.label),
+                    _detailRow(l10n.shop, order.shopName),
+                    _detailRow(l10n.status, _localizedOrderStatus(l10n, order.status)),
                     _detailRow(
-                      'Total',
+                      l10n.total,
                       '\$${order.totalPrice.toStringAsFixed(2)}',
                     ),
                     _detailRow(
-                      'Date',
+                      l10n.date,
                       DateFormat('MMM dd, yyyy HH:mm').format(order.createdAt),
                     ),
                     if (order.approvedBy != null)
-                      _detailRow('Approved By', order.approvedBy!),
+                      _detailRow(l10n.approvedBy, order.approvedBy!),
                     if (order.rejectionReason != null)
-                      _detailRow('Rejection Reason', order.rejectionReason!),
-                    if (order.notes != null) _detailRow('Notes', order.notes!),
+                      _detailRow(l10n.rejectionReason, order.rejectionReason!),
+                    if (order.notes != null) _detailRow(l10n.notes, order.notes!),
                     const Divider(),
-                    const Text(
-                      'Items:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                    Text(
+                      '${l10n.items}:',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     ...order.items.map(
@@ -315,7 +328,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('Close'),
+                child: Text(l10n.close),
               ),
             ],
           ),
@@ -350,21 +363,22 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 
   void _showRejectDialog(BuildContext context, String orderId) {
+    final l10n = AppLocalizations.of(context)!;
     final reasonCtrl = TextEditingController();
     showDialog(
       context: context,
       builder:
           (ctx) => AlertDialog(
-            title: const Text('Reject Order'),
+            title: Text(l10n.rejectOrder),
             content: TextField(
               controller: reasonCtrl,
-              decoration: const InputDecoration(labelText: 'Reason (optional)'),
+              decoration: InputDecoration(labelText: l10n.reasonOptional),
               maxLines: 3,
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancel'),
+                child: Text(l10n.cancel),
               ),
               ElevatedButton(
                 onPressed: () {
@@ -380,7 +394,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.dangerColor,
                 ),
-                child: const Text('Reject'),
+                child: Text(l10n.reject),
               ),
             ],
           ),
@@ -445,7 +459,7 @@ class _CreateOrderDialogState extends State<_CreateOrderDialog> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
-      title: const Text('Create New Order'),
+      title: Text(l10n.createNewOrder),
       content: SizedBox(
         width: 800,
         child:
@@ -459,8 +473,8 @@ class _CreateOrderDialogState extends State<_CreateOrderDialog> {
                       // Shop selector
                       DropdownButtonFormField<ShopModel>(
                         value: _selectedShop,
-                        decoration: const InputDecoration(
-                          labelText: 'Select Shop',
+                        decoration: InputDecoration(
+                          labelText: l10n.selectShop,
                         ),
                         items:
                             _shops
@@ -500,9 +514,9 @@ class _CreateOrderDialogState extends State<_CreateOrderDialog> {
                           }
                         },
                         child: InputDecorator(
-                          decoration: const InputDecoration(
-                            labelText: 'Order Date',
-                            suffixIcon: Icon(Icons.calendar_today),
+                          decoration: InputDecoration(
+                            labelText: l10n.orderDate,
+                            suffixIcon: const Icon(Icons.calendar_today),
                           ),
                           child: Text(
                             DateFormat('MMM dd, yyyy').format(_selectedDate),
@@ -513,15 +527,15 @@ class _CreateOrderDialogState extends State<_CreateOrderDialog> {
                       // Items
                       Row(
                         children: [
-                          const Text(
-                            'Order Items',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                          Text(
+                            l10n.orderItems,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           const Spacer(),
                           TextButton.icon(
                             onPressed: _addItem,
                             icon: const Icon(Icons.add, size: 18),
-                            label: const Text('Add Item'),
+                            label: Text(l10n.addItem),
                           ),
                         ],
                       ),
@@ -536,8 +550,8 @@ class _CreateOrderDialogState extends State<_CreateOrderDialog> {
                               children: [
                                 DropdownButtonFormField<ProductModel>(
                                   value: item.product,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Product',
+                                  decoration: InputDecoration(
+                                    labelText: l10n.product,
                                     isDense: true,
                                   ),
                                   items:
@@ -565,8 +579,8 @@ class _CreateOrderDialogState extends State<_CreateOrderDialog> {
                                     Expanded(
                                       child: TextFormField(
                                         controller: item.qtyCtrl,
-                                        decoration: const InputDecoration(
-                                          labelText: 'Qty',
+                                        decoration: InputDecoration(
+                                          labelText: l10n.qty,
                                           isDense: true,
                                         ),
                                         keyboardType: TextInputType.number,
@@ -579,8 +593,8 @@ class _CreateOrderDialogState extends State<_CreateOrderDialog> {
                                     Expanded(
                                       child: TextFormField(
                                         controller: item.priceCtrl,
-                                        decoration: const InputDecoration(
-                                          labelText: 'Price',
+                                        decoration: InputDecoration(
+                                          labelText: l10n.price,
                                           isDense: true,
                                           prefixText: '\$ ',
                                         ),
@@ -628,9 +642,9 @@ class _CreateOrderDialogState extends State<_CreateOrderDialog> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
-                          const Text(
-                            'Total: ',
-                            style: TextStyle(
+                          Text(
+                            l10n.totalColon,
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
@@ -652,12 +666,12 @@ class _CreateOrderDialogState extends State<_CreateOrderDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(l10n.cancel),
         ),
         ElevatedButton(
           onPressed:
               _selectedShop != null && _items.isNotEmpty ? _createOrder : null,
-          child: const Text('Create Order'),
+          child: Text(l10n.createOrder),
         ),
       ],
     );

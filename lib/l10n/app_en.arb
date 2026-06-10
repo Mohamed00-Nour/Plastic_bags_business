@@ -248,5 +248,225 @@
   "announcementHintMessageAr": "اكتب تفاصيل العرض أو الرسالة لجميع المحلات...",
   "sendPushNotification": "Send push notification to all shops",
   "sendPushNotificationHintOn": "FCM notification will be sent to all subscribed devices",
-  "sendPushNotificationHintOff": "Announcement saved to Firestore only"
+  "sendPushNotificationHintOff": "Announcement saved to Firestore only",
+
+  "confirm": "Confirm",
+  "delete": "Delete",
+  "edit": "Edit",
+  "update": "Update",
+  "add": "Add",
+  "save": "Save",
+  "required_field": "Required",
+  "invalid_value": "Invalid",
+  "search": "Search...",
+  "all": "All",
+  "areYouSureDelete": "Are you sure you want to delete \"{name}\"?",
+  "@areYouSureDelete": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "increase": "Increase",
+  "decrease": "Decrease",
+
+  "statusPending": "Pending",
+  "statusApproved": "Approved",
+  "statusRejected": "Rejected",
+  "statusDelivered": "Delivered",
+  "statusActive": "Active",
+  "statusInactive": "Inactive",
+
+  "stockIncoming": "Incoming",
+  "stockOutgoing": "Outgoing",
+  "stockAdjustment": "Adjustment",
+
+  "roleAdmin": "Admin",
+  "roleEmployee": "Employee",
+  "roleViewer": "Viewer",
+
+  "refresh": "Refresh",
+  "customRange": "Custom",
+  "failedToLoadDashboard": "Failed to load dashboard",
+  "rangeToday": "Today",
+  "rangeThisWeek": "This Week",
+  "rangeThisMonth": "This Month",
+  "rangeThisYear": "This Year",
+  "rangeAllTime": "All Time",
+
+  "viewDetails": "View Details",
+  "approve": "Approve",
+  "approveOrder": "Approve Order",
+  "approveOrderMessage": "This will deduct stock and charge the shop balance.",
+  "markDelivered": "Mark Delivered",
+  "approvedBy": "Approved By",
+  "rejectionReason": "Rejection Reason",
+  "notes": "Notes",
+  "reasonOptional": "Reason (optional)",
+  "totalColon": "Total: ",
+  "itemsCount": "{count} items",
+  "@itemsCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "selectShop": "Select Shop",
+  "orderDate": "Order Date",
+  "qty": "Qty",
+
+  "searchShops": "Search shops...",
+  "addShop": "Add Shop",
+  "noShopsYet": "No shops yet",
+  "addFirstShopSubtitle": "Add your first shop to get started",
+  "loginEmail": "Login Email",
+  "viewCredentials": "View Credentials",
+  "viewTransactions": "View Transactions",
+  "orderHistoryLabel": "Order History",
+  "deleteShop": "Delete Shop",
+  "editShop": "Edit Shop",
+  "shopName": "Shop Name",
+  "phone": "Phone",
+  "addressOptional": "Address (optional)",
+  "shopLoginCredentials": "Shop Login Credentials (Optional)",
+  "emailOptional": "Email (Optional)",
+  "emailHint": "shop@example.com",
+  "passwordOptional": "Password (Optional)",
+  "minSixChars": "Min 6 characters",
+  "invalidEmail": "Invalid email",
+  "noTransactionsFound": "No transactions found",
+  "description": "Description",
+  "loginCredentials": "Login Credentials",
+  "transactionsFor": "Transactions - {name}",
+  "@transactionsFor": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "orderHistoryFor": "Order History - {name}",
+  "@orderHistoryFor": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "credentialsFor": "{name} – Login Credentials",
+  "@credentialsFor": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+
+  "searchSuppliers": "Search suppliers...",
+  "addSupplier": "Add Supplier",
+  "noSuppliersYet": "No suppliers yet",
+  "addFirstSupplierSubtitle": "Add your first supplier to get started",
+  "address": "Address",
+  "balance": "Balance",
+  "totalSupplied": "Total Supplied",
+  "recordPayment": "Record Payment",
+  "viewHistory": "View History",
+  "deleteSupplier": "Delete Supplier",
+  "editSupplier": "Edit Supplier",
+  "recordPaymentToSupplier": "Record Payment to Supplier",
+  "supplierColon": "Supplier: {name}",
+  "@supplierColon": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "currentBalanceColon": "Current Balance: ${balance}",
+  "@currentBalanceColon": {
+    "placeholders": {
+      "balance": { "type": "String" }
+    }
+  },
+  "amount": "Amount",
+  "descriptionOptional": "Description (optional)",
+  "paymentRecordedSuccess": "Payment recorded successfully",
+  "historyFor": "History - {name}",
+  "@historyFor": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+
+  "searchProducts": "Search products...",
+  "noProductsFound": "No products found",
+  "addFirstProductSubtitle": "Add your first product to get started",
+  "addStock": "Add Stock",
+  "removeStock": "Remove Stock",
+  "deleteProduct": "Delete Product",
+  "editProduct": "Edit Product",
+  "sizeHint": "e.g. 30x40cm",
+  "costPrice": "Cost Price",
+  "sellingPrice": "Selling Price",
+  "initialStock": "Initial Stock",
+  "lowStockAlert": "Low Stock Alert",
+  "increaseStock": "Increase Stock",
+  "decreaseStock": "Decrease Stock",
+  "quantity": "Quantity",
+  "noteOptional": "Note (optional)",
+
+  "userManagement": "User Management",
+  "addUser": "Add User",
+  "noUsersFound": "No users found",
+  "role": "Role",
+  "changeRole": "Change Role",
+  "deactivate": "Deactivate",
+  "activate": "Activate",
+  "deactivateUser": "Deactivate User",
+  "activateUser": "Activate User",
+  "createUser": "Create User",
+  "fullName": "Full Name",
+  "assignToShop": "Assign to Shop",
+  "pleaseSelectShop": "Please select a shop",
+  "create": "Create",
+
+  "searchTransactions": "Search transactions...",
+  "shopSupplier": "Shop/Supplier",
+  "balanceAfter": "Balance After",
+
+  "searchByProductName": "Search by product name...",
+  "noStockLogsFound": "No stock logs found",
+  "stockMovementHistory": "Stock movement history will appear here",
+  "type": "Type",
+  "before": "Before",
+  "after": "After",
+  "note": "Note",
+
+  "salesReport": "Sales Report",
+  "inventoryReport": "Inventory Report",
+  "shopStatement": "Shop Statement",
+  "supplierInvoice": "Supplier Invoice",
+  "totalOrders": "Total Orders",
+  "balanceCharges": "Balance Charges",
+  "approvedOrders": "Approved Orders",
+  "dailySales": "Daily Sales",
+  "ordersInPeriod": "Orders in Period",
+  "noShopsFound": "No shops found",
+  "selectSupplier": "Select Supplier",
+  "noSuppliersFound": "No suppliers found",
+  "shopStatementFor": "Shop Statement - {name}",
+  "@shopStatementFor": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "supplierInvoiceFor": "Supplier Invoice - {name}",
+  "@supplierInvoiceFor": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+
+  "welcomeTitle": "Welcome to Mr.John's Dashboard",
+  "createAdminSubtitle": "Create your admin account to get started",
+  "adminSetup": "Admin Setup",
+  "oneTimeSetup": "This is a one-time setup. You will use this account to manage the entire system.",
+  "confirmPassword": "Confirm Password",
+  "pleaseEnterName": "Please enter your name",
+  "passwordMinSix": "Password must be at least 6 characters",
+  "passwordsDoNotMatch": "Passwords do not match",
+  "createAdminAccount": "Create Admin Account",
+  "notifications": "Notifications",
+  "paymentToSupplier": "Payment to supplier",
+  "splashTitle": "Mr.John's dashboard"
 }

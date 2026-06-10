@@ -56,7 +56,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 children: [
                   Expanded(
                     child: SearchField(
-                      hint: 'Search products...',
+                      hint: l10n.searchProducts,
                       onChanged:
                           (query) => context.read<ProductBloc>().add(
                             ProductSearchRequested(query: query),
@@ -92,9 +92,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
           icon: Icons.inventory_2_outlined,
           title:
               state.searchQuery.isNotEmpty
-                  ? 'No products found'
-                  : 'No products yet',
-          subtitle: 'Add your first product to get started',
+                  ? l10n.noProductsFound
+                  : l10n.noProductsYet,
+          subtitle: l10n.addFirstProductSubtitle,
           action: ElevatedButton.icon(
             onPressed: () => _showProductForm(context),
             icon: const Icon(Icons.add),
@@ -171,7 +171,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                   size: 20,
                                   color: AppTheme.successColor,
                                 ),
-                                tooltip: 'Add Stock',
+                                tooltip: l10n.addStock,
                                 onPressed:
                                     () => _showStockDialog(
                                       context,
@@ -185,7 +185,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                   size: 20,
                                   color: AppTheme.warningColor,
                                 ),
-                                tooltip: 'Remove Stock',
+                                tooltip: l10n.removeStock,
                                 onPressed:
                                     () => _showStockDialog(
                                       context,
@@ -199,7 +199,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                   size: 20,
                                   color: AppTheme.primaryColor,
                                 ),
-                                tooltip: 'Edit',
+                                tooltip: l10n.edit,
                                 onPressed:
                                     () => _showProductForm(
                                       context,
@@ -212,14 +212,14 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                   size: 20,
                                   color: AppTheme.dangerColor,
                                 ),
-                                tooltip: 'Delete',
+                                tooltip: l10n.delete,
                                 onPressed: () async {
                                   final confirmed = await ConfirmationDialog.show(
                                     context,
-                                    title: 'Delete Product',
+                                    title: l10n.deleteProduct,
                                     message:
-                                        'Are you sure you want to delete "${product.name}"?',
-                                    confirmLabel: 'Delete',
+                                        l10n.areYouSureDelete(product.name),
+                                    confirmLabel: l10n.delete,
                                     confirmColor: AppTheme.dangerColor,
                                   );
                                   if (confirmed == true && mounted) {
@@ -246,7 +246,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
   }
 
   void _showProductForm(BuildContext context, {ProductModel? product}) {
-    final l10n = AppLocalizations.of(context)!;
     final isEditing = product != null;
     final nameCtrl = TextEditingController(text: product?.name ?? '');
     final sizeCtrl = TextEditingController(text: product?.size ?? '');
@@ -273,7 +272,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
         return StatefulBuilder(
           builder:
               (ctx, setDialogState) => AlertDialog(
-                title: Text(isEditing ? 'Edit Product' : 'Add Product'),
+                title: Text(isEditing ? l10n.editProduct : l10n.addProduct),
                 content: SizedBox(
                   width: 500,
                   child: Form(
@@ -284,26 +283,26 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         children: [
                           TextFormField(
                             controller: nameCtrl,
-                            decoration: const InputDecoration(
-                              labelText: 'Name',
+                            decoration: InputDecoration(
+                              labelText: l10n.name,
                             ),
                             validator:
                                 (v) =>
                                     v?.trim().isEmpty == true
-                                        ? 'Required'
+                                        ? l10n.required_field
                                         : null,
                           ),
                           const SizedBox(height: 12),
                           TextFormField(
                             controller: sizeCtrl,
-                            decoration: const InputDecoration(
-                              labelText: 'Size',
-                              hintText: 'e.g. 30x40cm',
+                            decoration: InputDecoration(
+                              labelText: l10n.size,
+                              hintText: l10n.sizeHint,
                             ),
                             validator:
                                 (v) =>
                                     v?.trim().isEmpty == true
-                                        ? 'Required'
+                                        ? l10n.required_field
                                         : null,
                           ),
                           const SizedBox(height: 12),
@@ -312,15 +311,15 @@ class _ProductsScreenState extends State<ProductsScreen> {
                               Expanded(
                                 child: TextFormField(
                                   controller: costCtrl,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Cost Price',
+                                  decoration: InputDecoration(
+                                    labelText: l10n.costPrice,
                                   ),
                                   keyboardType: TextInputType.number,
                                   validator: (v) {
                                     if (v?.trim().isEmpty == true)
-                                      return 'Required';
+                                      return l10n.required_field;
                                     if (double.tryParse(v!) == null)
-                                      return 'Invalid';
+                                      return l10n.invalid_value;
                                     return null;
                                   },
                                 ),
@@ -329,15 +328,15 @@ class _ProductsScreenState extends State<ProductsScreen> {
                               Expanded(
                                 child: TextFormField(
                                   controller: priceCtrl,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Selling Price',
+                                  decoration: InputDecoration(
+                                    labelText: l10n.sellingPrice,
                                   ),
                                   keyboardType: TextInputType.number,
                                   validator: (v) {
                                     if (v?.trim().isEmpty == true)
-                                      return 'Required';
+                                      return l10n.required_field;
                                     if (double.tryParse(v!) == null)
-                                      return 'Invalid';
+                                      return l10n.invalid_value;
                                     return null;
                                   },
                                 ),
@@ -357,8 +356,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
                               final suppliers = snapshot.data?.docs ?? [];
                               return DropdownButtonFormField<String>(
                                 value: selectedSupplierId,
-                                decoration: const InputDecoration(
-                                  labelText: 'Supplier',
+                                decoration: InputDecoration(
+                                  labelText: l10n.supplier,
                                 ),
                                 items: [
                                   DropdownMenuItem<String>(
@@ -398,8 +397,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
                               Expanded(
                                 child: TextFormField(
                                   controller: stockCtrl,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Initial Stock',
+                                  decoration: InputDecoration(
+                                    labelText: l10n.initialStock,
                                   ),
                                   keyboardType: TextInputType.number,
                                   enabled: !isEditing,
@@ -409,8 +408,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
                               Expanded(
                                 child: TextFormField(
                                   controller: thresholdCtrl,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Low Stock Alert',
+                                  decoration: InputDecoration(
+                                    labelText: l10n.lowStockAlert,
                                   ),
                                   keyboardType: TextInputType.number,
                                 ),
@@ -460,7 +459,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         Navigator.pop(ctx);
                       }
                     },
-                    child: Text(isEditing ? 'Update' : 'Add'),
+                    child: Text(isEditing ? l10n.update : l10n.add),
                   ),
                 ],
               ),
@@ -482,12 +481,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
     showDialog(
       context: context,
       builder: (ctx) {
-        final l10n = AppLocalizations.of(ctx)!;
         return StatefulBuilder(
           builder: (context, setState) {
             final l10n = AppLocalizations.of(context)!;
             return AlertDialog(
-              title: Text(isIncrease ? 'Increase Stock' : 'Decrease Stock'),
+              title: Text(isIncrease ? l10n.increaseStock : l10n.decreaseStock),
               content: SizedBox(
                 width: 400,
                 child: SingleChildScrollView(
@@ -500,16 +498,16 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       const SizedBox(height: 16),
                       TextField(
                         controller: amountCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Quantity',
+                        decoration: InputDecoration(
+                          labelText: l10n.quantity,
                         ),
                         keyboardType: TextInputType.number,
                       ),
                       const SizedBox(height: 12),
                       TextField(
                         controller: noteCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Note (optional)',
+                        decoration: InputDecoration(
+                          labelText: l10n.noteOptional,
                         ),
                       ),
                       if (isIncrease) ...[
@@ -526,8 +524,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             final suppliers = snapshot.data?.docs ?? [];
                             return DropdownButtonFormField<String>(
                               value: selectedSupplierId,
-                              decoration: const InputDecoration(
-                                labelText: 'Supplier',
+                              decoration: InputDecoration(
+                                labelText: l10n.supplier,
                               ),
                               items: [
                                 DropdownMenuItem<String>(
@@ -605,7 +603,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             ? AppTheme.successColor
                             : AppTheme.warningColor,
                   ),
-                  child: Text(isIncrease ? 'Increase' : 'Decrease'),
+                  child: Text(isIncrease ? l10n.increase : l10n.decrease),
                 ),
               ],
             );

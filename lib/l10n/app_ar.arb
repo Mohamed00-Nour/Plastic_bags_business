@@ -248,5 +248,225 @@
   "announcementHintMessageAr": "اكتب تفاصيل العرض أو الرسالة لجميع المحلات...",
   "sendPushNotification": "إرسال إشعار لجميع المحلات",
   "sendPushNotificationHintOn": "سيتم إرسال إشعار FCM لجميع الأجهزة المشتركة",
-  "sendPushNotificationHintOff": "سيتم حفظ الإعلان في Firestore فقط"
+  "sendPushNotificationHintOff": "سيتم حفظ الإعلان في Firestore فقط",
+
+  "confirm": "تأكيد",
+  "delete": "حذف",
+  "edit": "تعديل",
+  "update": "تحديث",
+  "add": "إضافة",
+  "save": "حفظ",
+  "required_field": "مطلوب",
+  "invalid_value": "غير صالح",
+  "search": "بحث...",
+  "all": "الكل",
+  "areYouSureDelete": "هل أنت متأكد أنك تريد حذف \"{name}\"؟",
+  "@areYouSureDelete": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "increase": "زيادة",
+  "decrease": "نقصان",
+
+  "statusPending": "قيد الانتظار",
+  "statusApproved": "تمت الموافقة",
+  "statusRejected": "مرفوض",
+  "statusDelivered": "تم التوصيل",
+  "statusActive": "نشط",
+  "statusInactive": "غير نشط",
+
+  "stockIncoming": "وارد",
+  "stockOutgoing": "صادر",
+  "stockAdjustment": "تعديل",
+
+  "roleAdmin": "مشرف",
+  "roleEmployee": "موظف",
+  "roleViewer": "مشاهد",
+
+  "refresh": "تحديث",
+  "customRange": "مخصص",
+  "failedToLoadDashboard": "فشل في تحميل لوحة القيادة",
+  "rangeToday": "اليوم",
+  "rangeThisWeek": "هذا الأسبوع",
+  "rangeThisMonth": "هذا الشهر",
+  "rangeThisYear": "هذه السنة",
+  "rangeAllTime": "كل الأوقات",
+
+  "viewDetails": "عرض التفاصيل",
+  "approve": "موافقة",
+  "approveOrder": "الموافقة على الطلب",
+  "approveOrderMessage": "سيتم خصم المخزون وشحن رصيد المحل.",
+  "markDelivered": "تعيين كتم التوصيل",
+  "approvedBy": "تمت الموافقة بواسطة",
+  "rejectionReason": "سبب الرفض",
+  "notes": "ملاحظات",
+  "reasonOptional": "السبب (اختياري)",
+  "totalColon": "الإجمالي: ",
+  "itemsCount": "{count} عناصر",
+  "@itemsCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "selectShop": "اختر المحل",
+  "orderDate": "تاريخ الطلب",
+  "qty": "الكمية",
+
+  "searchShops": "ابحث في المحلات...",
+  "addShop": "إضافة محل",
+  "noShopsYet": "لا توجد محلات بعد",
+  "addFirstShopSubtitle": "أضف أول محل للبدء",
+  "loginEmail": "البريد الإلكتروني للدخول",
+  "viewCredentials": "عرض بيانات الدخول",
+  "viewTransactions": "عرض المعاملات",
+  "orderHistoryLabel": "تاريخ الطلبات",
+  "deleteShop": "حذف المحل",
+  "editShop": "تعديل المحل",
+  "shopName": "اسم المحل",
+  "phone": "الهاتف",
+  "addressOptional": "العنوان (اختياري)",
+  "shopLoginCredentials": "بيانات دخول المحل (اختياري)",
+  "emailOptional": "البريد الإلكتروني (اختياري)",
+  "emailHint": "shop@example.com",
+  "passwordOptional": "كلمة المرور (اختياري)",
+  "minSixChars": "6 أحرف كحد أدنى",
+  "invalidEmail": "بريد إلكتروني غير صالح",
+  "noTransactionsFound": "لا توجد معاملات",
+  "description": "الوصف",
+  "loginCredentials": "بيانات الدخول",
+  "transactionsFor": "المعاملات - {name}",
+  "@transactionsFor": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "orderHistoryFor": "تاريخ الطلبات - {name}",
+  "@orderHistoryFor": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "credentialsFor": "{name} – بيانات الدخول",
+  "@credentialsFor": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+
+  "searchSuppliers": "ابحث في الموردين...",
+  "addSupplier": "إضافة مورد",
+  "noSuppliersYet": "لا يوجد موردين بعد",
+  "addFirstSupplierSubtitle": "أضف أول مورد للبدء",
+  "address": "العنوان",
+  "balance": "الرصيد",
+  "totalSupplied": "إجمالي التوريد",
+  "recordPayment": "تسجيل دفعة",
+  "viewHistory": "عرض السجل",
+  "deleteSupplier": "حذف المورد",
+  "editSupplier": "تعديل المورد",
+  "recordPaymentToSupplier": "تسجيل دفعة للمورد",
+  "supplierColon": "المورد: {name}",
+  "@supplierColon": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "currentBalanceColon": "الرصيد الحالي: ${balance}",
+  "@currentBalanceColon": {
+    "placeholders": {
+      "balance": { "type": "String" }
+    }
+  },
+  "amount": "المبلغ",
+  "descriptionOptional": "الوصف (اختياري)",
+  "paymentRecordedSuccess": "تم تسجيل الدفعة بنجاح",
+  "historyFor": "السجل - {name}",
+  "@historyFor": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+
+  "searchProducts": "ابحث في المنتجات...",
+  "noProductsFound": "لم يتم العثور على منتجات",
+  "addFirstProductSubtitle": "أضف أول منتج للبدء",
+  "addStock": "إضافة مخزون",
+  "removeStock": "خصم مخزون",
+  "deleteProduct": "حذف المنتج",
+  "editProduct": "تعديل المنتج",
+  "sizeHint": "مثال 30x40سم",
+  "costPrice": "سعر التكلفة",
+  "sellingPrice": "سعر البيع",
+  "initialStock": "المخزون الأولي",
+  "lowStockAlert": "تنبيه المخزون المنخفض",
+  "increaseStock": "زيادة المخزون",
+  "decreaseStock": "خصم المخزون",
+  "quantity": "الكمية",
+  "noteOptional": "ملاحظة (اختياري)",
+
+  "userManagement": "إدارة المستخدمين",
+  "addUser": "إضافة مستخدم",
+  "noUsersFound": "لا يوجد مستخدمين",
+  "role": "الدور",
+  "changeRole": "تغيير الدور",
+  "deactivate": "إلغاء التنشيط",
+  "activate": "تنشيط",
+  "deactivateUser": "إلغاء تنشيط المستخدم",
+  "activateUser": "تنشيط المستخدم",
+  "createUser": "إنشاء مستخدم",
+  "fullName": "الاسم الكامل",
+  "assignToShop": "تعيين في محل",
+  "pleaseSelectShop": "الرجاء اختيار محل",
+  "create": "إنشاء",
+
+  "searchTransactions": "ابحث في المعاملات...",
+  "shopSupplier": "المحل/المورد",
+  "balanceAfter": "الرصيد بعد",
+
+  "searchByProductName": "ابحث باسم المنتج...",
+  "noStockLogsFound": "لم يتم العثور على سجلات مخزون",
+  "stockMovementHistory": "ستظهر هنا حركة المخزون",
+  "type": "النوع",
+  "before": "قبل",
+  "after": "بعد",
+  "note": "ملاحظة",
+
+  "salesReport": "تقرير المبيعات",
+  "inventoryReport": "تقرير المخزون",
+  "shopStatement": "كشف حساب محل",
+  "supplierInvoice": "فاتورة مورد",
+  "totalOrders": "إجمالي الطلبات",
+  "balanceCharges": "شحنات الرصيد",
+  "approvedOrders": "طلبات موافق عليها",
+  "dailySales": "المبيعات اليومية",
+  "ordersInPeriod": "طلبات الفترة",
+  "noShopsFound": "لا يوجد محلات",
+  "selectSupplier": "اختر المورد",
+  "noSuppliersFound": "لا يوجد موردين",
+  "shopStatementFor": "كشف حساب - {name}",
+  "@shopStatementFor": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "supplierInvoiceFor": "فاتورة مورد - {name}",
+  "@supplierInvoiceFor": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+
+  "welcomeTitle": "مرحبا بك في لوحة تحكم مستر جون",
+  "createAdminSubtitle": "أنشئ حساب المشرف للبدء",
+  "adminSetup": "إعداد المشرف",
+  "oneTimeSetup": "هذا إعداد لمرة واحدة. ستستخدم هذا الحساب لإدارة النظام بأكمله.",
+  "confirmPassword": "تأكيد كلمة المرور",
+  "pleaseEnterName": "الرجاء إدخال اسمك",
+  "passwordMinSix": "كلمة المرور يجب أن تكون 6 أحرف على الأقل",
+  "passwordsDoNotMatch": "كلمات المرور غير متطابقة",
+  "createAdminAccount": "إنشاء حساب مشرف",
+  "notifications": "الإشعارات",
+  "paymentToSupplier": "دفعة للمورد",
+  "splashTitle": "لوحة تحكم مستر جون"
 }

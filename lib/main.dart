@@ -207,7 +207,7 @@ class MyApp extends StatelessWidget {
             return BlocBuilder<ThemeCubit, ThemeMode>(
               builder: (context, themeMode) {
             return MaterialApp(
-              title: 'Mr.John\'s Dashboard',
+              title: 'Mr.John',
               debugShowCheckedModeBanner: false,
               localizationsDelegates: const [
                 AppLocalizations.delegate,
@@ -258,17 +258,17 @@ class _SplashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.store, size: 72, color: AppTheme.primaryColor),
-            SizedBox(height: 16),
-            Text('Mr.John\'s dashboard',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-            SizedBox(height: 24),
-            CircularProgressIndicator(),
+            const Icon(Icons.store, size: 72, color: AppTheme.primaryColor),
+            const SizedBox(height: 16),
+            Text(AppLocalizations.of(context)?.splashTitle ?? 'Mr.John\'s dashboard',
+                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 24),
+            const CircularProgressIndicator(),
           ],
         ),
       ),

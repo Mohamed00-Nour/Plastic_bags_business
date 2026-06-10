@@ -196,9 +196,9 @@ class _DesktopLayout extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 14),
-                          const Text(
-                            "Mr.John's Dashboard",
-                            style: TextStyle(
+                          Text(
+                            AppLocalizations.of(context)!.appTitle,
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 17,
                               fontWeight: FontWeight.bold,
@@ -352,7 +352,7 @@ class _DesktopLayout extends StatelessWidget {
                                 icon: const Icon(Icons.logout_rounded,
                                     color: Colors.white38, size: 20),
                                 onPressed: onLogout,
-                                tooltip: 'Logout',
+                                tooltip: AppLocalizations.of(context)!.logout,
                               ),
                             ],
                           ),
@@ -404,7 +404,7 @@ class _DesktopLayout extends StatelessWidget {
                                     Icons.notifications_outlined,
                                     size: 24),
                               ),
-                              tooltip: 'Notifications',
+                              tooltip: AppLocalizations.of(context)!.notifications,
                             ),
                             const SizedBox(width: 4),
                             IconButton(
@@ -416,7 +416,7 @@ class _DesktopLayout extends StatelessWidget {
                                     : Icons.dark_mode_rounded,
                                 size: 24,
                               ),
-                              tooltip: 'Toggle theme',
+                              tooltip: AppLocalizations.of(context)!.toggleTheme,
                             ),
                             const SizedBox(width: 4),
                             IconButton(
@@ -425,7 +425,7 @@ class _DesktopLayout extends StatelessWidget {
                                   .toggleLocale(),
                               icon: const Icon(Icons.language_rounded,
                                   size: 24),
-                              tooltip: 'Change Language',
+                              tooltip: AppLocalizations.of(context)!.toggleLanguage,
                             ),
                           ],
                         ),
@@ -475,14 +475,14 @@ class _MobileLayout extends StatelessWidget {
                   ? Icons.light_mode_rounded
                   : Icons.dark_mode_rounded,
             ),
-            tooltip: 'Toggle theme',
+            tooltip: AppLocalizations.of(context)!.toggleTheme,
           ),
           IconButton(
             onPressed: () {
               context.read<LocaleCubit>().toggleLocale();
             },
             icon: const Icon(Icons.language_rounded),
-            tooltip: 'Change Language',
+            tooltip: AppLocalizations.of(context)!.toggleLanguage,
           ),
           IconButton(
             onPressed: () {},
@@ -509,13 +509,13 @@ class _MobileLayout extends StatelessWidget {
                 ),
               ),
               const PopupMenuDivider(),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'logout',
                 child: Row(
                   children: [
-                    Icon(Icons.logout, size: 20),
-                    SizedBox(width: 8),
-                    Text('Logout'),
+                    const Icon(Icons.logout, size: 20),
+                    const SizedBox(width: 8),
+                    Text(AppLocalizations.of(context)!.logout),
                   ],
                 ),
               ),
@@ -556,7 +556,7 @@ class _MobileLayout extends StatelessWidget {
                   const Divider(),
                   ListTile(
                     leading: const Icon(Icons.logout),
-                    title: const Text('Logout'),
+                    title: Text(AppLocalizations.of(context)!.logout),
                     onTap: onLogout,
                   ),
                 ],

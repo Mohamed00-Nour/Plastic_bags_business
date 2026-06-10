@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -42,6 +43,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final dateFmt = DateFormat('MMM dd, yyyy');
     return BlocBuilder<ReportBloc, ReportState>(
       builder: (context, state) {
@@ -87,24 +89,24 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             ? () => _showSalesReportPreview(state)
                             : null,
                         icon: const Icon(Icons.picture_as_pdf, size: 18),
-                        label: const Text('Sales Report'),
+                        label: Text(l10n.salesReport),
                       ),
                       OutlinedButton.icon(
                         onPressed: state is ReportLoaded
                             ? () => _showInventoryReportPreview()
                             : null,
                         icon: const Icon(Icons.inventory, size: 18),
-                        label: const Text('Inventory Report'),
+                        label: Text(l10n.inventoryReport),
                       ),
                       OutlinedButton.icon(
                         onPressed: () => _showShopStatementPicker(),
                         icon: const Icon(Icons.store, size: 18),
-                        label: const Text('Shop Statement'),
+                        label: Text(l10n.shopStatement),
                       ),
                       OutlinedButton.icon(
                         onPressed: () => _showSupplierInvoicePicker(),
                         icon: const Icon(Icons.local_shipping, size: 18),
-                        label: const Text('Supplier Invoice'),
+                        label: Text(l10n.supplierInvoice),
                       ),
                     ],
                   ),
@@ -120,6 +122,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   Widget _buildContent(ReportState state) {
+    final l10n = AppLocalizations.of(context)!;
     if (state is ReportLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -146,25 +149,25 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   physics: const NeverScrollableScrollPhysics(),
                   children: [
                     _KpiCard(
-                      title: 'Total Orders',
+                      title: l10n.totalOrders,
                       value: '${state.orderCount}',
                       icon: Icons.receipt_long,
                       color: AppTheme.primaryColor,
                     ),
                     _KpiCard(
-                      title: 'Total Sales',
+                      title: l10n.totalSales,
                       value: currFmt.format(state.totalSales),
                       icon: Icons.attach_money,
                       color: AppTheme.successColor,
                     ),
                     _KpiCard(
-                      title: 'Balance Charges',
+                      title: l10n.balanceCharges,
                       value: currFmt.format(state.totalCharges),
                       icon: Icons.account_balance_wallet,
                       color: AppTheme.infoColor,
                     ),
                     _KpiCard(
-                      title: 'Approved Orders',
+                      title: l10n.approvedOrders,
                       value: '${state.approvedCount}',
                       icon: Icons.swap_horiz,
                       color: AppTheme.warningColor,
@@ -182,8 +185,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Daily Sales',
-                          style: TextStyle(
+                      Text(l10n.dailySales,
+                          style: const TextStyle(
                               fontSize: 16, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 16),
                       SizedBox(
@@ -282,19 +285,19 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Orders in Period',
-                          style: TextStyle(
+                      Text(l10n.ordersInPeriod,
+                          style: const TextStyle(
                               fontSize: 16, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 12),
                       SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: DataTable(
-                          columns: const [
-                            DataColumn(label: Text('Order ID')),
-                            DataColumn(label: Text('Shop')),
-                            DataColumn(label: Text('Total'), numeric: true),
-                            DataColumn(label: Text('Status')),
-                            DataColumn(label: Text('Date')),
+                          columns: [
+                            DataColumn(label: Text(l10n.orderId)),
+                            DataColumn(label: Text(l10n.shop)),
+                            DataColumn(label: Text(l10n.total), numeric: true),
+                            DataColumn(label: Text(l10n.status)),
+                            DataColumn(label: Text(l10n.date)),
                           ],
                           rows: state.orders.take(20).map((order) {
                             return DataRow(cells: [
@@ -303,7 +306,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                               DataCell(Text(order.shopName)),
                               DataCell(Text(currFmt.format(order.totalPrice))),
                               DataCell(StatusBadge(
-                                  label: order.status.label,
+                                  label: _localizedOrderStatus(l10n, order.status),
                                   color: order.status == OrderStatus.approved
                                       ? AppTheme.successColor
                                       : order.status == OrderStatus.pending
@@ -333,6 +336,19 @@ class _ReportsScreenState extends State<ReportsScreen> {
     return const SizedBox.shrink();
   }
 
+  String _localizedOrderStatus(AppLocalizations l10n, OrderStatus status) {
+    switch (status) {
+      case OrderStatus.pending:
+        return l10n.statusPending;
+      case OrderStatus.approved:
+        return l10n.statusApproved;
+      case OrderStatus.rejected:
+        return l10n.statusRejected;
+      case OrderStatus.delivered:
+        return l10n.statusDelivered;
+    }
+  }
+
   Future<void> _pickDateRange() async {
     final picked = await showDateRangePicker(
       context: context,
@@ -347,10 +363,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   Future<void> _showSalesReportPreview(ReportLoaded state) {
+    final l10n = AppLocalizations.of(context)!;
     return showDialog(
       context: context,
       builder: (_) => ReportPreviewDialog(
-        title: 'Sales Report',
+        title: l10n.salesReport,
         buildPdf: (_) => PdfService.buildSalesReportBytes(
           orders: state.orders,
           transactions: state.transactions,
@@ -364,20 +381,22 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   Future<void> _showInventoryReportPreview() {
+    final l10n = AppLocalizations.of(context)!;
     return showDialog(
       context: context,
       builder: (_) => ReportPreviewDialog(
-        title: 'Inventory Report',
+        title: l10n.inventoryReport,
         buildPdf: (_) => PdfService.buildInventoryReportBytes(),
       ),
     );
   }
 
   void _showShopStatementPicker() {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Select Shop'),
+        title: Text(l10n.selectShop),
         content: SizedBox(
           width: 400,
           height: 400,
@@ -393,7 +412,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               }
               final shops = snapshot.data!.docs;
               if (shops.isEmpty) {
-                return const Center(child: Text('No shops found'));
+                return Center(child: Text(l10n.noShopsFound));
               }
               return ListView.builder(
                 itemCount: shops.length,
@@ -421,7 +440,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
         ],
       ),
@@ -430,10 +449,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   Future<void> _showShopStatementPreview(
       String shopId, String shopName, double balance) {
+    final l10n = AppLocalizations.of(context)!;
     return showDialog(
       context: context,
       builder: (_) => ReportPreviewDialog(
-        title: 'Shop Statement - $shopName',
+        title: l10n.shopStatementFor(shopName),
         buildPdf: (_) async {
           final snapshot = await FirebaseFirestore.instance
               .collection('transactions')
@@ -456,10 +476,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   void _showSupplierInvoicePicker() {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Select Supplier'),
+        title: Text(l10n.selectSupplier),
         content: SizedBox(
           width: 400,
           height: 400,
@@ -475,7 +496,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               }
               final suppliers = snapshot.data!.docs;
               if (suppliers.isEmpty) {
-                return const Center(child: Text('No suppliers found'));
+                return Center(child: Text(l10n.noSuppliersFound));
               }
               return ListView.builder(
                 itemCount: suppliers.length,
@@ -503,7 +524,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
         ],
       ),
@@ -512,12 +533,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   Future<void> _showSupplierInvoicePreview(
       String supplierId, String supplierName, double balance) {
+    final l10n = AppLocalizations.of(context)!;
     return showDialog(
       context: context,
       builder: (_) => ReportPreviewDialog(
-        title: 'Supplier Invoice - $supplierName',
+        title: l10n.supplierInvoiceFor(supplierName),
         buildPdf: (_) async {
-          // Fetch transactions and products in parallel
           final results = await Future.wait([
             FirebaseFirestore.instance
                 .collection('transactions')

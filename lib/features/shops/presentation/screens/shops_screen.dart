@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../../../data/models/shop_model_new.dart';
@@ -11,6 +12,24 @@ import '../../../../data/models/order_model.dart';
 import '../../bloc/shop_bloc.dart';
 import '../../bloc/shop_event.dart';
 import '../../bloc/shop_state.dart';
+
+String _localizedOrderStatus(AppLocalizations l10n, OrderStatus status) {
+  switch (status) {
+    case OrderStatus.pending: return l10n.statusPending;
+    case OrderStatus.approved: return l10n.statusApproved;
+    case OrderStatus.rejected: return l10n.statusRejected;
+    case OrderStatus.delivered: return l10n.statusDelivered;
+  }
+}
+
+String _localizedTransactionType(AppLocalizations l10n, TransactionType type) {
+  switch (type) {
+    case TransactionType.balanceCharge: return l10n.transactionBalanceCharge;
+    case TransactionType.purchase: return l10n.transactionPurchase;
+    case TransactionType.refund: return l10n.transactionRefund;
+    case TransactionType.supplierPayment: return l10n.transactionSupplierPayment;
+  }
+}
 
 class ShopsScreen extends StatefulWidget {
   const ShopsScreen({super.key});
@@ -28,6 +47,7 @@ class _ShopsScreenState extends State<ShopsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return BlocConsumer<ShopBloc, ShopState>(
       listener: (context, state) {
         if (state is ShopOperationSuccess) {
@@ -56,7 +76,7 @@ class _ShopsScreenState extends State<ShopsScreen> {
                 children: [
                   Expanded(
                     child: SearchField(
-                      hint: 'Search shops...',
+                      hint: l10n.searchShops,
                       onChanged:
                           (query) => context.read<ShopBloc>().add(
                             ShopSearchRequested(query: query),
@@ -67,7 +87,7 @@ class _ShopsScreenState extends State<ShopsScreen> {
                   ElevatedButton.icon(
                     onPressed: () => _showShopForm(context),
                     icon: const Icon(Icons.add, size: 18),
-                    label: const Text('Add Shop'),
+                    label: Text(l10n.addShop),
                   ),
                 ],
               ),
@@ -81,6 +101,7 @@ class _ShopsScreenState extends State<ShopsScreen> {
   }
 
   Widget _buildContent(ShopState state) {
+    final l10n = AppLocalizations.of(context)!;
     if (state is ShopLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -88,12 +109,12 @@ class _ShopsScreenState extends State<ShopsScreen> {
       if (state.filteredShops.isEmpty) {
         return EmptyStateWidget(
           icon: Icons.store_outlined,
-          title: 'No shops yet',
-          subtitle: 'Add your first shop to get started',
+          title: l10n.noShopsYet,
+          subtitle: l10n.addFirstShopSubtitle,
           action: ElevatedButton.icon(
             onPressed: () => _showShopForm(context),
             icon: const Icon(Icons.add),
-            label: const Text('Add Shop'),
+            label: Text(l10n.addShop),
           ),
         );
       }
@@ -103,12 +124,12 @@ class _ShopsScreenState extends State<ShopsScreen> {
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: DataTable(
-              columns: const [
-                DataColumn(label: Text('Name')),
-                DataColumn(label: Text('Phone')),
-                DataColumn(label: Text('Login Email')),
-                DataColumn(label: Text('Total Purchases'), numeric: true),
-                DataColumn(label: Text('Actions')),
+              columns: [
+                DataColumn(label: Text(l10n.name)),
+                DataColumn(label: Text(l10n.phone)),
+                DataColumn(label: Text(l10n.loginEmail)),
+                DataColumn(label: Text(l10n.totalPurchasesLabel), numeric: true),
+                DataColumn(label: Text(l10n.actions)),
               ],
               rows:
                   state.filteredShops.map((shop) {
@@ -139,7 +160,7 @@ class _ShopsScreenState extends State<ShopsScreen> {
                                     size: 20,
                                     color: Colors.deepPurple,
                                   ),
-                                  tooltip: 'View Credentials',
+                                  tooltip: l10n.viewCredentials,
                                   onPressed:
                                       () =>
                                           _showCredentialsDialog(context, shop),
@@ -150,7 +171,7 @@ class _ShopsScreenState extends State<ShopsScreen> {
                                   size: 20,
                                   color: AppTheme.infoColor,
                                 ),
-                                tooltip: 'View Transactions',
+                                tooltip: l10n.viewTransactions,
                                 onPressed:
                                     () => _showShopTransactions(context, shop),
                               ),
@@ -160,7 +181,7 @@ class _ShopsScreenState extends State<ShopsScreen> {
                                   size: 20,
                                   color: AppTheme.warningColor,
                                 ),
-                                tooltip: 'Order History',
+                                tooltip: l10n.orderHistoryLabel,
                                 onPressed: () => _showShopOrders(context, shop),
                               ),
                               IconButton(
@@ -169,7 +190,7 @@ class _ShopsScreenState extends State<ShopsScreen> {
                                   size: 20,
                                   color: AppTheme.primaryColor,
                                 ),
-                                tooltip: 'Edit',
+                                tooltip: l10n.edit,
                                 onPressed:
                                     () => _showShopForm(context, shop: shop),
                               ),
@@ -179,14 +200,14 @@ class _ShopsScreenState extends State<ShopsScreen> {
                                   size: 20,
                                   color: AppTheme.dangerColor,
                                 ),
-                                tooltip: 'Delete',
+                                tooltip: l10n.delete,
                                 onPressed: () async {
                                   final confirmed = await ConfirmationDialog.show(
                                     context,
-                                    title: 'Delete Shop',
+                                    title: l10n.deleteShop,
                                     message:
-                                        'Are you sure you want to delete "${shop.name}"?',
-                                    confirmLabel: 'Delete',
+                                        l10n.areYouSureDelete(shop.name),
+                                    confirmLabel: l10n.delete,
                                     confirmColor: AppTheme.dangerColor,
                                   );
                                   if (confirmed == true && mounted) {
@@ -211,6 +232,7 @@ class _ShopsScreenState extends State<ShopsScreen> {
   }
 
   void _showCredentialsDialog(BuildContext context, ShopModel shop) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder:
@@ -219,7 +241,7 @@ class _ShopsScreenState extends State<ShopsScreen> {
               children: [
                 const Icon(Icons.key, color: Colors.deepPurple),
                 const SizedBox(width: 8),
-                Text('${shop.name} – Login Credentials'),
+                Text(l10n.credentialsFor(shop.name)),
               ],
             ),
             content: SizedBox(
@@ -230,12 +252,12 @@ class _ShopsScreenState extends State<ShopsScreen> {
                 children: [
                   ListTile(
                     leading: const Icon(Icons.email_outlined),
-                    title: const Text('Email'),
+                    title: Text(l10n.email),
                     subtitle: SelectableText(shop.loginEmail ?? '—'),
                   ),
                   ListTile(
                     leading: const Icon(Icons.lock_outlined),
-                    title: const Text('Password'),
+                    title: Text(l10n.password),
                     subtitle: SelectableText(shop.loginPassword ?? '—'),
                   ),
                 ],
@@ -244,7 +266,7 @@ class _ShopsScreenState extends State<ShopsScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('Close'),
+                child: Text(l10n.close),
               ),
             ],
           ),
@@ -252,6 +274,7 @@ class _ShopsScreenState extends State<ShopsScreen> {
   }
 
   void _showShopForm(BuildContext context, {ShopModel? shop}) {
+    final l10n = AppLocalizations.of(context)!;
     final isEditing = shop != null;
     final nameCtrl = TextEditingController(text: shop?.name ?? '');
     final phoneCtrl = TextEditingController(text: shop?.phone ?? '');
@@ -265,7 +288,7 @@ class _ShopsScreenState extends State<ShopsScreen> {
       context: context,
       builder:
           (ctx) => AlertDialog(
-            title: Text(isEditing ? 'Edit Shop' : 'Add Shop'),
+            title: Text(isEditing ? l10n.editShop : l10n.addShop),
             content: SizedBox(
               width: 450,
               child: Form(
@@ -276,40 +299,39 @@ class _ShopsScreenState extends State<ShopsScreen> {
                     children: [
                       TextFormField(
                         controller: nameCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Shop Name',
+                        decoration: InputDecoration(
+                          labelText: l10n.shopName,
                         ),
                         validator:
                             (v) =>
-                                v?.trim().isEmpty == true ? 'Required' : null,
+                                v?.trim().isEmpty == true ? l10n.required_field : null,
                       ),
                       const SizedBox(height: 12),
                       TextFormField(
                         controller: phoneCtrl,
-                        decoration: const InputDecoration(labelText: 'Phone'),
+                        decoration: InputDecoration(labelText: l10n.phone),
                         keyboardType: TextInputType.phone,
                         validator:
                             (v) =>
-                                v?.trim().isEmpty == true ? 'Required' : null,
+                                v?.trim().isEmpty == true ? l10n.required_field : null,
                       ),
                       const SizedBox(height: 12),
                       TextFormField(
                         controller: addressCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Address (optional)',
+                        decoration: InputDecoration(
+                          labelText: l10n.addressOptional,
                         ),
                       ),
                       const SizedBox(height: 12),
 
-                      // Login credentials - only for new shops
                       if (!isEditing) ...[
                         const SizedBox(height: 20),
                         const Divider(),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 8),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
                           child: Text(
-                            'Shop Login Credentials (Optional)',
-                            style: TextStyle(
+                            l10n.shopLoginCredentials,
+                            style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
                             ),
@@ -317,15 +339,15 @@ class _ShopsScreenState extends State<ShopsScreen> {
                         ),
                         TextFormField(
                           controller: emailCtrl,
-                          decoration: const InputDecoration(
-                            labelText: 'Email (Optional)',
-                            hintText: 'shop@example.com',
-                            prefixIcon: Icon(Icons.email_outlined),
+                          decoration: InputDecoration(
+                            labelText: l10n.emailOptional,
+                            hintText: l10n.emailHint,
+                            prefixIcon: const Icon(Icons.email_outlined),
                           ),
                           keyboardType: TextInputType.emailAddress,
                           validator: (v) {
                             if (v != null && v.trim().isNotEmpty && !v.contains('@')) {
-                              return 'Invalid email';
+                              return l10n.invalidEmail;
                             }
                             return null;
                           },
@@ -333,15 +355,15 @@ class _ShopsScreenState extends State<ShopsScreen> {
                         const SizedBox(height: 12),
                         TextFormField(
                           controller: passwordCtrl,
-                          decoration: const InputDecoration(
-                            labelText: 'Password (Optional)',
-                            hintText: 'Min 6 characters',
-                            prefixIcon: Icon(Icons.lock_outlined),
+                          decoration: InputDecoration(
+                            labelText: l10n.passwordOptional,
+                            hintText: l10n.minSixChars,
+                            prefixIcon: const Icon(Icons.lock_outlined),
                           ),
                           obscureText: true,
                           validator: (v) {
                             if (v != null && v.isNotEmpty && v.length < 6) {
-                              return 'Min 6 characters';
+                              return l10n.minSixChars;
                             }
                             return null;
                           },
@@ -355,7 +377,7 @@ class _ShopsScreenState extends State<ShopsScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancel'),
+                child: Text(l10n.cancel),
               ),
               ElevatedButton(
                 onPressed: () {
@@ -399,7 +421,7 @@ class _ShopsScreenState extends State<ShopsScreen> {
                     Navigator.pop(ctx);
                   }
                 },
-                child: Text(isEditing ? 'Update' : 'Add'),
+                child: Text(isEditing ? l10n.update : l10n.add),
               ),
             ],
           ),
@@ -407,6 +429,7 @@ class _ShopsScreenState extends State<ShopsScreen> {
   }
 
   void _showShopTransactions(BuildContext context, ShopModel shop) {
+    final l10n = AppLocalizations.of(context)!;
     final currFmt = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
     final dateFmt = DateFormat('MMM dd, yyyy HH:mm');
 
@@ -414,7 +437,7 @@ class _ShopsScreenState extends State<ShopsScreen> {
       context: context,
       builder:
           (ctx) => AlertDialog(
-            title: Text('Transactions - ${shop.name}'),
+            title: Text(l10n.transactionsFor(shop.name)),
             content: SizedBox(
               width: 700,
               height: 500,
@@ -432,7 +455,7 @@ class _ShopsScreenState extends State<ShopsScreen> {
                   }
                   final docs = snapshot.data!.docs;
                   if (docs.isEmpty) {
-                    return const Center(child: Text('No transactions found'));
+                    return Center(child: Text(l10n.noTransactionsFound));
                   }
                   final transactions =
                       docs
@@ -442,12 +465,12 @@ class _ShopsScreenState extends State<ShopsScreen> {
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: DataTable(
-                        columns: const [
-                          DataColumn(label: Text('Date')),
-                          DataColumn(label: Text('Type')),
-                          DataColumn(label: Text('Amount'), numeric: true),
+                        columns: [
+                          DataColumn(label: Text(l10n.date)),
+                          DataColumn(label: Text(l10n.type)),
+                          DataColumn(label: Text(l10n.amount), numeric: true),
 
-                          DataColumn(label: Text('Description')),
+                          DataColumn(label: Text(l10n.description)),
                         ],
                         rows:
                             transactions.map((t) {
@@ -458,7 +481,7 @@ class _ShopsScreenState extends State<ShopsScreen> {
                                   DataCell(Text(dateFmt.format(t.createdAt))),
                                   DataCell(
                                     StatusBadge(
-                                      label: t.type.label,
+                                      label: _localizedTransactionType(l10n, t.type),
                                       color:
                                           isCredit
                                               ? AppTheme.successColor
@@ -491,7 +514,7 @@ class _ShopsScreenState extends State<ShopsScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('Close'),
+                child: Text(l10n.close),
               ),
             ],
           ),
@@ -499,6 +522,7 @@ class _ShopsScreenState extends State<ShopsScreen> {
   }
 
   void _showShopOrders(BuildContext context, ShopModel shop) {
+    final l10n = AppLocalizations.of(context)!;
     final currFmt = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
     final dateFmt = DateFormat('MMM dd, yyyy');
 
@@ -506,7 +530,7 @@ class _ShopsScreenState extends State<ShopsScreen> {
       context: context,
       builder:
           (ctx) => AlertDialog(
-            title: Text('Order History - ${shop.name}'),
+            title: Text(l10n.orderHistoryFor(shop.name)),
             content: SizedBox(
               width: 700,
               height: 500,
@@ -524,7 +548,7 @@ class _ShopsScreenState extends State<ShopsScreen> {
                   }
                   final docs = snapshot.data!.docs;
                   if (docs.isEmpty) {
-                    return const Center(child: Text('No orders found'));
+                    return Center(child: Text(l10n.noOrdersFound));
                   }
                   final orders =
                       docs.map((d) => OrderModel.fromFirestore(d)).toList();
@@ -532,12 +556,12 @@ class _ShopsScreenState extends State<ShopsScreen> {
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: DataTable(
-                        columns: const [
-                          DataColumn(label: Text('Order ID')),
-                          DataColumn(label: Text('Items')),
-                          DataColumn(label: Text('Total'), numeric: true),
-                          DataColumn(label: Text('Status')),
-                          DataColumn(label: Text('Date')),
+                        columns: [
+                          DataColumn(label: Text(l10n.orderId)),
+                          DataColumn(label: Text(l10n.items)),
+                          DataColumn(label: Text(l10n.total), numeric: true),
+                          DataColumn(label: Text(l10n.status)),
+                          DataColumn(label: Text(l10n.date)),
                         ],
                         rows:
                             orders.map((o) {
@@ -555,11 +579,11 @@ class _ShopsScreenState extends State<ShopsScreen> {
                               return DataRow(
                                 cells: [
                                   DataCell(Text('#${o.id.substring(0, 8)}')),
-                                  DataCell(Text('${o.items.length} items')),
+                                  DataCell(Text(l10n.itemsCount(o.items.length))),
                                   DataCell(Text(currFmt.format(o.totalPrice))),
                                   DataCell(
                                     StatusBadge(
-                                      label: o.status.label,
+                                      label: _localizedOrderStatus(l10n, o.status),
                                       color: statusColor,
                                     ),
                                   ),
@@ -576,7 +600,7 @@ class _ShopsScreenState extends State<ShopsScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('Close'),
+                child: Text(l10n.close),
               ),
             ],
           ),

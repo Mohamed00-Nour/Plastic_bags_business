@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../bloc/auth_bloc.dart';
 import '../../bloc/auth_event.dart';
@@ -31,6 +32,7 @@ class _AdminSetupScreenState extends State<AdminSetupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
@@ -64,18 +66,18 @@ class _AdminSetupScreenState extends State<AdminSetupScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  const Text(
-                    'Welcome to Mr.John\'s Dashboard',
-                    style: TextStyle(
+                  Text(
+                    l10n.welcomeTitle,
+                    style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: AppTheme.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Create your admin account to get started',
-                    style: TextStyle(
+                  Text(
+                    l10n.createAdminSubtitle,
+                    style: const TextStyle(
                       fontSize: 14,
                       color: AppTheme.textSecondary,
                     ),
@@ -89,17 +91,17 @@ class _AdminSetupScreenState extends State<AdminSetupScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            const Text(
-                              'Admin Setup',
-                              style: TextStyle(
+                            Text(
+                              l10n.adminSetup,
+                              style: const TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                             const SizedBox(height: 8),
-                            const Text(
-                              'This is a one-time setup. You will use this account to manage the entire system.',
-                              style: TextStyle(
+                            Text(
+                              l10n.oneTimeSetup,
+                              style: const TextStyle(
                                 fontSize: 13,
                                 color: AppTheme.textSecondary,
                               ),
@@ -108,13 +110,13 @@ class _AdminSetupScreenState extends State<AdminSetupScreen> {
                             TextFormField(
                               controller: _nameController,
                               textCapitalization: TextCapitalization.words,
-                              decoration: const InputDecoration(
-                                labelText: 'Full Name',
-                                prefixIcon: Icon(Icons.person_outlined),
+                              decoration: InputDecoration(
+                                labelText: l10n.fullName,
+                                prefixIcon: const Icon(Icons.person_outlined),
                               ),
                               validator: (value) {
                                 if (value == null || value.trim().isEmpty) {
-                                  return 'Please enter your name';
+                                  return l10n.pleaseEnterName;
                                 }
                                 return null;
                               },
@@ -123,16 +125,16 @@ class _AdminSetupScreenState extends State<AdminSetupScreen> {
                             TextFormField(
                               controller: _emailController,
                               keyboardType: TextInputType.emailAddress,
-                              decoration: const InputDecoration(
-                                labelText: 'Email',
-                                prefixIcon: Icon(Icons.email_outlined),
+                              decoration: InputDecoration(
+                                labelText: l10n.email,
+                                prefixIcon: const Icon(Icons.email_outlined),
                               ),
                               validator: (value) {
                                 if (value == null || value.trim().isEmpty) {
-                                  return 'Please enter your email';
+                                  return l10n.pleaseEnterEmail;
                                 }
                                 if (!value.contains('@')) {
-                                  return 'Please enter a valid email';
+                                  return l10n.pleaseEnterValidEmail;
                                 }
                                 return null;
                               },
@@ -142,7 +144,7 @@ class _AdminSetupScreenState extends State<AdminSetupScreen> {
                               controller: _passwordController,
                               obscureText: _obscurePassword,
                               decoration: InputDecoration(
-                                labelText: 'Password',
+                                labelText: l10n.password,
                                 prefixIcon: const Icon(Icons.lock_outlined),
                                 suffixIcon: IconButton(
                                   icon: Icon(_obscurePassword
@@ -154,7 +156,7 @@ class _AdminSetupScreenState extends State<AdminSetupScreen> {
                               ),
                               validator: (value) {
                                 if (value == null || value.length < 6) {
-                                  return 'Password must be at least 6 characters';
+                                  return l10n.passwordMinSix;
                                 }
                                 return null;
                               },
@@ -163,13 +165,13 @@ class _AdminSetupScreenState extends State<AdminSetupScreen> {
                             TextFormField(
                               controller: _confirmPasswordController,
                               obscureText: _obscurePassword,
-                              decoration: const InputDecoration(
-                                labelText: 'Confirm Password',
-                                prefixIcon: Icon(Icons.lock_outlined),
+                              decoration: InputDecoration(
+                                labelText: l10n.confirmPassword,
+                                prefixIcon: const Icon(Icons.lock_outlined),
                               ),
                               validator: (value) {
                                 if (value != _passwordController.text) {
-                                  return 'Passwords do not match';
+                                  return l10n.passwordsDoNotMatch;
                                 }
                                 return null;
                               },
@@ -193,7 +195,7 @@ class _AdminSetupScreenState extends State<AdminSetupScreen> {
                                             color: Colors.white,
                                           ),
                                         )
-                                      : const Text('Create Admin Account'),
+                                      : Text(l10n.createAdminAccount),
                                 );
                               },
                             ),

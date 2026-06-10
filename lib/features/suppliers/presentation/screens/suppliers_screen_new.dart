@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -12,6 +13,19 @@ import '../../../../data/repositories/transaction_repository.dart';
 import '../../bloc/supplier_bloc_new.dart';
 import '../../bloc/supplier_event.dart';
 import '../../bloc/supplier_state.dart';
+
+String _localizedTransactionType(AppLocalizations l10n, TransactionType type) {
+  switch (type) {
+    case TransactionType.balanceCharge:
+      return l10n.transactionBalanceCharge;
+    case TransactionType.purchase:
+      return l10n.transactionPurchase;
+    case TransactionType.refund:
+      return l10n.transactionRefund;
+    case TransactionType.supplierPayment:
+      return l10n.transactionSupplierPayment;
+  }
+}
 
 class SuppliersScreen extends StatefulWidget {
   const SuppliersScreen({super.key});
@@ -29,6 +43,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return BlocConsumer<SupplierBloc, SupplierState>(
       listener: (context, state) {
         if (state is SupplierOperationSuccess) {
@@ -55,7 +70,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                 children: [
                   Expanded(
                     child: SearchField(
-                      hint: 'Search suppliers...',
+                      hint: l10n.searchSuppliers,
                       onChanged: (query) => context
                           .read<SupplierBloc>()
                           .add(SupplierSearchRequested(query: query)),
@@ -65,7 +80,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                   ElevatedButton.icon(
                     onPressed: () => _showSupplierForm(context),
                     icon: const Icon(Icons.add, size: 18),
-                    label: const Text('Add Supplier'),
+                    label: Text(l10n.addSupplier),
                   ),
                 ],
               ),
@@ -79,6 +94,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
   }
 
   Widget _buildContent(SupplierState state) {
+    final l10n = AppLocalizations.of(context)!;
     if (state is SupplierLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -86,12 +102,12 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
       if (state.filteredSuppliers.isEmpty) {
         return EmptyStateWidget(
           icon: Icons.local_shipping_outlined,
-          title: 'No suppliers yet',
-          subtitle: 'Add your first supplier to get started',
+          title: l10n.noSuppliersYet,
+          subtitle: l10n.addFirstSupplierSubtitle,
           action: ElevatedButton.icon(
             onPressed: () => _showSupplierForm(context),
             icon: const Icon(Icons.add),
-            label: const Text('Add Supplier'),
+            label: Text(l10n.addSupplier),
           ),
         );
       }
@@ -101,13 +117,13 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: DataTable(
-              columns: const [
-                DataColumn(label: Text('Name')),
-                DataColumn(label: Text('Phone')),
-                DataColumn(label: Text('Address')),
-                DataColumn(label: Text('Balance'), numeric: true),
-                DataColumn(label: Text('Total Supplied'), numeric: true),
-                DataColumn(label: Text('Actions')),
+              columns: [
+                DataColumn(label: Text(l10n.name)),
+                DataColumn(label: Text(l10n.phone)),
+                DataColumn(label: Text(l10n.address)),
+                DataColumn(label: Text(l10n.balance), numeric: true),
+                DataColumn(label: Text(l10n.totalSupplied), numeric: true),
+                DataColumn(label: Text(l10n.actions)),
               ],
               rows: state.filteredSuppliers.map((supplier) {
                 return DataRow(cells: [
@@ -130,35 +146,35 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                       IconButton(
                         icon: const Icon(Icons.payment,
                             size: 20, color: AppTheme.successColor),
-                        tooltip: 'Record Payment',
+                        tooltip: l10n.recordPayment,
                         onPressed: () =>
                             _showPaymentDialog(context, supplier),
                       ),
                       IconButton(
                         icon: const Icon(Icons.receipt_long,
                             size: 20, color: AppTheme.infoColor),
-                        tooltip: 'View History',
+                        tooltip: l10n.viewHistory,
                         onPressed: () =>
                             _showSupplierHistory(context, supplier),
                       ),
                       IconButton(
                         icon: const Icon(Icons.edit_outlined,
                             size: 20, color: AppTheme.primaryColor),
-                        tooltip: 'Edit',
+                        tooltip: l10n.edit,
                         onPressed: () =>
                             _showSupplierForm(context, supplier: supplier),
                       ),
                       IconButton(
                         icon: const Icon(Icons.delete_outline,
                             size: 20, color: AppTheme.dangerColor),
-                        tooltip: 'Delete',
+                        tooltip: l10n.delete,
                         onPressed: () async {
                           final confirmed = await ConfirmationDialog.show(
                             context,
-                            title: 'Delete Supplier',
+                            title: l10n.deleteSupplier,
                             message:
-                                'Are you sure you want to delete "${supplier.name}"?',
-                            confirmLabel: 'Delete',
+                                l10n.areYouSureDelete(supplier.name),
+                            confirmLabel: l10n.delete,
                             confirmColor: AppTheme.dangerColor,
                           );
                           if (confirmed == true && mounted) {
@@ -190,173 +206,180 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(isEditing ? 'Edit Supplier' : 'Add Supplier'),
-        content: SizedBox(
-          width: 450,
-          child: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: nameCtrl,
-                  decoration: const InputDecoration(labelText: 'Name'),
-                  validator: (v) =>
-                      v?.trim().isEmpty == true ? 'Required' : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: phoneCtrl,
-                  decoration: const InputDecoration(labelText: 'Phone'),
-                  keyboardType: TextInputType.phone,
-                  validator: (v) =>
-                      v?.trim().isEmpty == true ? 'Required' : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: addressCtrl,
-                  decoration:
-                      const InputDecoration(labelText: 'Address (optional)'),
-                ),
-              ],
+      builder: (ctx) {
+        final dialogL10n = AppLocalizations.of(ctx)!;
+        return AlertDialog(
+          title: Text(isEditing ? dialogL10n.editSupplier : dialogL10n.addSupplier),
+          content: SizedBox(
+            width: 450,
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: nameCtrl,
+                    decoration: InputDecoration(labelText: dialogL10n.name),
+                    validator: (v) =>
+                        v?.trim().isEmpty == true ? dialogL10n.required_field : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: phoneCtrl,
+                    decoration: InputDecoration(labelText: dialogL10n.phone),
+                    keyboardType: TextInputType.phone,
+                    validator: (v) =>
+                        v?.trim().isEmpty == true ? dialogL10n.required_field : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: addressCtrl,
+                    decoration:
+                        InputDecoration(labelText: dialogL10n.addressOptional),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (formKey.currentState!.validate()) {
-                final now = DateTime.now();
-                final s = SupplierModel(
-                  id: supplier?.id ?? const Uuid().v4(),
-                  name: nameCtrl.text.trim(),
-                  phone: phoneCtrl.text.trim(),
-                  address: addressCtrl.text.trim().isNotEmpty
-                      ? addressCtrl.text.trim()
-                      : null,
-                  balance: supplier?.balance ?? 0,
-                  totalSupplied: supplier?.totalSupplied ?? 0,
-                  createdAt: supplier?.createdAt ?? now,
-                  updatedAt: now,
-                );
-                if (isEditing) {
-                  context
-                      .read<SupplierBloc>()
-                      .add(SupplierUpdateRequested(supplier: s));
-                } else {
-                  context
-                      .read<SupplierBloc>()
-                      .add(SupplierAddRequested(supplier: s));
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(dialogL10n.cancel),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (formKey.currentState!.validate()) {
+                  final now = DateTime.now();
+                  final s = SupplierModel(
+                    id: supplier?.id ?? const Uuid().v4(),
+                    name: nameCtrl.text.trim(),
+                    phone: phoneCtrl.text.trim(),
+                    address: addressCtrl.text.trim().isNotEmpty
+                        ? addressCtrl.text.trim()
+                        : null,
+                    balance: supplier?.balance ?? 0,
+                    totalSupplied: supplier?.totalSupplied ?? 0,
+                    createdAt: supplier?.createdAt ?? now,
+                    updatedAt: now,
+                  );
+                  if (isEditing) {
+                    context
+                        .read<SupplierBloc>()
+                        .add(SupplierUpdateRequested(supplier: s));
+                  } else {
+                    context
+                        .read<SupplierBloc>()
+                        .add(SupplierAddRequested(supplier: s));
+                  }
+                  Navigator.pop(ctx);
                 }
-                Navigator.pop(ctx);
-              }
-            },
-            child: Text(isEditing ? 'Update' : 'Add'),
-          ),
-        ],
-      ),
+              },
+              child: Text(isEditing ? dialogL10n.update : dialogL10n.add),
+            ),
+          ],
+        );
+      },
     );
   }
 
   void _showPaymentDialog(BuildContext context, SupplierModel supplier) {
+    final l10n = AppLocalizations.of(context)!;
     final amountCtrl = TextEditingController();
     final descCtrl = TextEditingController();
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Record Payment to Supplier'),
-        content: SizedBox(
-          width: 400,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Supplier: ${supplier.name}'),
-              Text(
-                  'Current Balance: \$${supplier.balance.toStringAsFixed(2)}'),
-              const SizedBox(height: 16),
-              TextField(
-                controller: amountCtrl,
-                decoration: const InputDecoration(labelText: 'Amount'),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: descCtrl,
-                decoration: const InputDecoration(
-                    labelText: 'Description (optional)'),
-              ),
-            ],
+      builder: (ctx) {
+        final dialogL10n = AppLocalizations.of(ctx)!;
+        return AlertDialog(
+          title: Text(dialogL10n.recordPaymentToSupplier),
+          content: SizedBox(
+            width: 400,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(dialogL10n.supplierColon(supplier.name)),
+                Text(dialogL10n.currentBalanceColon(
+                    supplier.balance.toStringAsFixed(2))),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: amountCtrl,
+                  decoration: InputDecoration(labelText: dialogL10n.amount),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: descCtrl,
+                  decoration: InputDecoration(
+                      labelText: dialogL10n.descriptionOptional),
+                ),
+              ],
+            ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final amount = double.tryParse(amountCtrl.text);
-              if (amount != null && amount > 0) {
-                try {
-                  final supplierRepo = context.read<SupplierRepository>();
-                  final transactionRepo =
-                      context.read<TransactionRepository>();
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(dialogL10n.cancel),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final amount = double.tryParse(amountCtrl.text);
+                if (amount != null && amount > 0) {
+                  try {
+                    final supplierRepo = context.read<SupplierRepository>();
+                    final transactionRepo =
+                        context.read<TransactionRepository>();
 
-                  await supplierRepo.updateBalance(
-                      supplier.id, -amount);
+                    await supplierRepo.updateBalance(
+                        supplier.id, -amount);
 
-                  await transactionRepo
-                      .addTransaction(TransactionModel(
-                    id: const Uuid().v4(),
-                    supplierId: supplier.id,
-                    supplierName: supplier.name,
-                    type: TransactionType.supplierPayment,
-                    amount: amount,
-                    balanceAfter: supplier.balance - amount,
-                    description: descCtrl.text.isNotEmpty
-                        ? descCtrl.text
-                        : 'Payment to supplier',
-                    createdBy: 'admin',
-                    createdAt: DateTime.now(),
-                  ));
+                    await transactionRepo
+                        .addTransaction(TransactionModel(
+                      id: const Uuid().v4(),
+                      supplierId: supplier.id,
+                      supplierName: supplier.name,
+                      type: TransactionType.supplierPayment,
+                      amount: amount,
+                      balanceAfter: supplier.balance - amount,
+                      description: descCtrl.text.isNotEmpty
+                          ? descCtrl.text
+                          : l10n.paymentToSupplier,
+                      createdBy: 'admin',
+                      createdAt: DateTime.now(),
+                    ));
 
-                  if (ctx.mounted) Navigator.pop(ctx);
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Payment recorded successfully'),
-                        backgroundColor: AppTheme.successColor,
-                      ),
-                    );
-                    context
-                        .read<SupplierBloc>()
-                        .add(SupplierLoadRequested());
-                  }
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Error: $e'),
-                        backgroundColor: AppTheme.dangerColor,
-                      ),
-                    );
+                    if (ctx.mounted) Navigator.pop(ctx);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(l10n.paymentRecordedSuccess),
+                          backgroundColor: AppTheme.successColor,
+                        ),
+                      );
+                      context
+                          .read<SupplierBloc>()
+                          .add(SupplierLoadRequested());
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Error: $e'),
+                          backgroundColor: AppTheme.dangerColor,
+                        ),
+                      );
+                    }
                   }
                 }
-              }
-            },
-            style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.successColor),
-            child: const Text('Record Payment'),
-          ),
-        ],
-      ),
+              },
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.successColor),
+              child: Text(dialogL10n.recordPayment),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -366,70 +389,77 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('History - ${supplier.name}'),
-        content: SizedBox(
-          width: 700,
-          height: 500,
-          child: StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('transactions')
-                .where('supplierId', isEqualTo: supplier.id)
-                .orderBy('createdAt', descending: true)
-                .limit(50)
-                .snapshots(),
-            builder: (context, snapshot) {
-              if (!snapshot.hasData) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              final docs = snapshot.data!.docs;
-              if (docs.isEmpty) {
-                return const Center(child: Text('No transactions found'));
-              }
-              final transactions = docs
-                  .map((d) => TransactionModel.fromFirestore(d))
-                  .toList();
-              return SingleChildScrollView(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: DataTable(
-                    columns: const [
-                      DataColumn(label: Text('Date')),
-                      DataColumn(label: Text('Type')),
-                      DataColumn(label: Text('Amount'), numeric: true),
-                      DataColumn(label: Text('Balance'), numeric: true),
-                      DataColumn(label: Text('Description')),
-                    ],
-                    rows: transactions.map((t) {
-                      return DataRow(cells: [
-                        DataCell(Text(dateFmt.format(t.createdAt))),
-                        DataCell(StatusBadge(
-                          label: t.type.label,
-                          color: t.type == TransactionType.supplierPayment
-                              ? AppTheme.successColor
-                              : AppTheme.warningColor,
-                        )),
-                        DataCell(Text(
-                          currFmt.format(t.amount),
-                          style: const TextStyle(fontWeight: FontWeight.w500),
-                        )),
-                        DataCell(Text(currFmt.format(t.balanceAfter))),
-                        DataCell(Text(t.description ?? '-')),
-                      ]);
-                    }).toList(),
+      builder: (ctx) {
+        final dialogL10n = AppLocalizations.of(ctx)!;
+        return AlertDialog(
+          title: Text(dialogL10n.historyFor(supplier.name)),
+          content: SizedBox(
+            width: 700,
+            height: 500,
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('transactions')
+                  .where('supplierId', isEqualTo: supplier.id)
+                  .orderBy('createdAt', descending: true)
+                  .limit(50)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final docs = snapshot.data!.docs;
+                if (docs.isEmpty) {
+                  return Center(child: Text(dialogL10n.noTransactionsFound));
+                }
+                final transactions = docs
+                    .map((d) => TransactionModel.fromFirestore(d))
+                    .toList();
+                return SingleChildScrollView(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: DataTable(
+                      columns: [
+                        DataColumn(label: Text(dialogL10n.date)),
+                        DataColumn(label: Text(dialogL10n.type)),
+                        DataColumn(
+                            label: Text(dialogL10n.amount), numeric: true),
+                        DataColumn(
+                            label: Text(dialogL10n.balance), numeric: true),
+                        DataColumn(label: Text(dialogL10n.description)),
+                      ],
+                      rows: transactions.map((t) {
+                        return DataRow(cells: [
+                          DataCell(Text(dateFmt.format(t.createdAt))),
+                          DataCell(StatusBadge(
+                            label: _localizedTransactionType(
+                                dialogL10n, t.type),
+                            color: t.type == TransactionType.supplierPayment
+                                ? AppTheme.successColor
+                                : AppTheme.warningColor,
+                          )),
+                          DataCell(Text(
+                            currFmt.format(t.amount),
+                            style:
+                                const TextStyle(fontWeight: FontWeight.w500),
+                          )),
+                          DataCell(Text(currFmt.format(t.balanceAfter))),
+                          DataCell(Text(t.description ?? '-')),
+                        ]);
+                      }).toList(),
+                    ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(dialogL10n.close),
+            ),
+          ],
+        );
+      },
     );
   }
 }

@@ -65,7 +65,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         if (state is DashboardError) {
           return EmptyStateWidget(
             icon: Icons.error_outline,
-            title: 'Failed to load dashboard',
+            title: l10n.failedToLoadDashboard,
             subtitle: state.message,
             action: ElevatedButton(
               onPressed:
@@ -107,9 +107,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Overview',
-                      style: TextStyle(
+                    Text(
+                      l10n.overview,
+                      style: const TextStyle(
                           fontSize: 24, fontWeight: FontWeight.bold),
                     ),
                     if (state.selectedRange == DashboardDateRange.custom &&
@@ -131,7 +131,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.refresh_rounded),
-                  tooltip: 'Refresh',
+                  tooltip: l10n.refresh,
                   onPressed: () => context
                       .read<DashboardBloc>()
                       .add(DashboardRefreshRequested()),
@@ -150,7 +150,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       .map((range) {
                     final isSelected = state.selectedRange == range;
                     return _RangePill(
-                      label: range.label,
+                      label: _localizedRangeLabel(l10n, range),
                       selected: isSelected,
                       onTap: () => context
                           .read<DashboardBloc>()
@@ -158,7 +158,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     );
                   }),
                   _RangePill(
-                    label: 'Custom',
+                    label: l10n.customRange,
                     selected: state.selectedRange == DashboardDateRange.custom,
                     icon: Icons.date_range_rounded,
                     onTap: () => _pickCustomRange(context),
@@ -273,9 +273,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Monthly Sales',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            Text(
+              l10n.monthlySales,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
             SizedBox(
@@ -373,9 +373,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Top Products',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            Text(
+              l10n.topProducts,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             if (state.topProducts.isEmpty)
@@ -437,9 +437,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Recent Orders',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            Text(
+              l10n.recentOrders,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             if (state.recentOrders.isEmpty)
@@ -472,7 +472,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             DataCell(
                               Text('\$${order.totalPrice.toStringAsFixed(2)}'),
                             ),
-                            DataCell(_buildStatusBadge(order.status)),
+                            DataCell(_buildStatusBadge(context, order.status)),
                             DataCell(Text(dateFormat.format(order.createdAt))),
                           ],
                         );
@@ -485,7 +485,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildStatusBadge(OrderStatus status) {
+  Widget _buildStatusBadge(BuildContext context, OrderStatus status) {
     Color color;
     switch (status) {
       case OrderStatus.pending:
@@ -501,7 +501,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
         color = AppTheme.infoColor;
         break;
     }
-    return StatusBadge(label: status.label, color: color);
+    return StatusBadge(
+      label: _localizedOrderStatus(AppLocalizations.of(context)!, status),
+      color: color,
+    );
+  }
+
+  String _localizedRangeLabel(AppLocalizations l10n, DashboardDateRange range) {
+    switch (range) {
+      case DashboardDateRange.today:
+        return l10n.rangeToday;
+      case DashboardDateRange.week:
+        return l10n.rangeThisWeek;
+      case DashboardDateRange.month:
+        return l10n.rangeThisMonth;
+      case DashboardDateRange.year:
+        return l10n.rangeThisYear;
+      case DashboardDateRange.all:
+        return l10n.rangeAllTime;
+      case DashboardDateRange.custom:
+        return l10n.customRange;
+    }
+  }
+
+  String _localizedOrderStatus(AppLocalizations l10n, OrderStatus status) {
+    switch (status) {
+      case OrderStatus.pending:
+        return l10n.statusPending;
+      case OrderStatus.approved:
+        return l10n.statusApproved;
+      case OrderStatus.rejected:
+        return l10n.statusRejected;
+      case OrderStatus.delivered:
+        return l10n.statusDelivered;
+    }
   }
 }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common_widgets.dart';
@@ -26,6 +27,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return BlocBuilder<TransactionBloc, TransactionState>(
       builder: (context, state) {
         return Padding(
@@ -36,7 +38,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 children: [
                   Expanded(
                     child: SearchField(
-                      hint: 'Search transactions...',
+                      hint: l10n.searchTransactions,
                       onChanged: (query) => context
                           .read<TransactionBloc>()
                           .add(TransactionSearchRequested(query: query)),
@@ -48,7 +50,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                     return Padding(
                       padding: const EdgeInsets.only(right: 6),
                       child: FilterChip(
-                        label: Text(type.label),
+                        label: Text(_localizedTransactionType(l10n, type)),
                         selected: isSelected,
                         onSelected: (selected) {
                           setState(() {
@@ -64,7 +66,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 ],
               ),
               const SizedBox(height: 20),
-              Expanded(child: _buildContent(state)),
+              Expanded(child: _buildContent(state, l10n)),
             ],
           ),
         );
@@ -72,15 +74,15 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     );
   }
 
-  Widget _buildContent(TransactionState state) {
+  Widget _buildContent(TransactionState state, AppLocalizations l10n) {
     if (state is TransactionLoading) {
       return const Center(child: CircularProgressIndicator());
     }
     if (state is TransactionLoaded) {
       if (state.filteredTransactions.isEmpty) {
-        return const EmptyStateWidget(
+        return EmptyStateWidget(
           icon: Icons.account_balance_wallet_outlined,
-          title: 'No transactions found',
+          title: l10n.noTransactionsFound,
         );
       }
       final dateFmt = DateFormat('MMM dd, yyyy HH:mm');
@@ -90,19 +92,19 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: DataTable(
-              columns: const [
-                DataColumn(label: Text('Date')),
-                DataColumn(label: Text('Type')),
-                DataColumn(label: Text('Shop/Supplier')),
-                DataColumn(label: Text('Amount'), numeric: true),
-                DataColumn(label: Text('Balance After'), numeric: true),
-                DataColumn(label: Text('Description')),
+              columns: [
+                DataColumn(label: Text(l10n.date)),
+                DataColumn(label: Text(l10n.type)),
+                DataColumn(label: Text(l10n.shopSupplier)),
+                DataColumn(label: Text(l10n.amount), numeric: true),
+                DataColumn(label: Text(l10n.balanceAfter), numeric: true),
+                DataColumn(label: Text(l10n.description)),
               ],
               rows: state.filteredTransactions.map((t) {
                 return DataRow(cells: [
                   DataCell(Text(dateFmt.format(t.createdAt),
                       style: const TextStyle(fontSize: 12))),
-                  DataCell(_buildTypeBadge(t.type)),
+                  DataCell(_buildTypeBadge(l10n, t.type)),
                   DataCell(Text(t.shopName ?? t.supplierName ?? '-')),
                   DataCell(Text(
                     currFmt.format(t.amount),
@@ -126,7 +128,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     return const SizedBox.shrink();
   }
 
-  Widget _buildTypeBadge(TransactionType type) {
+  Widget _buildTypeBadge(AppLocalizations l10n, TransactionType type) {
     Color color;
     switch (type) {
       case TransactionType.balanceCharge:
@@ -142,6 +144,19 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         color = AppTheme.infoColor;
         break;
     }
-    return StatusBadge(label: type.label, color: color);
+    return StatusBadge(label: _localizedTransactionType(l10n, type), color: color);
+  }
+
+  String _localizedTransactionType(AppLocalizations l10n, TransactionType type) {
+    switch (type) {
+      case TransactionType.balanceCharge:
+        return l10n.transactionBalanceCharge;
+      case TransactionType.purchase:
+        return l10n.transactionPurchase;
+      case TransactionType.refund:
+        return l10n.transactionRefund;
+      case TransactionType.supplierPayment:
+        return l10n.transactionSupplierPayment;
+    }
   }
 }

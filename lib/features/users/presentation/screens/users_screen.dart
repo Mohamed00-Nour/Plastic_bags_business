@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../../../data/models/user_model.dart';
@@ -22,8 +23,20 @@ class _UsersScreenState extends State<UsersScreen> {
     context.read<UserManagementBloc>().add(UserManagementLoadRequested());
   }
 
+  String _localizedRole(AppLocalizations l10n, UserRole role) {
+    switch (role) {
+      case UserRole.admin:
+        return l10n.roleAdmin;
+      case UserRole.employee:
+        return l10n.roleEmployee;
+      case UserRole.viewer:
+        return l10n.roleViewer;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return BlocConsumer<UserManagementBloc, UserManagementState>(
       listener: (context, state) {
         if (state is UserManagementOperationSuccess) {
@@ -48,14 +61,14 @@ class _UsersScreenState extends State<UsersScreen> {
             children: [
               Row(
                 children: [
-                  const Text('User Management',
-                      style:
-                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  Text(l10n.userManagement,
+                      style: const TextStyle(
+                          fontSize: 20, fontWeight: FontWeight.bold)),
                   const Spacer(),
                   ElevatedButton.icon(
                     onPressed: () => _showCreateUserDialog(context),
                     icon: const Icon(Icons.person_add, size: 18),
-                    label: const Text('Add User'),
+                    label: Text(l10n.addUser),
                   ),
                 ],
               ),
@@ -69,14 +82,15 @@ class _UsersScreenState extends State<UsersScreen> {
   }
 
   Widget _buildContent(UserManagementState state) {
+    final l10n = AppLocalizations.of(context)!;
     if (state is UserManagementLoading) {
       return const Center(child: CircularProgressIndicator());
     }
     if (state is UserManagementLoaded) {
       if (state.users.isEmpty) {
-        return const EmptyStateWidget(
+        return EmptyStateWidget(
           icon: Icons.people_outline,
-          title: 'No users found',
+          title: l10n.noUsersFound,
         );
       }
       return Card(
@@ -84,13 +98,13 @@ class _UsersScreenState extends State<UsersScreen> {
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: DataTable(
-              columns: const [
-                DataColumn(label: Text('Name')),
-                DataColumn(label: Text('Email')),
-                DataColumn(label: Text('Role')),
-                DataColumn(label: Text('Shop')),
-                DataColumn(label: Text('Status')),
-                DataColumn(label: Text('Actions')),
+              columns: [
+                DataColumn(label: Text(l10n.name)),
+                DataColumn(label: Text(l10n.email)),
+                DataColumn(label: Text(l10n.role)),
+                DataColumn(label: Text(l10n.shop)),
+                DataColumn(label: Text(l10n.status)),
+                DataColumn(label: Text(l10n.actions)),
               ],
               rows: state.users.map((user) {
                 return DataRow(cells: [
@@ -100,7 +114,7 @@ class _UsersScreenState extends State<UsersScreen> {
                   DataCell(_buildRoleBadge(user.role)),
                   DataCell(Text(user.shopName ?? '—')),
                   DataCell(StatusBadge(
-                    label: user.isActive ? 'Active' : 'Inactive',
+                    label: user.isActive ? l10n.statusActive : l10n.statusInactive,
                     color: user.isActive
                         ? AppTheme.successColor
                         : AppTheme.textSecondary,
@@ -111,7 +125,7 @@ class _UsersScreenState extends State<UsersScreen> {
                       PopupMenuButton<UserRole>(
                         icon: const Icon(Icons.admin_panel_settings,
                             size: 20, color: AppTheme.primaryColor),
-                        tooltip: 'Change Role',
+                        tooltip: l10n.changeRole,
                         onSelected: (role) {
                           context.read<UserManagementBloc>().add(UserManagementUpdateRoleRequested(
                                 userId: user.id,
@@ -130,7 +144,7 @@ class _UsersScreenState extends State<UsersScreen> {
                                         size: 16,
                                       ),
                                       const SizedBox(width: 8),
-                                      Text(role.label),
+                                      Text(_localizedRole(l10n, role)),
                                     ],
                                   ),
                                 ))
@@ -146,18 +160,15 @@ class _UsersScreenState extends State<UsersScreen> {
                               ? AppTheme.dangerColor
                               : AppTheme.successColor,
                         ),
-                        tooltip: user.isActive ? 'Deactivate' : 'Activate',
+                        tooltip: user.isActive ? l10n.deactivate : l10n.activate,
                         onPressed: () async {
-                          final action =
-                              user.isActive ? 'deactivate' : 'activate';
                           final confirmed = await ConfirmationDialog.show(
                             context,
-                            title: '${user.isActive ? 'Deactivate' : 'Activate'} User',
-                            message:
-                                'Are you sure you want to $action "${user.name}"?',
+                            title: user.isActive ? l10n.deactivateUser : l10n.activateUser,
+                            message: l10n.areYouSureDelete(user.name),
                             confirmLabel: user.isActive
-                                ? 'Deactivate'
-                                : 'Activate',
+                                ? l10n.deactivate
+                                : l10n.activate,
                             confirmColor: user.isActive
                                 ? AppTheme.dangerColor
                                 : AppTheme.successColor,
@@ -185,6 +196,7 @@ class _UsersScreenState extends State<UsersScreen> {
   }
 
   Widget _buildRoleBadge(UserRole role) {
+    final l10n = AppLocalizations.of(context)!;
     Color color;
     switch (role) {
       case UserRole.admin:
@@ -197,10 +209,11 @@ class _UsersScreenState extends State<UsersScreen> {
         color = AppTheme.textSecondary;
         break;
     }
-    return StatusBadge(label: role.label, color: color);
+    return StatusBadge(label: _localizedRole(l10n, role), color: color);
   }
 
   void _showCreateUserDialog(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final emailCtrl = TextEditingController();
     final passwordCtrl = TextEditingController();
     final nameCtrl = TextEditingController();
@@ -213,7 +226,7 @@ class _UsersScreenState extends State<UsersScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          title: const Text('Create User'),
+          title: Text(l10n.createUser),
           content: SizedBox(
             width: 450,
             child: Form(
@@ -223,40 +236,40 @@ class _UsersScreenState extends State<UsersScreen> {
                 children: [
                   TextFormField(
                     controller: nameCtrl,
-                    decoration: const InputDecoration(labelText: 'Full Name'),
+                    decoration: InputDecoration(labelText: l10n.fullName),
                     validator: (v) =>
-                        v?.trim().isEmpty == true ? 'Required' : null,
+                        v?.trim().isEmpty == true ? l10n.required_field : null,
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: emailCtrl,
-                    decoration: const InputDecoration(labelText: 'Email'),
+                    decoration: InputDecoration(labelText: l10n.email),
                     keyboardType: TextInputType.emailAddress,
                     validator: (v) {
-                      if (v?.trim().isEmpty == true) return 'Required';
-                      if (!v!.contains('@')) return 'Invalid email';
+                      if (v?.trim().isEmpty == true) return l10n.required_field;
+                      if (!v!.contains('@')) return l10n.invalidEmail;
                       return null;
                     },
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: passwordCtrl,
-                    decoration: const InputDecoration(labelText: 'Password'),
+                    decoration: InputDecoration(labelText: l10n.password),
                     obscureText: true,
                     validator: (v) {
-                      if (v?.isEmpty == true) return 'Required';
-                      if (v!.length < 6) return 'Min 6 characters';
+                      if (v?.isEmpty == true) return l10n.required_field;
+                      if (v!.length < 6) return l10n.minSixChars;
                       return null;
                     },
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<UserRole>(
                     value: selectedRole,
-                    decoration: const InputDecoration(labelText: 'Role'),
+                    decoration: InputDecoration(labelText: l10n.role),
                     items: UserRole.values
                         .map((r) => DropdownMenuItem(
                               value: r,
-                              child: Text(r.label),
+                              child: Text(_localizedRole(l10n, r)),
                             ))
                         .toList(),
                     onChanged: (role) {
@@ -284,10 +297,10 @@ class _UsersScreenState extends State<UsersScreen> {
                         return DropdownButtonFormField<String>(
                           value: selectedShopId,
                           decoration:
-                              const InputDecoration(labelText: 'Assign to Shop'),
+                              InputDecoration(labelText: l10n.assignToShop),
                           validator: (v) => selectedRole != UserRole.admin &&
                                   (v == null || v.isEmpty)
-                              ? 'Please select a shop'
+                              ? l10n.pleaseSelectShop
                               : null,
                           items: shops
                               .map((doc) {
@@ -322,7 +335,7 @@ class _UsersScreenState extends State<UsersScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
+              child: Text(l10n.cancel),
             ),
             ElevatedButton(
               onPressed: () {
@@ -338,7 +351,7 @@ class _UsersScreenState extends State<UsersScreen> {
                   Navigator.pop(ctx);
                 }
               },
-              child: const Text('Create'),
+              child: Text(l10n.create),
             ),
           ],
         ),
