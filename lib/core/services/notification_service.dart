@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 /// Wraps flutter_local_notifications with a simple API.
@@ -11,6 +12,12 @@ class NotificationService {
   static const _androidChannelDesc = 'Store announcements and promotions';
 
   static Future<void> init() async {
+    // Local notifications are only configured for mobile targets.
+    if (defaultTargetPlatform != TargetPlatform.android &&
+        defaultTargetPlatform != TargetPlatform.iOS) {
+      return;
+    }
+
     const androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 

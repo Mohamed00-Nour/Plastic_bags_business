@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -47,8 +50,13 @@ import 'package:store_manager/features/manufacturing/bloc/waste_processing_event
 import 'package:store_manager/features/manufacturing/bloc/manufacturing_expense_bloc.dart';
 import 'package:store_manager/features/manufacturing/bloc/manufacturing_expense_event.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:store_manager/core/services/firebase_desktop_init.dart';
 import 'package:store_manager/core/services/notification_service.dart';
 import 'firebase_options.dart';
+
+bool get _isMobilePlatform =>
+    !kIsWeb &&
+    (Platform.isAndroid || Platform.isIOS);
 
 /// Must be a top-level function — required by FCM for background messages.
 @pragma('vm:entry-point')
@@ -57,11 +65,15 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  configureFirebaseAuthForWindows();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  await NotificationService.init();
+  await configureFirestoreForWindows();
+  if (_isMobilePlatform) {
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    await NotificationService.init();
+  }
   runApp(const MyApp());
 }
 
