@@ -60,3 +60,27 @@ class OrderError extends OrderState {
   @override
   List<Object?> get props => [message];
 }
+
+class InsufficientStockItem extends Equatable {
+  final String productName;
+  final int available;
+  final int required;
+
+  const InsufficientStockItem({
+    required this.productName,
+    required this.available,
+    required this.required,
+  });
+
+  int get shortage => required - available;
+
+  @override
+  List<Object?> get props => [productName, available, required];
+}
+
+class OrderInsufficientStock extends OrderState {
+  final List<InsufficientStockItem> items;
+  const OrderInsufficientStock({required this.items});
+  @override
+  List<Object?> get props => [items];
+}

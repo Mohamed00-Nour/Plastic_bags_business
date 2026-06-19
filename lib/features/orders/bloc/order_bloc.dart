@@ -160,20 +160,32 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
       final order = await _orderRepository.getOrder(event.orderId);
 
       // Verify stock availability for all items first to prevent partial stock deduction
-      final insufficientItems = <String>[];
+      final insufficientItems = <InsufficientStockItem>[];
       for (final item in order.items) {
         final product = await _productRepository.getProduct(item.productId);
         if (product.stockQuantity < item.quantity) {
           insufficientItems.add(
-            '${item.productName} (Available: ${product.stockQuantity}, Required: ${item.quantity})',
+            InsufficientStockItem(
+              productName: item.productName,
+              available: product.stockQuantity,
+              required: item.quantity,
+            ),
           );
         }
       }
 
       if (insufficientItems.isNotEmpty) {
-        throw Exception(
-          'Insufficient stock for: ${insufficientItems.join(', ')}',
-        );
+        emit(OrderInsufficientStock(items: insufficientItems));
+        if (currentState is OrderLoaded) {
+          emit(
+            currentState.copyWith(
+              deliveringOrderIds: currentState.deliveringOrderIds
+                  .where((id) => id != event.orderId)
+                  .toSet(),
+            ),
+          );
+        }
+        return;
       }
 
       // Deduct stock for each item upon delivery
@@ -227,17 +239,16 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         ),
       );
     } catch (e) {
-      if (state is OrderLoaded) {
-        final currentLoaded = state as OrderLoaded;
+      emit(OrderError(message: e.toString()));
+      if (currentState is OrderLoaded) {
         emit(
-          currentLoaded.copyWith(
-            deliveringOrderIds: currentLoaded.deliveringOrderIds
+          currentState.copyWith(
+            deliveringOrderIds: currentState.deliveringOrderIds
                 .where((id) => id != event.orderId)
                 .toSet(),
           ),
         );
       }
-      emit(OrderError(message: e.toString()));
     }
   }
 
