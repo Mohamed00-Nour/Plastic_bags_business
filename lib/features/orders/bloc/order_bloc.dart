@@ -151,6 +151,23 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     try {
       final order = await _orderRepository.getOrder(event.orderId);
 
+      // Verify stock availability for all items first to prevent partial stock deduction
+      final insufficientItems = <String>[];
+      for (final item in order.items) {
+        final product = await _productRepository.getProduct(item.productId);
+        if (product.stockQuantity < item.quantity) {
+          insufficientItems.add(
+            '${item.productName} (Available: ${product.stockQuantity}, Required: ${item.quantity})',
+          );
+        }
+      }
+
+      if (insufficientItems.isNotEmpty) {
+        throw Exception(
+          'Insufficient stock for: ${insufficientItems.join(', ')}',
+        );
+      }
+
       // Deduct stock for each item upon delivery
       for (final item in order.items) {
         final product = await _productRepository.getProduct(item.productId);
