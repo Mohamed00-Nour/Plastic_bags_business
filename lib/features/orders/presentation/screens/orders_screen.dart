@@ -309,6 +309,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
       backgroundColor: Colors.transparent,
       builder: (ctx) {
         final theme = Theme.of(ctx);
+        final l10n = AppLocalizations.of(ctx)!;
         return Container(
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
@@ -341,7 +342,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Insufficient Stock',
+                      l10n.insufficientStockTitle,
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: AppTheme.dangerColor,
@@ -352,7 +353,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                'The following products do not have enough stock to fulfill this order. Please increase stock or adjust the order:',
+                l10n.insufficientStockDesc,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -387,42 +388,28 @@ class _OrdersScreenState extends State<OrdersScreen> {
                           ),
                         ),
                         subtitle: Text(
-                          'Available: ${item.available} | Required: ${item.required}',
+                          '${l10n.insufficientStockDetail(item.available, item.required)}\n${l10n.insufficientStockNeed(item.shortage)}',
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
-                        trailing: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppTheme.dangerColor.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                '-${item.shortage}',
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: AppTheme.dangerColor,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                        isThreeLine: true,
+                        trailing: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppTheme.dangerColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            '-${item.shortage}',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: AppTheme.dangerColor,
+                              fontWeight: FontWeight.bold,
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Needs ${item.shortage} more',
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: theme.colorScheme.onSurfaceVariant,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                       ),
                     );
@@ -436,7 +423,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   backgroundColor: AppTheme.dangerColor,
                   foregroundColor: Colors.white,
                 ),
-                child: const Text('Dismiss'),
+                child: Text(l10n.dismiss),
               ),
             ],
           ),

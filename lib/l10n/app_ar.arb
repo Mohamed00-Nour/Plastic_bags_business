@@ -526,5 +526,27 @@
   "subtotal": "المجموع الفرعي",
   "orderSummary": "ملخص الطلب",
   "exportSuccess": "تم حفظ الملف بنجاح",
-  "exportFailed": "فشل التصدير"
+  "exportFailed": "فشل التصدير",
+  "insufficientStockTitle": "عجز في المخزون",
+  "insufficientStockDesc": "المنتجات التالية ليس بها مخزون كافٍ لتلبية هذا الطلب. يرجى زيادة المخزون أو تعديل الطلب:",
+  "insufficientStockDetail": "المتاح: {available} | المطلوب: {required}",
+  "@insufficientStockDetail": {
+    "placeholders": {
+      "available": {
+        "type": "int"
+      },
+      "required": {
+        "type": "int"
+      }
+    }
+  },
+  "insufficientStockNeed": "تحتاج {shortage} إضافية لإكمال الطلب",
+  "@insufficientStockNeed": {
+    "placeholders": {
+      "shortage": {
+        "type": "int"
+      }
+    }
+  },
+  "dismiss": "إغلاق"
 }

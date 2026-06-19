@@ -526,5 +526,27 @@
   "subtotal": "Subtotal",
   "orderSummary": "Order Summary",
   "exportSuccess": "File saved successfully",
-  "exportFailed": "Export failed"
+  "exportFailed": "Export failed",
+  "insufficientStockTitle": "Insufficient Stock",
+  "insufficientStockDesc": "The following products do not have enough stock to fulfill this order. Please increase stock or adjust the order:",
+  "insufficientStockDetail": "Available: {available} | Required: {required}",
+  "@insufficientStockDetail": {
+    "placeholders": {
+      "available": {
+        "type": "int"
+      },
+      "required": {
+        "type": "int"
+      }
+    }
+  },
+  "insufficientStockNeed": "Needs {shortage} more to fulfill",
+  "@insufficientStockNeed": {
+    "placeholders": {
+      "shortage": {
+        "type": "int"
+      }
+    }
+  },
+  "dismiss": "Dismiss"
 }
