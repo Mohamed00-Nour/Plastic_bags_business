@@ -94,9 +94,8 @@ class _UsersScreenState extends State<UsersScreen> {
         );
       }
       return Card(
-        child: SingleChildScrollView(
+        child: HorizontalScrollableTable(
           child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
             child: DataTable(
               columns: [
                 DataColumn(label: Text(l10n.name)),

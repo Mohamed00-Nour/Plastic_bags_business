@@ -103,9 +103,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
         );
       }
       return Card(
-        child: SingleChildScrollView(
+        child: HorizontalScrollableTable(
           child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
             child: DataTable(
               columns: [
                 DataColumn(label: Text(l10n.name)),

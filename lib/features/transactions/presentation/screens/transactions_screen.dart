@@ -88,9 +88,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       final dateFmt = DateFormat('MMM dd, yyyy HH:mm');
       final currFmt = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
       return Card(
-        child: SingleChildScrollView(
+        child: HorizontalScrollableTable(
           child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
             child: DataTable(
               columns: [
                 DataColumn(label: Text(l10n.date)),

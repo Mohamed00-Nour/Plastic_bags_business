@@ -453,8 +453,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               )
             else
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
+              HorizontalScrollableTable(
                 child: DataTable(
                   columns: [
                     DataColumn(label: Text(l10n.orderId)),

@@ -127,7 +127,7 @@ class _AdminShellState extends State<AdminShell> {
   }
 }
 
-class _DesktopLayout extends StatefulWidget {
+class _DesktopLayout extends StatelessWidget {
   final List<_NavItem> navItems;
   final int selectedIndex;
   final ValueChanged<int> onIndexChanged;
@@ -143,41 +143,12 @@ class _DesktopLayout extends StatefulWidget {
   });
 
   @override
-  State<_DesktopLayout> createState() => _DesktopLayoutState();
-}
-
-class _DesktopLayoutState extends State<_DesktopLayout> {
-  late final ScrollController _horizontalScrollController;
-
-  @override
-  void initState() {
-    super.initState();
-    _horizontalScrollController = ScrollController();
-  }
-
-  @override
-  void didUpdateWidget(covariant _DesktopLayout oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.selectedIndex != widget.selectedIndex) {
-      if (_horizontalScrollController.hasClients) {
-        _horizontalScrollController.jumpTo(0);
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _horizontalScrollController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final navItems = widget.navItems;
-    final selectedIndex = widget.selectedIndex;
-    final onIndexChanged = widget.onIndexChanged;
-    final user = widget.user;
-    final onLogout = widget.onLogout;
+    final navItems = this.navItems;
+    final selectedIndex = this.selectedIndex;
+    final onIndexChanged = this.onIndexChanged;
+    final user = this.user;
+    final onLogout = this.onLogout;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -467,27 +438,7 @@ class _DesktopLayoutState extends State<_DesktopLayout> {
                       ),
                       const Divider(height: 1),
                       Expanded(
-                        child: LayoutBuilder(
-                          builder: (context, constraints) {
-                            return Scrollbar(
-                              controller: _horizontalScrollController,
-                              thumbVisibility: true,
-                              child: SingleChildScrollView(
-                                controller: _horizontalScrollController,
-                                scrollDirection: Axis.horizontal,
-                                child: ConstrainedBox(
-                                  constraints: const BoxConstraints(
-                                    minWidth: 1000,
-                                  ),
-                                  child: SizedBox(
-                                    width: constraints.maxWidth,
-                                    child: navItems[selectedIndex].screen,
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
+                        child: navItems[selectedIndex].screen,
                       ),
                     ],
                   ),

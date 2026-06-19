@@ -120,9 +120,8 @@ class _ShopsScreenState extends State<ShopsScreen> {
       }
       final currFmt = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
       return Card(
-        child: SingleChildScrollView(
+        child: HorizontalScrollableTable(
           child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
             child: DataTable(
               columns: [
                 DataColumn(label: Text(l10n.name)),
@@ -465,9 +464,9 @@ class _ShopsScreenState extends State<ShopsScreen> {
                       docs
                           .map((d) => TransactionModel.fromFirestore(d))
                           .toList();
-                  return SingleChildScrollView(
+                  return HorizontalScrollableTable(
+                    minWidth: 700,
                     child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
                       child: DataTable(
                         columns: [
                           DataColumn(label: Text(l10n.date)),
@@ -556,9 +555,9 @@ class _ShopsScreenState extends State<ShopsScreen> {
                   }
                   final orders =
                       docs.map((d) => OrderModel.fromFirestore(d)).toList();
-                  return SingleChildScrollView(
+                  return HorizontalScrollableTable(
+                    minWidth: 700,
                     child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
                       child: DataTable(
                         columns: [
                           DataColumn(label: Text(l10n.orderId)),

@@ -196,3 +196,57 @@ class SearchField extends StatelessWidget {
     );
   }
 }
+
+class HorizontalScrollableTable extends StatefulWidget {
+  final Widget child;
+  final double? minWidth;
+
+  const HorizontalScrollableTable({
+    super.key,
+    required this.child,
+    this.minWidth,
+  });
+
+  @override
+  State<HorizontalScrollableTable> createState() =>
+      _HorizontalScrollableTableState();
+}
+
+class _HorizontalScrollableTableState extends State<HorizontalScrollableTable> {
+  late final ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double effectiveMinWidth = widget.minWidth ?? constraints.maxWidth;
+        return Scrollbar(
+          controller: _scrollController,
+          thumbVisibility: true,
+          child: SingleChildScrollView(
+            controller: _scrollController,
+            scrollDirection: Axis.horizontal,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minWidth: effectiveMinWidth,
+              ),
+              child: widget.child,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}

@@ -100,9 +100,8 @@ class _StockLogsScreenState extends State<StockLogsScreen> {
                 }
 
                 return Card(
-                  child: SingleChildScrollView(
+                  child: HorizontalScrollableTable(
                     child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
                       child: DataTable(
                         columns: [
                           DataColumn(label: Text(l10n.date)),

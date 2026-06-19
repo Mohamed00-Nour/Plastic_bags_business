@@ -135,9 +135,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
       }
       final dateFmt = DateFormat('MMM dd, yyyy HH:mm');
       return Card(
-        child: SingleChildScrollView(
+        child: HorizontalScrollableTable(
           child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
             child: DataTable(
               columns: [
                 DataColumn(label: Text(l10n.orderId)),

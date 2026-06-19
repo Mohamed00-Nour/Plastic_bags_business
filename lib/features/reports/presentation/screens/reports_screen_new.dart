@@ -289,8 +289,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                           style: const TextStyle(
                               fontSize: 16, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 12),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
+                      HorizontalScrollableTable(
                         child: DataTable(
                           columns: [
                             DataColumn(label: Text(l10n.orderId)),
