@@ -42,9 +42,13 @@ class WasteRunAddRequested extends WasteProcessingEvent {
 
 class WasteRunUpdateRequested extends WasteProcessingEvent {
   final WasteProcessingRunModel run;
-  const WasteRunUpdateRequested({required this.run});
+  final bool execute;
+  const WasteRunUpdateRequested({
+    required this.run,
+    this.execute = false,
+  });
   @override
-  List<Object?> get props => [run];
+  List<Object?> get props => [run, execute];
 }
 
 class WasteRunDeleteRequested extends WasteProcessingEvent {

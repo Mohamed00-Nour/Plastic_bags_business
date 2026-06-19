@@ -9,7 +9,12 @@ import '../../../../data/models/additional_cost.dart';
 import '../../../../data/models/custom_run_field.dart';
 import '../../../../data/models/manufacturing_mix_model.dart';
 import '../../../../data/models/production_run_model.dart';
+import '../../../../data/models/production_run_output.dart';
 import '../../../../data/models/raw_material_model.dart';
+import '../../../../data/models/product_model_new.dart';
+import '../../../products/bloc/product_bloc_new.dart';
+import '../../../products/bloc/product_event.dart';
+import '../../../products/bloc/product_state.dart';
 import '../../bloc/manufacturing_mix_bloc.dart';
 import '../../bloc/manufacturing_mix_state.dart';
 import '../../bloc/production_run_bloc.dart';
@@ -26,6 +31,12 @@ class ProductionRunsScreen extends StatefulWidget {
 }
 
 class _ProductionRunsScreenState extends State<ProductionRunsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    context.read<ProductBloc>().add(ProductLoadRequested());
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<ProductionRunBloc, ProductionRunState>(
@@ -236,7 +247,7 @@ class _ProductionRunsScreenState extends State<ProductionRunsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${r.productName} | ${DateFormat('dd/MM/yyyy').format(r.date)}',
+                  '${r.outputSummary} | ${DateFormat('dd/MM/yyyy').format(r.date)}',
                 ),
                 Text(
                   '${l10n.mfgInputLabel}: ${r.inputKg.toStringAsFixed(1)} ${l10n.mfgKg}'
@@ -440,18 +451,19 @@ class _ProductionRunDialog extends StatefulWidget {
 class _ProductionRunDialogState extends State<_ProductionRunDialog> {
   ManufacturingMixModel? _selectedMix;
   final _inputCtrl = TextEditingController();
-  final _outputCtrl = TextEditingController();
   final _techCtrl = TextEditingController();
   final _elecCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
   DateTime _date = DateTime.now();
   final List<AdditionalCost> _additionalCosts = [];
   final List<CustomRunField> _customFields = [];
+  final List<ProductionRunOutput> _outputs = [];
 
   double _rawMaterialCost = 0;
   double _totalCost = 0;
   double _costPerKg = 0;
   double _damagedKg = 0;
+  double _totalOutputKg = 0;
 
   bool get _isExecuted =>
       widget.editing?.status == ProductionRunStatus.executed;
@@ -462,13 +474,13 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
     final e = widget.editing;
     if (e != null) {
       _inputCtrl.text = e.inputKg.toString();
-      _outputCtrl.text = e.outputKg?.toString() ?? '';
       _techCtrl.text = e.technicianCost.toString();
       _elecCtrl.text = e.electricityCost.toString();
       _notesCtrl.text = e.notes ?? '';
       _date = e.date;
       _additionalCosts.addAll(e.additionalCosts);
       _customFields.addAll(e.customFields);
+      _outputs.addAll(e.outputs);
       final mixes = widget.mixState is ManufacturingMixLoaded
           ? (widget.mixState as ManufacturingMixLoaded).all
           : <ManufacturingMixModel>[];
@@ -488,7 +500,6 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
   @override
   void dispose() {
     _inputCtrl.dispose();
-    _outputCtrl.dispose();
     _techCtrl.dispose();
     _elecCtrl.dispose();
     _notesCtrl.dispose();
@@ -497,7 +508,8 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
 
   void _recalculate() {
     final inputKg = double.tryParse(_inputCtrl.text) ?? 0;
-    final outputKg = double.tryParse(_outputCtrl.text) ?? 0;
+    final outputKg =
+        _outputs.fold(0.0, (sum, o) => sum + o.quantityKg);
     final tech = double.tryParse(_techCtrl.text) ?? 0;
     final elec = double.tryParse(_elecCtrl.text) ?? 0;
     final addl = _additionalCosts.fold(0.0, (s, c) => s + c.amount);
@@ -532,6 +544,7 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
       _damagedKg = damaged > 0 ? damaged : 0;
       _totalCost = total;
       _costPerKg = outputKg > 0 ? total / outputKg : 0;
+      _totalOutputKg = outputKg;
     });
   }
 
@@ -543,25 +556,26 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
   }
 
   double get _inputKg => double.tryParse(_inputCtrl.text) ?? 0;
-  double get _outputKg => double.tryParse(_outputCtrl.text) ?? 0;
 
-  bool get _canExecute =>
-      _outputCtrl.text.isNotEmpty &&
-      _outputKg > 0 &&
-      !_isExecuted;
+  bool get _canExecute => _totalOutputKg > 0 && !_isExecuted;
 
   ProductionRunModel _buildRun() {
     final now = DateTime.now();
     final inputKg = double.tryParse(_inputCtrl.text) ?? 0;
-    final outputKg = double.tryParse(_outputCtrl.text);
+    final mergedOutputs = mergeProductionRunOutputs(_outputs);
+    final totalOutput =
+        mergedOutputs.fold(0.0, (sum, o) => sum + o.quantityKg);
 
     return ProductionRunModel(
       id: widget.editing?.id ?? const Uuid().v4(),
       mixId: _selectedMix!.id,
       mixName: _selectedMix!.name,
-      productName: _selectedMix!.productName,
+      productName: mergedOutputs.isNotEmpty
+          ? mergedOutputs.map((o) => o.productName).join(', ')
+          : _selectedMix!.productName,
       inputKg: inputKg,
-      outputKg: outputKg,
+      outputKg: totalOutput > 0 ? totalOutput : null,
+      outputs: mergedOutputs,
       damagedKg: _damagedKg > 0 ? _damagedKg : null,
       technicianCost: double.tryParse(_techCtrl.text) ?? 0,
       electricityCost: double.tryParse(_elecCtrl.text) ?? 0,
@@ -646,18 +660,95 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
                 readOnly: _isExecuted,
               ),
               const SizedBox(height: 12),
-              TextField(
-                controller: _outputCtrl,
-                keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true),
-                decoration:
-                    InputDecoration(labelText: l10n.mfgOutputQty),
-                onChanged: (_) => _recalculate(),
-                readOnly: _isExecuted,
+              BlocBuilder<ProductBloc, ProductState>(
+                builder: (context, productState) {
+                  final products = productState is ProductLoaded
+                      ? productState.products
+                          .where((p) => p.isActive)
+                          .toList()
+                      : <ProductModel>[];
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(l10n.mfgOutputProducts,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w600)),
+                          const Spacer(),
+                          if (!_isExecuted && products.isNotEmpty)
+                            TextButton.icon(
+                              onPressed: () {
+                                final product = products.first;
+                                setState(() {
+                                  _outputs.add(ProductionRunOutput(
+                                    productId: product.id,
+                                    productName: product.name,
+                                    quantityKg: 0,
+                                  ));
+                                });
+                                _recalculate();
+                              },
+                              icon: const Icon(Icons.add, size: 16),
+                              label: Text(l10n.mfgAddOutputProduct),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      if (products.isEmpty)
+                        Text(l10n.mfgNoProductsAvailable,
+                            style: TextStyle(
+                                color: Colors.grey[600], fontSize: 13))
+                      else
+                        ..._outputs.asMap().entries.map((entry) {
+                          final idx = entry.key;
+                          final output = entry.value;
+                          return _OutputProductRow(
+                            output: output,
+                            products: products,
+                            readOnly: _isExecuted,
+                            onChanged: (updated) {
+                              setState(() => _outputs[idx] = updated);
+                              _recalculate();
+                            },
+                            onRemove: _isExecuted
+                                ? null
+                                : () {
+                                    setState(() => _outputs.removeAt(idx));
+                                    _recalculate();
+                                  },
+                          );
+                        }),
+                      if (_totalOutputKg > 0) ...[
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: AppTheme.infoColor
+                                .withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              Text(
+                                '${l10n.mfgTotalOutputQty}: ${_totalOutputKg.toStringAsFixed(1)} ${l10n.mfgKg}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: AppTheme.infoColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: 12),
               // Auto-calculated damaged display
-              if (_inputKg > 0 && _outputKg > 0)
+              if (_inputKg > 0 && _totalOutputKg > 0)
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
@@ -910,6 +1001,110 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
           ],
         );
       },
+    );
+  }
+}
+
+class _OutputProductRow extends StatefulWidget {
+  final ProductionRunOutput output;
+  final List<ProductModel> products;
+  final bool readOnly;
+  final ValueChanged<ProductionRunOutput> onChanged;
+  final VoidCallback? onRemove;
+
+  const _OutputProductRow({
+    required this.output,
+    required this.products,
+    required this.readOnly,
+    required this.onChanged,
+    this.onRemove,
+  });
+
+  @override
+  State<_OutputProductRow> createState() => _OutputProductRowState();
+}
+
+class _OutputProductRowState extends State<_OutputProductRow> {
+  late final TextEditingController _qtyCtrl;
+  late String _selectedId;
+
+  @override
+  void initState() {
+    super.initState();
+    _qtyCtrl = TextEditingController(
+      text: widget.output.quantityKg > 0
+          ? widget.output.quantityKg.toString()
+          : '',
+    );
+    _selectedId = widget.output.productId.isNotEmpty &&
+            widget.products.any((p) => p.id == widget.output.productId)
+        ? widget.output.productId
+        : (widget.products.isNotEmpty ? widget.products.first.id : '');
+  }
+
+  @override
+  void dispose() {
+    _qtyCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 3,
+            child: DropdownButtonFormField<String>(
+              value: _selectedId.isEmpty ? null : _selectedId,
+              decoration:
+                  InputDecoration(labelText: l10n.mfgSelectProduct),
+              items: widget.products
+                  .map((p) => DropdownMenuItem(
+                        value: p.id,
+                        child: Text('${p.name} (${p.size})'),
+                      ))
+                  .toList(),
+              onChanged: widget.readOnly
+                  ? null
+                  : (v) {
+                      if (v == null) return;
+                      setState(() => _selectedId = v);
+                      final product =
+                          widget.products.firstWhere((p) => p.id == v);
+                      widget.onChanged(widget.output.copyWith(
+                        productId: v,
+                        productName: product.name,
+                      ));
+                    },
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 2,
+            child: TextField(
+              controller: _qtyCtrl,
+              readOnly: widget.readOnly,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              decoration:
+                  InputDecoration(labelText: l10n.mfgOutputProductQty),
+              onChanged: (v) {
+                widget.onChanged(widget.output.copyWith(
+                  quantityKg: double.tryParse(v) ?? 0,
+                ));
+              },
+            ),
+          ),
+          if (widget.onRemove != null)
+            IconButton(
+              icon: const Icon(Icons.close, size: 18),
+              onPressed: widget.onRemove,
+            ),
+        ],
+      ),
     );
   }
 }

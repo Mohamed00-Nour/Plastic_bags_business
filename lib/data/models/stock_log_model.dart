@@ -28,6 +28,8 @@ class StockLogModel extends Equatable {
   final String? note;
   final String? supplierId;
   final String? supplierName;
+  final double? unitCost;
+  final double? avgCostAfter;
   final String createdBy;
   final DateTime createdAt;
 
@@ -43,6 +45,8 @@ class StockLogModel extends Equatable {
     this.note,
     this.supplierId,
     this.supplierName,
+    this.unitCost,
+    this.avgCostAfter,
     required this.createdBy,
     required this.createdAt,
   });
@@ -64,6 +68,12 @@ class StockLogModel extends Equatable {
       note: data['note'],
       supplierId: data['supplierId'],
       supplierName: data['supplierName'],
+      unitCost: data['unitCost'] != null
+          ? (data['unitCost'] as num).toDouble()
+          : null,
+      avgCostAfter: data['avgCostAfter'] != null
+          ? (data['avgCostAfter'] as num).toDouble()
+          : null,
       createdBy: data['createdBy'] ?? '',
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
@@ -80,6 +90,8 @@ class StockLogModel extends Equatable {
         'note': note,
         'supplierId': supplierId,
         'supplierName': supplierName,
+        'unitCost': unitCost,
+        'avgCostAfter': avgCostAfter,
         'createdBy': createdBy,
         'createdAt': Timestamp.fromDate(createdAt),
       };
@@ -97,6 +109,8 @@ class StockLogModel extends Equatable {
         note,
         supplierId,
         supplierName,
+        unitCost,
+        avgCostAfter,
         createdBy,
         createdAt,
       ];

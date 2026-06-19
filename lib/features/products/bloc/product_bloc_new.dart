@@ -76,6 +76,13 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
     Emitter<ProductState> emit,
   ) async {
     try {
+      final existing =
+          await _productRepository.findByName(event.product.name);
+      if (existing != null) {
+        emit(const ProductError(
+            message: 'This product already exists'));
+        return;
+      }
       await _productRepository.addProduct(event.product);
       emit(const ProductOperationSuccess(message: 'Product added successfully'));
     } catch (e) {
@@ -109,6 +116,17 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
     }
   }
 
+  static double weightedAverageCost({
+    required int currentStock,
+    required double currentCostPrice,
+    required int addedQty,
+    required double unitCost,
+  }) {
+    final totalQty = currentStock + addedQty;
+    if (totalQty <= 0) return unitCost;
+    return (currentStock * currentCostPrice + addedQty * unitCost) / totalQty;
+  }
+
   Future<void> _onStockIncrease(
     ProductStockIncreased event,
     Emitter<ProductState> emit,
@@ -116,7 +134,20 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
     try {
       final product = await _productRepository.getProduct(event.productId);
       final stockBefore = product.stockQuantity;
-      await _productRepository.incrementStock(event.productId, event.amount);
+      double? avgCostAfter;
+
+      if (event.unitCost != null && event.unitCost! > 0) {
+        avgCostAfter = weightedAverageCost(
+          currentStock: stockBefore,
+          currentCostPrice: product.costPrice,
+          addedQty: event.amount,
+          unitCost: event.unitCost!,
+        );
+        await _productRepository.stockIn(
+            event.productId, event.amount, avgCostAfter);
+      } else {
+        await _productRepository.incrementStock(event.productId, event.amount);
+      }
 
       await _stockLogRepository.addLog(StockLogModel(
         id: const Uuid().v4(),
@@ -126,6 +157,8 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
         quantity: event.amount,
         stockBefore: stockBefore,
         stockAfter: stockBefore + event.amount,
+        unitCost: event.unitCost,
+        avgCostAfter: avgCostAfter,
         note: event.note,
         supplierId: event.supplierId,
         supplierName: event.supplierName,

@@ -53,6 +53,9 @@ class _WasteProcessingScreenState extends State<WasteProcessingScreen>
             content: Text(state.message),
             backgroundColor: AppTheme.dangerColor,
           ));
+          context
+              .read<WasteProcessingBloc>()
+              .add(WasteProcessingLoadRequested());
         }
       },
       builder: (context, state) {
@@ -312,6 +315,7 @@ class _RunsTab extends StatelessWidget {
                       return Card(
                         margin: const EdgeInsets.only(bottom: 8),
                         child: ListTile(
+                          onTap: () => _showRunForm(context, r, machines),
                           leading: CircleAvatar(
                             backgroundColor: AppTheme.warningColor
                                 .withValues(alpha: 0.1),
@@ -319,19 +323,49 @@ class _RunsTab extends StatelessWidget {
                                 Icons.recycling_outlined,
                                 color: AppTheme.warningColor),
                           ),
-                          title: Text(r.machineName,
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.w600)),
+                          title: Row(
+                            children: [
+                              Expanded(
+                                child: Text(r.machineName,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w600)),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: (r.isExecuted
+                                          ? AppTheme.successColor
+                                          : AppTheme.warningColor)
+                                      .withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  r.isExecuted
+                                      ? l10n.mfgStatusExecuted
+                                      : l10n.mfgStatusDraft,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: r.isExecuted
+                                        ? AppTheme.successColor
+                                        : AppTheme.warningColor,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                           subtitle: Builder(builder: (bCtx) {
                             final l10n = AppLocalizations.of(bCtx)!;
-                            final resultLabel = r.resultType == WasteResultType.rawMaterial
+                            final resultLabel = r.resultType ==
+                                    WasteResultType.rawMaterial
                                 ? l10n.mfgWasteNewMaterial
                                 : l10n.mfgWasteCostOnly;
                             return Text(
                               '${DateFormat('dd/MM/yyyy').format(r.date)} | '
-                              '${l10n.mfgInputLabel}: ${r.inputKg.toStringAsFixed(1)} → ${l10n.mfgOutputLabel}: ${r.outputKg.toStringAsFixed(1)} ${l10n.mfgKg}\n'
+                              '${l10n.mfgInputLabel}: ${r.inputKg.toStringAsFixed(1)} → ${l10n.mfgOutputLabel}: ${r.effectiveOutputKg.toStringAsFixed(1)} ${l10n.mfgKg}\n'
                               '${l10n.mfgResultTypeLabel}: $resultLabel'
-                              '${r.resultMaterialName != null ? ' (${r.resultMaterialName})' : ''}',
+                              '${r.resultType == WasteResultType.rawMaterial ? ' (${WasteProcessingRunModel.heavyMaterialName})' : ''}',
                             );
                           }),
                           isThreeLine: true,
@@ -359,6 +393,11 @@ class _RunsTab extends StatelessWidget {
                               ),
                               const SizedBox(width: 8),
                               IconButton(
+                                icon: const Icon(Icons.edit_outlined),
+                                onPressed: () =>
+                                    _showRunForm(context, r, machines),
+                              ),
+                              IconButton(
                                 icon: const Icon(Icons.delete_outline,
                                     color: AppTheme.dangerColor),
                                 onPressed: () =>
@@ -378,217 +417,26 @@ class _RunsTab extends StatelessWidget {
 
   void _showRunForm(BuildContext context, WasteProcessingRunModel? editing,
       List<WasteMachineModel> machines) {
-    final l10n = AppLocalizations.of(context)!;
-    WasteMachineModel? selectedMachine = editing != null
-        ? machines.firstWhere((m) => m.id == editing.machineId,
-            orElse: () => machines.first)
-        : machines.first;
-    final inputCtrl = TextEditingController(
-        text: editing != null ? editing.inputKg.toString() : '');
-    final outputCtrl = TextEditingController(
-        text: editing != null ? editing.outputKg.toString() : '');
-    final procCtrl = TextEditingController(
-        text: editing != null ? editing.processingCost.toString() : '');
-    final transCtrl = TextEditingController(
-        text: editing != null ? editing.transportCost.toString() : '');
-    final nameCtrl = TextEditingController(
-        text: editing?.resultMaterialName ?? '');
-    var resultType =
-        editing?.resultType ?? WasteResultType.rawMaterial;
-    DateTime date = editing?.date ?? DateTime.now();
-
     showDialog(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDlg) {
-          final inputKg = double.tryParse(inputCtrl.text) ?? 0;
-          final outputKg = double.tryParse(outputCtrl.text) ?? 0;
-          final proc = double.tryParse(procCtrl.text) ?? 0;
-          final trans = double.tryParse(transCtrl.text) ?? 0;
-          final total = proc + trans;
-          final cpk = outputKg > 0 ? total / outputKg : 0.0;
-
-          return AlertDialog(
-            title: Text(editing == null
-                ? l10n.mfgAddWasteRun
-                : l10n.mfgEditWasteRun),
-            content: SizedBox(
-              width: 460,
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    DropdownButtonFormField<WasteMachineModel>(
-                      value: selectedMachine,
-                      decoration:
-                          InputDecoration(labelText: l10n.mfgMachineName),
-                      items: machines
-                          .map((m) => DropdownMenuItem(
-                              value: m, child: Text(m.name)))
-                          .toList(),
-                      onChanged: (v) =>
-                          setDlg(() => selectedMachine = v),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(children: [
-                      Expanded(
-                        child: TextField(
-                          controller: inputCtrl,
-                          keyboardType:
-                              const TextInputType.numberWithOptions(
-                                  decimal: true),
-                          decoration: InputDecoration(
-                              labelText: l10n.mfgInputKgLabel),
-                          onChanged: (_) => setDlg(() {}),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: TextField(
-                          controller: outputCtrl,
-                          keyboardType:
-                              const TextInputType.numberWithOptions(
-                                  decimal: true),
-                          decoration: InputDecoration(
-                              labelText: l10n.mfgOutputKgLabel),
-                          onChanged: (_) => setDlg(() {}),
-                        ),
-                      ),
-                    ]),
-                    const SizedBox(height: 12),
-                    Row(children: [
-                      Expanded(
-                        child: TextField(
-                          controller: procCtrl,
-                          keyboardType:
-                              const TextInputType.numberWithOptions(
-                                  decimal: true),
-                          decoration: InputDecoration(
-                              labelText: l10n.mfgProcessingCost),
-                          onChanged: (_) => setDlg(() {}),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: TextField(
-                          controller: transCtrl,
-                          keyboardType:
-                              const TextInputType.numberWithOptions(
-                                  decimal: true),
-                          decoration: InputDecoration(
-                              labelText: l10n.mfgTransportCost),
-                          onChanged: (_) => setDlg(() {}),
-                        ),
-                      ),
-                    ]),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Text(
-                            'التاريخ: ${DateFormat('dd/MM/yyyy').format(date)}'),
-                        const Spacer(),
-                        TextButton.icon(
-                          onPressed: () async {
-                            final p = await showDatePicker(
-                              context: context,
-                              initialDate: date,
-                              firstDate: DateTime(2020),
-                              lastDate: DateTime(2100),
-                            );
-                            if (p != null) setDlg(() => date = p);
-                          },
-                          icon: const Icon(Icons.calendar_today,
-                              size: 16),
-                          label: Text(l10n.mfgChooseDate),
-                        ),
-                      ],
-                    ),
-                    const Divider(),
-                    DropdownButtonFormField<WasteResultType>(
-                      value: resultType,
-                      decoration:
-                          InputDecoration(labelText: l10n.mfgResultTypeLabel),
-                      items: WasteResultType.values
-                          .map((t) => DropdownMenuItem(
-                              value: t,
-                              child: Text(t == WasteResultType.rawMaterial
-                                  ? l10n.mfgWasteNewMaterial
-                                  : l10n.mfgWasteCostOnly)))
-                          .toList(),
-                      onChanged: (v) =>
-                          setDlg(() => resultType = v!),
-                    ),
-                    if (resultType ==
-                        WasteResultType.rawMaterial) ...[
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: nameCtrl,
-                        decoration: InputDecoration(
-                            labelText: l10n.mfgResultMaterialName),
-                      ),
-                    ],
-                    const Divider(),
-                    Text(
-                        'التكلفة الإجمالية: \$${total.toStringAsFixed(2)} | سعر الكيلو: \$${cpk.toStringAsFixed(2)}',
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.primaryColor)),
-                  ],
-                ),
-              ),
-            ),
-            actions: [
-              TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: Text(l10n.cancel)),
-              ElevatedButton(
-                onPressed: () {
-                  if (selectedMachine == null ||
-                      inputKg <= 0 ||
-                      outputKg <= 0) return;
-                  final now = DateTime.now();
-                  final runId = editing?.id ?? const Uuid().v4();
-                  final run = WasteProcessingRunModel(
-                    id: runId,
-                    machineId: selectedMachine!.id,
-                    machineName: selectedMachine!.name,
-                    inputKg: inputKg,
-                    outputKg: outputKg,
-                    processingCost: proc,
-                    transportCost: trans,
-                    totalCost: total,
-                    costPerKg: cpk,
-                    resultType: resultType,
-                    resultMaterialId: resultType ==
-                            WasteResultType.rawMaterial
-                        ? '${runId}_material'
-                        : null,
-                    resultMaterialName: resultType ==
-                            WasteResultType.rawMaterial
-                        ? nameCtrl.text.trim().isNotEmpty
-                            ? nameCtrl.text.trim()
-                            : 'هالك مخروز - ${selectedMachine!.name}'
-                        : null,
-                    date: date,
-                    createdBy: CurrentUserService.instance.userName,
-                    createdAt: editing?.createdAt ?? now,
-                  );
-                  if (editing == null) {
-                    context
-                        .read<WasteProcessingBloc>()
-                        .add(WasteRunAddRequested(run: run));
-                  } else {
-                    context
-                        .read<WasteProcessingBloc>()
-                        .add(WasteRunUpdateRequested(run: run));
-                  }
-                  Navigator.pop(ctx);
-                },
-                child:
-                    Text(editing == null ? l10n.mfgAddWasteRun : l10n.mfgSave),
-              ),
-            ],
-          );
+      builder: (ctx) => _WasteRunDialog(
+        editing: editing,
+        machines: machines,
+        onSave: (run) {
+          if (editing == null) {
+            context.read<WasteProcessingBloc>().add(
+                  WasteRunAddRequested(run: run),
+                );
+          } else {
+            context.read<WasteProcessingBloc>().add(
+                  WasteRunUpdateRequested(run: run),
+                );
+          }
+        },
+        onExecute: (run) {
+          context.read<WasteProcessingBloc>().add(
+                WasteRunUpdateRequested(run: run, execute: true),
+              );
         },
       ),
     );
@@ -619,6 +467,311 @@ class _RunsTab extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _WasteRunDialog extends StatefulWidget {
+  final WasteProcessingRunModel? editing;
+  final List<WasteMachineModel> machines;
+  final ValueChanged<WasteProcessingRunModel> onSave;
+  final ValueChanged<WasteProcessingRunModel> onExecute;
+
+  const _WasteRunDialog({
+    required this.editing,
+    required this.machines,
+    required this.onSave,
+    required this.onExecute,
+  });
+
+  @override
+  State<_WasteRunDialog> createState() => _WasteRunDialogState();
+}
+
+class _WasteRunDialogState extends State<_WasteRunDialog> {
+  WasteMachineModel? _selectedMachine;
+  final _inputCtrl = TextEditingController();
+  final _outputCtrl = TextEditingController();
+  final _procCtrl = TextEditingController();
+  final _transCtrl = TextEditingController();
+  WasteResultType _resultType = WasteResultType.rawMaterial;
+  DateTime _date = DateTime.now();
+
+  bool get _isExecuted =>
+      widget.editing?.status == WasteRunStatus.executed;
+
+  @override
+  void initState() {
+    super.initState();
+    final e = widget.editing;
+    if (e != null) {
+      _selectedMachine = widget.machines.firstWhere(
+        (m) => m.id == e.machineId,
+        orElse: () => widget.machines.first,
+      );
+      _inputCtrl.text = e.inputKg.toString();
+      _outputCtrl.text = e.outputKg?.toString() ?? '';
+      _procCtrl.text = e.processingCost.toString();
+      _transCtrl.text = e.transportCost.toString();
+      _resultType = e.resultType;
+      _date = e.date;
+    } else if (widget.machines.isNotEmpty) {
+      _selectedMachine = widget.machines.first;
+    }
+  }
+
+  @override
+  void dispose() {
+    _inputCtrl.dispose();
+    _outputCtrl.dispose();
+    _procCtrl.dispose();
+    _transCtrl.dispose();
+    super.dispose();
+  }
+
+  double get _inputKg => double.tryParse(_inputCtrl.text) ?? 0;
+
+  double get _outputKg => double.tryParse(_outputCtrl.text) ?? 0;
+
+  double get _totalCost {
+    final proc = double.tryParse(_procCtrl.text) ?? 0;
+    final trans = double.tryParse(_transCtrl.text) ?? 0;
+    return proc + trans;
+  }
+
+  double get _costPerKg =>
+      _outputKg > 0 ? _totalCost / _outputKg : 0;
+
+  bool get _canExecute =>
+      _outputCtrl.text.isNotEmpty &&
+      _outputKg > 0 &&
+      _inputKg > 0 &&
+      !_isExecuted;
+
+  WasteProcessingRunModel _buildRun() {
+    final now = DateTime.now();
+    final outputVal = double.tryParse(_outputCtrl.text);
+    return WasteProcessingRunModel(
+      id: widget.editing?.id ?? const Uuid().v4(),
+      machineId: _selectedMachine!.id,
+      machineName: _selectedMachine!.name,
+      inputKg: _inputKg,
+      outputKg: outputVal,
+      processingCost: double.tryParse(_procCtrl.text) ?? 0,
+      transportCost: double.tryParse(_transCtrl.text) ?? 0,
+      totalCost: _totalCost,
+      costPerKg: _costPerKg,
+      resultType: _resultType,
+      resultMaterialId: widget.editing?.resultMaterialId,
+      resultMaterialName: _resultType == WasteResultType.rawMaterial
+          ? WasteProcessingRunModel.heavyMaterialName
+          : null,
+      status: widget.editing?.status ?? WasteRunStatus.draft,
+      date: _date,
+      createdBy: widget.editing?.createdBy ??
+          CurrentUserService.instance.userName,
+      modifiedBy: widget.editing != null
+          ? CurrentUserService.instance.userName
+          : '',
+      createdAt: widget.editing?.createdAt ?? now,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return AlertDialog(
+      title: Text(widget.editing == null
+          ? l10n.mfgAddWasteRun
+          : l10n.mfgEditWasteRun),
+      content: SizedBox(
+        width: 460,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_isExecuted)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.successColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                        color: AppTheme.successColor.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.check_circle,
+                          color: AppTheme.successColor, size: 18),
+                      const SizedBox(width: 8),
+                      Text(l10n.mfgExecutedNote,
+                          style: const TextStyle(
+                              color: AppTheme.successColor,
+                              fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                ),
+              DropdownButtonFormField<WasteMachineModel>(
+                value: _selectedMachine,
+                decoration: InputDecoration(labelText: l10n.mfgMachineName),
+                items: widget.machines
+                    .map((m) =>
+                        DropdownMenuItem(value: m, child: Text(m.name)))
+                    .toList(),
+                onChanged: _isExecuted
+                    ? null
+                    : (v) => setState(() => _selectedMachine = v),
+              ),
+              const SizedBox(height: 12),
+              Row(children: [
+                Expanded(
+                  child: TextField(
+                    controller: _inputCtrl,
+                    keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true),
+                    decoration:
+                        InputDecoration(labelText: l10n.mfgInputKgLabel),
+                    onChanged: (_) => setState(() {}),
+                    readOnly: _isExecuted,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: _outputCtrl,
+                    keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true),
+                    decoration:
+                        InputDecoration(labelText: l10n.mfgOutputKgLabel),
+                    onChanged: (_) => setState(() {}),
+                    readOnly: _isExecuted,
+                  ),
+                ),
+              ]),
+              const SizedBox(height: 12),
+              Row(children: [
+                Expanded(
+                  child: TextField(
+                    controller: _procCtrl,
+                    keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true),
+                    decoration:
+                        InputDecoration(labelText: l10n.mfgProcessingCost),
+                    onChanged: (_) => setState(() {}),
+                    readOnly: _isExecuted,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: _transCtrl,
+                    keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true),
+                    decoration:
+                        InputDecoration(labelText: l10n.mfgTransportCost),
+                    onChanged: (_) => setState(() {}),
+                    readOnly: _isExecuted,
+                  ),
+                ),
+              ]),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Text('${l10n.date}: ${DateFormat('dd/MM/yyyy').format(_date)}'),
+                  const Spacer(),
+                  if (!_isExecuted)
+                    TextButton.icon(
+                      onPressed: () async {
+                        final p = await showDatePicker(
+                          context: context,
+                          initialDate: _date,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime(2100),
+                        );
+                        if (p != null) setState(() => _date = p);
+                      },
+                      icon: const Icon(Icons.calendar_today, size: 16),
+                      label: Text(l10n.mfgChooseDate),
+                    ),
+                ],
+              ),
+              const Divider(),
+              DropdownButtonFormField<WasteResultType>(
+                value: _resultType,
+                decoration:
+                    InputDecoration(labelText: l10n.mfgResultTypeLabel),
+                items: WasteResultType.values
+                    .map((t) => DropdownMenuItem(
+                          value: t,
+                          child: Text(t == WasteResultType.rawMaterial
+                              ? l10n.mfgWasteNewMaterial
+                              : l10n.mfgWasteCostOnly),
+                        ))
+                    .toList(),
+                onChanged: _isExecuted
+                    ? null
+                    : (v) => setState(() => _resultType = v!),
+              ),
+              if (_resultType == WasteResultType.rawMaterial) ...[
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppTheme.infoColor.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                        color: AppTheme.infoColor.withValues(alpha: 0.3)),
+                  ),
+                  child: Text(
+                    l10n.mfgWasteHeavyMaterialNote,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.infoColor,
+                    ),
+                  ),
+                ),
+              ],
+              const Divider(),
+              Text(
+                '${l10n.mfgTotalCost}: \$${_totalCost.toStringAsFixed(2)} | ${l10n.mfgCostPerKgLabel}: \$${_costPerKg.toStringAsFixed(2)}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.primaryColor,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l10n.cancel)),
+        if (!_isExecuted)
+          ElevatedButton(
+            onPressed: () {
+              if (_selectedMachine == null || _inputKg <= 0) return;
+              widget.onSave(_buildRun());
+              Navigator.pop(context);
+            },
+            child: Text(
+                widget.editing == null ? l10n.mfgAddWasteRun : l10n.mfgSave),
+          ),
+        if (!_isExecuted && widget.editing != null && _canExecute)
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.successColor,
+            ),
+            onPressed: () {
+              widget.onExecute(_buildRun());
+              Navigator.pop(context);
+            },
+            child: Text(l10n.mfgExecuteBtn),
+          ),
+      ],
     );
   }
 }

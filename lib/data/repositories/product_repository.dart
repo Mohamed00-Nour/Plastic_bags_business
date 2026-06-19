@@ -24,6 +24,17 @@ class ProductRepository {
     return ProductModel.fromFirestore(doc);
   }
 
+  Future<ProductModel?> findByName(String name) async {
+    final lower = name.toLowerCase();
+    final snapshot =
+        await _collection.where('isActive', isEqualTo: true).get();
+    for (final doc in snapshot.docs) {
+      final product = ProductModel.fromFirestore(doc);
+      if (product.name.toLowerCase() == lower) return product;
+    }
+    return null;
+  }
+
   Future<void> addProduct(ProductModel product) async {
     final data = product.toFirestore();
     data['createdBy'] = CurrentUserService.instance.userName;
@@ -55,6 +66,15 @@ class ProductRepository {
   Future<void> incrementStock(String productId, int amount) async {
     await _collection.doc(productId).update({
       'stockQuantity': FieldValue.increment(amount),
+      'modifiedBy': CurrentUserService.instance.userName,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> stockIn(String productId, int deltaQty, double newCostPrice) async {
+    await _collection.doc(productId).update({
+      'stockQuantity': FieldValue.increment(deltaQty),
+      'costPrice': newCostPrice,
       'modifiedBy': CurrentUserService.instance.userName,
       'updatedAt': FieldValue.serverTimestamp(),
     });

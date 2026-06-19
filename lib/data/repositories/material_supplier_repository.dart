@@ -22,6 +22,16 @@ class MaterialSupplierRepository {
         .map((s) => s.docs.map(MaterialSupplierModel.fromFirestore).toList());
   }
 
+  Future<MaterialSupplierModel?> findByName(String name) async {
+    final lower = name.toLowerCase();
+    final s = await _col.get();
+    for (final doc in s.docs) {
+      final supplier = MaterialSupplierModel.fromFirestore(doc);
+      if (supplier.name.toLowerCase() == lower) return supplier;
+    }
+    return null;
+  }
+
   Future<void> add(MaterialSupplierModel supplier) async {
     final data = supplier.toFirestore();
     data['createdBy'] = CurrentUserService.instance.userName;

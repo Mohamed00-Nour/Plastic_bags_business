@@ -45,7 +45,7 @@ class _DamagedInventoryScreenState extends State<DamagedInventoryScreen> {
                 }
 
                 final totalDamaged =
-                    items.fold(0.0, (s, e) => s + e.damagedKg);
+                    items.fold(0.0, (s, e) => s + e.signedKg);
 
                 return Column(
                   children: [
@@ -82,24 +82,33 @@ class _DamagedInventoryScreenState extends State<DamagedInventoryScreen> {
                         itemCount: items.length,
                         itemBuilder: (context, i) {
                           final item = items[i];
+                          final isDeduction = item.isDeduction;
                           return Card(
                             margin:
                                 const EdgeInsets.only(bottom: 8),
                             child: ListTile(
                               leading: CircleAvatar(
-                                backgroundColor: AppTheme.warningColor
+                                backgroundColor: (isDeduction
+                                        ? AppTheme.dangerColor
+                                        : AppTheme.warningColor)
                                     .withValues(alpha: 0.1),
-                                child: const Icon(
-                                    Icons.broken_image_outlined,
-                                    color: AppTheme.warningColor),
+                                child: Icon(
+                                    isDeduction
+                                        ? Icons.remove_circle_outline
+                                        : Icons.broken_image_outlined,
+                                    color: isDeduction
+                                        ? AppTheme.dangerColor
+                                        : AppTheme.warningColor),
                               ),
                               title: Text(
-                                '${item.mixName} - ${item.productName}',
+                                isDeduction
+                                    ? item.productName
+                                    : '${item.mixName} - ${item.productName}',
                                 style: const TextStyle(
                                     fontWeight: FontWeight.w600),
                               ),
                               subtitle: Text(
-                                '${item.damagedKg.toStringAsFixed(1)} ${l10n.mfgKg} | ${DateFormat('dd/MM/yyyy').format(item.date)}',
+                                '${isDeduction ? '-' : ''}${item.damagedKg.toStringAsFixed(1)} ${l10n.mfgKg} | ${DateFormat('dd/MM/yyyy').format(item.date)}',
                               ),
                               trailing: Text(
                                 item.createdBy,

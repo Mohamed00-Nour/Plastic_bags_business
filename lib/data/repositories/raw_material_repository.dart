@@ -25,6 +25,15 @@ class RawMaterialRepository {
     return RawMaterialModel.fromFirestore(doc);
   }
 
+  Future<RawMaterialModel?> findByName(String name) async {
+    final lower = name.toLowerCase();
+    final all = await getAllOnce();
+    for (final material in all) {
+      if (material.name.toLowerCase() == lower) return material;
+    }
+    return null;
+  }
+
   Future<void> add(RawMaterialModel material) async {
     final data = material.toFirestore();
     data['createdBy'] = CurrentUserService.instance.userName;
@@ -53,6 +62,15 @@ class RawMaterialRepository {
   Future<void> decrementQuantity(String id, double deltaKg) async {
     await _col.doc(id).update({
       'quantityKg': FieldValue.increment(-deltaKg),
+      'modifiedBy': CurrentUserService.instance.userName,
+      'updatedAt': Timestamp.fromDate(DateTime.now()),
+    });
+  }
+
+  Future<void> stockIn(String id, double deltaKg, double newPricePerKg) async {
+    await _col.doc(id).update({
+      'quantityKg': FieldValue.increment(deltaKg),
+      'pricePerKg': newPricePerKg,
       'modifiedBy': CurrentUserService.instance.userName,
       'updatedAt': Timestamp.fromDate(DateTime.now()),
     });

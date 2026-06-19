@@ -37,21 +37,60 @@ class RawMaterialDeleteRequested extends RawMaterialEvent {
   List<Object?> get props => [id];
 }
 
+class RawMaterialStockInRequested extends RawMaterialEvent {
+  final String materialId;
+  final String materialName;
+  final double quantityKg;
+  final double purchasePricePerKg;
+  final double currentStock;
+  final double currentPricePerKg;
+  final String? note;
+  final String? supplierId;
+  final String? supplierName;
+
+  const RawMaterialStockInRequested({
+    required this.materialId,
+    required this.materialName,
+    required this.quantityKg,
+    required this.purchasePricePerKg,
+    required this.currentStock,
+    required this.currentPricePerKg,
+    this.note,
+    this.supplierId,
+    this.supplierName,
+  });
+
+  @override
+  List<Object?> get props =>
+      [materialId, quantityKg, purchasePricePerKg, note];
+}
+
 class RawMaterialQuantityAddRequested extends RawMaterialEvent {
   final String materialId;
   final String materialName;
   final double quantityKg;
+  final double purchasePricePerKg;
   final double currentStock;
+  final double currentPricePerKg;
   final String? note;
+  final String? supplierId;
+  final String? supplierName;
+
   const RawMaterialQuantityAddRequested({
     required this.materialId,
     required this.materialName,
     required this.quantityKg,
+    required this.purchasePricePerKg,
     required this.currentStock,
+    required this.currentPricePerKg,
     this.note,
+    this.supplierId,
+    this.supplierName,
   });
+
   @override
-  List<Object?> get props => [materialId, quantityKg, note];
+  List<Object?> get props =>
+      [materialId, quantityKg, purchasePricePerKg, note, supplierId];
 }
 
 class RawMaterialQuantityReduceRequested extends RawMaterialEvent {
@@ -60,6 +99,7 @@ class RawMaterialQuantityReduceRequested extends RawMaterialEvent {
   final double quantityKg;
   final double currentStock;
   final String? note;
+
   const RawMaterialQuantityReduceRequested({
     required this.materialId,
     required this.materialName,
@@ -67,6 +107,7 @@ class RawMaterialQuantityReduceRequested extends RawMaterialEvent {
     required this.currentStock,
     this.note,
   });
+
   @override
   List<Object?> get props => [materialId, quantityKg, note];
 }

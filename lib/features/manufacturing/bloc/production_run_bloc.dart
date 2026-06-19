@@ -1,10 +1,14 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
+import '../../../core/services/current_user_service.dart';
 import '../../../data/models/damaged_inventory_model.dart';
 import '../../../data/models/production_run_model.dart';
+import '../../../data/models/stock_log_model.dart';
 import '../../../data/repositories/damaged_inventory_repository.dart';
+import '../../../data/repositories/product_repository.dart';
 import '../../../data/repositories/production_run_repository.dart';
+import '../../../data/repositories/stock_log_repository.dart';
 import 'production_run_event.dart';
 import 'production_run_state.dart';
 
@@ -26,6 +30,8 @@ class ProductionRunBloc
     extends Bloc<ProductionRunEvent, ProductionRunState> {
   final ProductionRunRepository _repository;
   final DamagedInventoryRepository? _damagedRepository;
+  final ProductRepository? _productRepository;
+  final StockLogRepository? _stockLogRepository;
   StreamSubscription? _subscription;
   List<ProductionRunModel> _allRuns = [];
   RunFilterPeriod _activePeriod = RunFilterPeriod.all;
@@ -35,8 +41,12 @@ class ProductionRunBloc
   ProductionRunBloc({
     required ProductionRunRepository repository,
     DamagedInventoryRepository? damagedRepository,
+    ProductRepository? productRepository,
+    StockLogRepository? stockLogRepository,
   })  : _repository = repository,
         _damagedRepository = damagedRepository,
+        _productRepository = productRepository,
+        _stockLogRepository = stockLogRepository,
         super(ProductionRunInitial()) {
     on<ProductionRunLoadRequested>(_onLoad);
     on<_RunsReceived>(_onReceived);
@@ -47,6 +57,17 @@ class ProductionRunBloc
     on<ProductionRunDeleteRequested>(_onDelete);
     on<ProductionRunExecuteRequested>(_onExecute);
     on<ProductionRunFilterRequested>(_onFilter);
+  }
+
+  static double weightedAverageCost({
+    required int currentStock,
+    required double currentCostPrice,
+    required int addedQty,
+    required double unitCost,
+  }) {
+    final totalQty = currentStock + addedQty;
+    if (totalQty <= 0) return unitCost;
+    return (currentStock * currentCostPrice + addedQty * unitCost) / totalQty;
   }
 
   Future<void> _onLoad(ProductionRunLoadRequested event,
@@ -174,7 +195,7 @@ class ProductionRunBloc
       Emitter<ProductionRunState> emit) async {
     try {
       final run = event.run;
-      if (run.outputKg == null || run.effectiveOutputKg <= 0) {
+      if (run.effectiveOutputKg <= 0) {
         emit(const ProductionRunError(
             message: 'لا يمكن تنفيذ التشغيلة - أدخل كمية الخرج'));
         _restoreLoaded(emit);
@@ -187,10 +208,8 @@ class ProductionRunBloc
         return;
       }
 
-      // Persist latest run data before executing
       await _repository.update(run);
 
-      // Store damaged kg in damaged inventory
       final damaged = run.calculatedDamagedKg;
       if (damaged > 0 && _damagedRepository != null) {
         final entry = DamagedInventoryModel(
@@ -198,7 +217,7 @@ class ProductionRunBloc
           productionRunId: run.id,
           mixId: run.mixId,
           mixName: run.mixName,
-          productName: run.productName,
+          productName: run.outputSummary,
           damagedKg: damaged,
           date: run.date,
           createdAt: DateTime.now(),
@@ -206,7 +225,41 @@ class ProductionRunBloc
         await _damagedRepository.add(entry);
       }
 
-      // Save the calculated damaged value and mark as executed
+      if (_productRepository != null && run.outputs.isNotEmpty) {
+        final unitCost = run.costPerKg;
+        for (final output in run.outputs) {
+          final qty = output.quantityKg.round();
+          if (qty <= 0) continue;
+
+          final product =
+              await _productRepository.getProduct(output.productId);
+          final stockBefore = product.stockQuantity;
+          final newCost = weightedAverageCost(
+            currentStock: stockBefore,
+            currentCostPrice: product.costPrice,
+            addedQty: qty,
+            unitCost: unitCost,
+          );
+
+          await _productRepository.stockIn(output.productId, qty, newCost);
+
+          if (_stockLogRepository != null) {
+            await _stockLogRepository.addLog(StockLogModel(
+              id: const Uuid().v4(),
+              productId: output.productId,
+              productName: output.productName,
+              type: StockMovementType.incoming,
+              quantity: qty,
+              stockBefore: stockBefore,
+              stockAfter: stockBefore + qty,
+              note: 'Production run ${run.mixName}',
+              createdBy: CurrentUserService.instance.userName,
+              createdAt: DateTime.now(),
+            ));
+          }
+        }
+      }
+
       await _repository.update(run.copyWith(
         damagedKg: damaged,
         status: ProductionRunStatus.executed,

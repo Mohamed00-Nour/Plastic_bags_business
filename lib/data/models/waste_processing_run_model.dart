@@ -4,6 +4,8 @@ import 'additional_cost.dart';
 
 enum WasteResultType { rawMaterial, costOnly }
 
+enum WasteRunStatus { draft, executed }
+
 extension WasteResultTypeX on WasteResultType {
   String get label {
     switch (this) {
@@ -16,11 +18,14 @@ extension WasteResultTypeX on WasteResultType {
 }
 
 class WasteProcessingRunModel extends Equatable {
+  static const heavyMaterialName = 'heavy';
+  static const kharazaSupplierName = 'الخرازة';
+
   final String id;
   final String machineId;
   final String machineName;
   final double inputKg;
-  final double outputKg;
+  final double? outputKg;
   final double processingCost;
   final double transportCost;
   final List<AdditionalCost> additionalExpenses;
@@ -29,6 +34,7 @@ class WasteProcessingRunModel extends Equatable {
   final WasteResultType resultType;
   final String? resultMaterialId;
   final String? resultMaterialName;
+  final WasteRunStatus status;
   final String? notes;
   final DateTime date;
   final String createdBy;
@@ -40,15 +46,16 @@ class WasteProcessingRunModel extends Equatable {
     required this.machineId,
     required this.machineName,
     required this.inputKg,
-    required this.outputKg,
+    this.outputKg,
     this.processingCost = 0,
     this.transportCost = 0,
     this.additionalExpenses = const [],
-    required this.totalCost,
-    required this.costPerKg,
+    this.totalCost = 0,
+    this.costPerKg = 0,
     required this.resultType,
     this.resultMaterialId,
     this.resultMaterialName,
+    this.status = WasteRunStatus.draft,
     this.notes,
     required this.date,
     required this.createdBy,
@@ -56,10 +63,23 @@ class WasteProcessingRunModel extends Equatable {
     required this.createdAt,
   });
 
-  double get lossKg => inputKg - outputKg;
-  double get lossPercentage => inputKg > 0 ? (lossKg / inputKg) * 100 : 0;
+  double get effectiveOutputKg => outputKg ?? 0;
+
+  double get lossKg => inputKg - effectiveOutputKg;
+
+  double get lossPercentage =>
+      inputKg > 0 ? (lossKg / inputKg) * 100 : 0;
+
   double get additionalExpensesTotal =>
       additionalExpenses.fold(0, (s, c) => s + c.amount);
+
+  bool get isExecuted => status == WasteRunStatus.executed;
+
+  bool get canExecute =>
+      outputKg != null &&
+      effectiveOutputKg > 0 &&
+      inputKg > 0 &&
+      !isExecuted;
 
   factory WasteProcessingRunModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
@@ -70,7 +90,9 @@ class WasteProcessingRunModel extends Equatable {
       machineId: data['machineId'] ?? '',
       machineName: data['machineName'] ?? '',
       inputKg: (data['inputKg'] ?? 0).toDouble(),
-      outputKg: (data['outputKg'] ?? 0).toDouble(),
+      outputKg: data['outputKg'] != null
+          ? (data['outputKg'] as num).toDouble()
+          : null,
       processingCost: (data['processingCost'] ?? 0).toDouble(),
       transportCost: (data['transportCost'] ?? 0).toDouble(),
       additionalExpenses: rawAdditional
@@ -84,6 +106,9 @@ class WasteProcessingRunModel extends Equatable {
       ),
       resultMaterialId: data['resultMaterialId'],
       resultMaterialName: data['resultMaterialName'],
+      status: data['status'] == 'executed'
+          ? WasteRunStatus.executed
+          : WasteRunStatus.draft,
       notes: data['notes'],
       date: (data['date'] as Timestamp?)?.toDate() ?? DateTime.now(),
       createdBy: data['createdBy'] ?? '',
@@ -107,6 +132,7 @@ class WasteProcessingRunModel extends Equatable {
         'resultType': resultType.name,
         'resultMaterialId': resultMaterialId,
         'resultMaterialName': resultMaterialName,
+        'status': status == WasteRunStatus.executed ? 'executed' : 'draft',
         'notes': notes,
         'date': Timestamp.fromDate(date),
         'createdBy': createdBy,
@@ -128,6 +154,7 @@ class WasteProcessingRunModel extends Equatable {
     WasteResultType? resultType,
     String? resultMaterialId,
     String? resultMaterialName,
+    WasteRunStatus? status,
     String? notes,
     DateTime? date,
     String? createdBy,
@@ -148,6 +175,7 @@ class WasteProcessingRunModel extends Equatable {
       resultType: resultType ?? this.resultType,
       resultMaterialId: resultMaterialId ?? this.resultMaterialId,
       resultMaterialName: resultMaterialName ?? this.resultMaterialName,
+      status: status ?? this.status,
       notes: notes ?? this.notes,
       date: date ?? this.date,
       createdBy: createdBy ?? this.createdBy,
@@ -158,5 +186,5 @@ class WasteProcessingRunModel extends Equatable {
 
   @override
   List<Object?> get props =>
-      [id, machineId, inputKg, outputKg, totalCost, costPerKg, date];
+      [id, machineId, inputKg, outputKg, totalCost, costPerKg, date, status];
 }

@@ -201,6 +201,8 @@ class MyApp extends StatelessWidget {
             create: (_) => ProductionRunBloc(
               repository: productionRunRepository,
               damagedRepository: damagedInventoryRepository,
+              productRepository: productRepository,
+              stockLogRepository: stockLogRepository,
             ),
           ),
           BlocProvider<MaterialSupplierBloc>(
@@ -213,6 +215,8 @@ class MyApp extends StatelessWidget {
               machineRepository: wasteMachineRepository,
               processingRepository: wasteProcessingRepository,
               materialRepository: rawMaterialRepository,
+              supplierRepository: materialSupplierRepository,
+              damagedRepository: damagedInventoryRepository,
             ),
           ),
           BlocProvider<ManufacturingExpenseBloc>(

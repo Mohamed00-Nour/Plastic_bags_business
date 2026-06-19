@@ -25,8 +25,70 @@ class RawMaterialBloc extends Bloc<RawMaterialEvent, RawMaterialState> {
     on<RawMaterialAddRequested>(_onAdd);
     on<RawMaterialUpdateRequested>(_onUpdate);
     on<RawMaterialDeleteRequested>(_onDelete);
+    on<RawMaterialStockInRequested>(_onStockIn);
     on<RawMaterialQuantityAddRequested>(_onQuantityAdd);
     on<RawMaterialQuantityReduceRequested>(_onQuantityReduce);
+  }
+
+  static double weightedAveragePrice({
+    required double currentStock,
+    required double currentPricePerKg,
+    required double quantityKg,
+    required double purchasePricePerKg,
+  }) {
+    final totalQty = currentStock + quantityKg;
+    if (totalQty <= 0) return purchasePricePerKg;
+    return (currentStock * currentPricePerKg +
+            quantityKg * purchasePricePerKg) /
+        totalQty;
+  }
+
+  Future<void> _performStockIn({
+    required String materialId,
+    required String materialName,
+    required double quantityKg,
+    required double purchasePricePerKg,
+    required double currentStock,
+    required double currentPricePerKg,
+    String? note,
+    String? supplierId,
+    String? supplierName,
+  }) async {
+    final newAvg = weightedAveragePrice(
+      currentStock: currentStock,
+      currentPricePerKg: currentPricePerKg,
+      quantityKg: quantityKg,
+      purchasePricePerKg: purchasePricePerKg,
+    );
+
+    await _repository.stockIn(materialId, quantityKg, newAvg);
+
+    if (supplierId != null || supplierName != null) {
+      final material = await _repository.getById(materialId);
+      if (material != null) {
+        await _repository.update(material.copyWith(
+          supplierId: supplierId ?? material.supplierId,
+          supplierName: supplierName ?? material.supplierName,
+        ));
+      }
+    }
+
+    if (_stockLogRepository != null) {
+      final log = MaterialStockLogModel(
+        id: const Uuid().v4(),
+        materialId: materialId,
+        materialName: materialName,
+        type: MaterialStockChangeType.addition,
+        quantityKg: quantityKg,
+        stockBefore: currentStock,
+        stockAfter: currentStock + quantityKg,
+        pricePerKg: purchasePricePerKg,
+        avgPriceAfter: newAvg,
+        note: note,
+        createdAt: DateTime.now(),
+      );
+      await _stockLogRepository!.add(log);
+    }
   }
 
   Future<void> _onLoad(
@@ -59,6 +121,14 @@ class RawMaterialBloc extends Bloc<RawMaterialEvent, RawMaterialState> {
   Future<void> _onAdd(
       RawMaterialAddRequested event, Emitter<RawMaterialState> emit) async {
     try {
+      final existing =
+          await _repository.findByName(event.material.name);
+      if (existing != null) {
+        emit(const RawMaterialError(
+            message:
+                'الخامة موجودة بالفعل — استخدم "خامة موجودة" لإضافة كمية'));
+        return;
+      }
       await _repository.add(event.material);
       emit(const RawMaterialOperationSuccess(message: 'تم إضافة الخامة'));
     } catch (e) {
@@ -86,24 +156,50 @@ class RawMaterialBloc extends Bloc<RawMaterialEvent, RawMaterialState> {
     }
   }
 
+  Future<void> _onStockIn(RawMaterialStockInRequested event,
+      Emitter<RawMaterialState> emit) async {
+    try {
+      if (event.quantityKg <= 0 || event.purchasePricePerKg <= 0) {
+        emit(const RawMaterialError(
+            message: 'أدخل كمية وسعر صحيحين'));
+        return;
+      }
+      await _performStockIn(
+        materialId: event.materialId,
+        materialName: event.materialName,
+        quantityKg: event.quantityKg,
+        purchasePricePerKg: event.purchasePricePerKg,
+        currentStock: event.currentStock,
+        currentPricePerKg: event.currentPricePerKg,
+        note: event.note,
+        supplierId: event.supplierId,
+        supplierName: event.supplierName,
+      );
+      emit(const RawMaterialOperationSuccess(message: 'تم إضافة الكمية'));
+    } catch (e) {
+      emit(RawMaterialError(message: e.toString()));
+    }
+  }
+
   Future<void> _onQuantityAdd(RawMaterialQuantityAddRequested event,
       Emitter<RawMaterialState> emit) async {
     try {
-      await _repository.incrementQuantity(event.materialId, event.quantityKg);
-      if (_stockLogRepository != null) {
-        final log = MaterialStockLogModel(
-          id: const Uuid().v4(),
-          materialId: event.materialId,
-          materialName: event.materialName,
-          type: MaterialStockChangeType.addition,
-          quantityKg: event.quantityKg,
-          stockBefore: event.currentStock,
-          stockAfter: event.currentStock + event.quantityKg,
-          note: event.note,
-          createdAt: DateTime.now(),
-        );
-        await _stockLogRepository.add(log);
+      if (event.quantityKg <= 0 || event.purchasePricePerKg <= 0) {
+        emit(const RawMaterialError(
+            message: 'أدخل كمية وسعر صحيحين'));
+        return;
       }
+      await _performStockIn(
+        materialId: event.materialId,
+        materialName: event.materialName,
+        quantityKg: event.quantityKg,
+        purchasePricePerKg: event.purchasePricePerKg,
+        currentStock: event.currentStock,
+        currentPricePerKg: event.currentPricePerKg,
+        note: event.note,
+        supplierId: event.supplierId,
+        supplierName: event.supplierName,
+      );
       emit(const RawMaterialOperationSuccess(message: 'تم إضافة الكمية'));
     } catch (e) {
       emit(RawMaterialError(message: e.toString()));
@@ -126,7 +222,7 @@ class RawMaterialBloc extends Bloc<RawMaterialEvent, RawMaterialState> {
           note: event.note,
           createdAt: DateTime.now(),
         );
-        await _stockLogRepository.add(log);
+        await _stockLogRepository!.add(log);
       }
       emit(const RawMaterialOperationSuccess(message: 'تم خصم الكمية'));
     } catch (e) {

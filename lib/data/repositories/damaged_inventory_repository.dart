@@ -7,6 +7,19 @@ class DamagedInventoryRepository {
   CollectionReference get _col =>
       _firestore.collection('damaged_inventory');
 
+  Future<List<DamagedInventoryModel>> getAllOnce() async {
+    final s = await _col.orderBy('date', descending: true).get();
+    return s.docs.map(DamagedInventoryModel.fromFirestore).toList();
+  }
+
+  Future<double> getTotalKg() async {
+    final items = await getAllOnce();
+    return items.fold<double>(
+      0.0,
+      (double sum, item) => sum + item.signedKg,
+    );
+  }
+
   Stream<List<DamagedInventoryModel>> getAll() {
     return _col
         .orderBy('date', descending: true)

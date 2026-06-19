@@ -22,7 +22,8 @@ class WasteProcessingLoaded extends WasteProcessingState {
   });
 
   double get totalInput => runs.fold(0, (s, r) => s + r.inputKg);
-  double get totalOutput => runs.fold(0, (s, r) => s + r.outputKg);
+  double get totalOutput =>
+      runs.fold(0, (s, r) => s + r.effectiveOutputKg);
   double get totalLoss => runs.fold(0, (s, r) => s + r.lossKg);
   double get totalCost => runs.fold(0, (s, r) => s + r.totalCost);
 

@@ -45,6 +45,13 @@ class WasteProcessingRepository {
     await _col.doc(run.id).update(data);
   }
 
+  Future<void> executeRun(String runId) async {
+    await _col.doc(runId).update({
+      'status': 'executed',
+      'modifiedBy': CurrentUserService.instance.userName,
+    });
+  }
+
   Future<void> delete(String id) async {
     await _col.doc(id).delete();
   }

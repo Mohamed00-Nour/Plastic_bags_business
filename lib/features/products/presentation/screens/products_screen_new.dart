@@ -269,6 +269,15 @@ class _ProductsScreenState extends State<ProductsScreen> {
     String? selectedSupplierId = product?.supplierId;
     String? selectedSupplierName = product?.supplierName;
 
+    bool nameExists(String name) {
+      if (name.trim().isEmpty) return false;
+      final state = context.read<ProductBloc>().state;
+      if (state is! ProductLoaded) return false;
+      final lower = name.trim().toLowerCase();
+      return state.products.any((p) =>
+          p.name.toLowerCase() == lower && p.id != product?.id);
+    }
+
     showDialog(
       context: context,
       builder: (ctx) {
@@ -289,12 +298,20 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             controller: nameCtrl,
                             decoration: InputDecoration(
                               labelText: l10n.name,
+                              errorText: nameExists(nameCtrl.text)
+                                  ? l10n.productExistsWarning
+                                  : null,
                             ),
-                            validator:
-                                (v) =>
-                                    v?.trim().isEmpty == true
-                                        ? l10n.required_field
-                                        : null,
+                            onChanged: (_) => setDialogState(() {}),
+                            validator: (v) {
+                              if (v?.trim().isEmpty == true) {
+                                return l10n.required_field;
+                              }
+                              if (nameExists(v!)) {
+                                return l10n.productExistsWarning;
+                              }
+                              return null;
+                            },
                           ),
                           const SizedBox(height: 12),
                           TextFormField(
@@ -431,7 +448,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     child: Text(l10n.cancel),
                   ),
                   ElevatedButton(
-                    onPressed: () {
+                    onPressed: nameExists(nameCtrl.text)
+                        ? null
+                        : () {
                       if (formKey.currentState!.validate()) {
                         final now = DateTime.now();
                         final p = ProductModel(
@@ -478,6 +497,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
     bool isIncrease,
   ) {
     final amountCtrl = TextEditingController();
+    final costCtrl = TextEditingController();
     final noteCtrl = TextEditingController();
     String? selectedSupplierId;
     String? selectedSupplierName;
@@ -499,6 +519,14 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     children: [
                       Text('${l10n.product}: ${product.name}'),
                       Text('${l10n.currentStock}: ${product.stockQuantity}'),
+                      if (isIncrease)
+                        Text(
+                          '${l10n.currentAvgCost}: \$${product.costPrice.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.infoColor,
+                          ),
+                        ),
                       const SizedBox(height: 16),
                       TextField(
                         controller: amountCtrl,
@@ -507,6 +535,17 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         ),
                         keyboardType: TextInputType.number,
                       ),
+                      if (isIncrease) ...[
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: costCtrl,
+                          decoration: InputDecoration(
+                            labelText: l10n.stockInUnitCostOptional,
+                          ),
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                        ),
+                      ],
                       const SizedBox(height: 12),
                       TextField(
                         controller: noteCtrl,
@@ -578,10 +617,15 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     final amount = int.tryParse(amountCtrl.text);
                     if (amount != null && amount > 0) {
                       if (isIncrease) {
+                        final unitCost = double.tryParse(costCtrl.text);
                         context.read<ProductBloc>().add(
                           ProductStockIncreased(
                             productId: product.id,
                             amount: amount,
+                            unitCost:
+                                unitCost != null && unitCost > 0
+                                    ? unitCost
+                                    : null,
                             note:
                                 noteCtrl.text.isNotEmpty ? noteCtrl.text : null,
                             supplierId: selectedSupplierId,

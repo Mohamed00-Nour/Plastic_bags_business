@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
 import 'additional_cost.dart';
 import 'custom_run_field.dart';
+import 'production_run_output.dart';
 
 enum ProductionRunStatus { draft, executed }
 
@@ -12,6 +13,7 @@ class ProductionRunModel extends Equatable {
   final String productName;
   final double inputKg;
   final double? outputKg;
+  final List<ProductionRunOutput> outputs;
   final double? damagedKg;
   final double technicianCost;
   final double electricityCost;
@@ -34,6 +36,7 @@ class ProductionRunModel extends Equatable {
     required this.productName,
     required this.inputKg,
     this.outputKg,
+    this.outputs = const [],
     this.damagedKg,
     this.technicianCost = 0,
     this.electricityCost = 0,
@@ -50,7 +53,12 @@ class ProductionRunModel extends Equatable {
     required this.createdAt,
   });
 
-  double get effectiveOutputKg => outputKg ?? 0;
+  double get totalOutputFromList =>
+      outputs.fold(0.0, (sum, o) => sum + o.quantityKg);
+
+  double get effectiveOutputKg =>
+      outputs.isNotEmpty ? totalOutputFromList : (outputKg ?? 0);
+
   double get effectiveDamagedKg => damagedKg ?? 0;
 
   double get customCostTotal =>
@@ -61,10 +69,7 @@ class ProductionRunModel extends Equatable {
 
   bool get isExecuted => status == ProductionRunStatus.executed;
 
-  bool get canExecute =>
-      outputKg != null &&
-      effectiveOutputKg > 0 &&
-      !isExecuted;
+  bool get canExecute => effectiveOutputKg > 0 && !isExecuted;
 
   double get wasteKg => inputKg - effectiveOutputKg;
   double get wastePercentage =>
@@ -72,10 +77,20 @@ class ProductionRunModel extends Equatable {
   double get additionalCostsTotal =>
       additionalCosts.fold(0, (s, c) => s + c.amount);
 
+  String get outputSummary => outputs.isNotEmpty
+      ? outputs
+          .map((o) => '${o.productName}: ${o.quantityKg.toStringAsFixed(1)}')
+          .join(' | ')
+      : productName;
+
   factory ProductionRunModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     final rawAdditional = data['additionalCosts'] as List<dynamic>? ?? [];
     final rawCustom = data['customFields'] as List<dynamic>? ?? [];
+    final rawOutputs = data['outputs'] as List<dynamic>? ?? [];
+    final outputs = rawOutputs
+        .map((o) => ProductionRunOutput.fromMap(o as Map<String, dynamic>))
+        .toList();
     return ProductionRunModel(
       id: doc.id,
       mixId: data['mixId'] ?? '',
@@ -85,6 +100,7 @@ class ProductionRunModel extends Equatable {
       outputKg: data['outputKg'] != null
           ? (data['outputKg'] as num).toDouble()
           : null,
+      outputs: outputs,
       damagedKg: data['damagedKg'] != null
           ? (data['damagedKg'] as num).toDouble()
           : null,
@@ -117,6 +133,7 @@ class ProductionRunModel extends Equatable {
         'productName': productName,
         'inputKg': inputKg,
         'outputKg': outputKg,
+        'outputs': outputs.map((o) => o.toMap()).toList(),
         'damagedKg': damagedKg,
         'technicianCost': technicianCost,
         'electricityCost': electricityCost,
@@ -144,6 +161,7 @@ class ProductionRunModel extends Equatable {
     String? productName,
     double? inputKg,
     double? outputKg,
+    List<ProductionRunOutput>? outputs,
     double? damagedKg,
     double? technicianCost,
     double? electricityCost,
@@ -166,6 +184,7 @@ class ProductionRunModel extends Equatable {
       productName: productName ?? this.productName,
       inputKg: inputKg ?? this.inputKg,
       outputKg: outputKg ?? this.outputKg,
+      outputs: outputs ?? this.outputs,
       damagedKg: damagedKg ?? this.damagedKg,
       technicianCost: technicianCost ?? this.technicianCost,
       electricityCost: electricityCost ?? this.electricityCost,
@@ -185,5 +204,5 @@ class ProductionRunModel extends Equatable {
 
   @override
   List<Object?> get props =>
-      [id, mixId, inputKg, outputKg, totalCost, costPerKg, date, status];
+      [id, mixId, inputKg, outputKg, outputs, totalCost, costPerKg, date, status];
 }

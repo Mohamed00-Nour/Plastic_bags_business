@@ -33,6 +33,7 @@ class ProductDeleteRequested extends ProductEvent {
 class ProductStockIncreased extends ProductEvent {
   final String productId;
   final int amount;
+  final double? unitCost;
   final String? note;
   final String? supplierId;
   final String? supplierName;
@@ -40,13 +41,15 @@ class ProductStockIncreased extends ProductEvent {
   const ProductStockIncreased({
     required this.productId,
     required this.amount,
+    this.unitCost,
     this.note,
     this.supplierId,
     this.supplierName,
   });
   
   @override
-  List<Object?> get props => [productId, amount, note, supplierId, supplierName];
+  List<Object?> get props =>
+      [productId, amount, unitCost, note, supplierId, supplierName];
 }
 
 class ProductStockDecreased extends ProductEvent {

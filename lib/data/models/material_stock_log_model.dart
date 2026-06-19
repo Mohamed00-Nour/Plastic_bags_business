@@ -11,6 +11,8 @@ class MaterialStockLogModel extends Equatable {
   final double quantityKg;
   final double stockBefore;
   final double stockAfter;
+  final double? pricePerKg;
+  final double? avgPriceAfter;
   final String? note;
   final String createdBy;
   final DateTime createdAt;
@@ -23,6 +25,8 @@ class MaterialStockLogModel extends Equatable {
     required this.quantityKg,
     required this.stockBefore,
     required this.stockAfter,
+    this.pricePerKg,
+    this.avgPriceAfter,
     this.note,
     this.createdBy = '',
     required this.createdAt,
@@ -40,6 +44,12 @@ class MaterialStockLogModel extends Equatable {
       quantityKg: (data['quantityKg'] ?? 0).toDouble(),
       stockBefore: (data['stockBefore'] ?? 0).toDouble(),
       stockAfter: (data['stockAfter'] ?? 0).toDouble(),
+      pricePerKg: data['pricePerKg'] != null
+          ? (data['pricePerKg'] as num).toDouble()
+          : null,
+      avgPriceAfter: data['avgPriceAfter'] != null
+          ? (data['avgPriceAfter'] as num).toDouble()
+          : null,
       note: data['note'],
       createdBy: data['createdBy'] ?? '',
       createdAt:
@@ -56,6 +66,8 @@ class MaterialStockLogModel extends Equatable {
         'quantityKg': quantityKg,
         'stockBefore': stockBefore,
         'stockAfter': stockAfter,
+        'pricePerKg': pricePerKg,
+        'avgPriceAfter': avgPriceAfter,
         'note': note,
         'createdBy': createdBy,
         'createdAt': Timestamp.fromDate(createdAt),
