@@ -148,6 +148,14 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     OrderMarkDelivered event,
     Emitter<OrderState> emit,
   ) async {
+    final currentState = state;
+    if (currentState is OrderLoaded) {
+      emit(
+        currentState.copyWith(
+          deliveringOrderIds: {...currentState.deliveringOrderIds, event.orderId},
+        ),
+      );
+    }
     try {
       final order = await _orderRepository.getOrder(event.orderId);
 
@@ -219,6 +227,16 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         ),
       );
     } catch (e) {
+      if (state is OrderLoaded) {
+        final currentLoaded = state as OrderLoaded;
+        emit(
+          currentLoaded.copyWith(
+            deliveringOrderIds: currentLoaded.deliveringOrderIds
+                .where((id) => id != event.orderId)
+                .toSet(),
+          ),
+        );
+      }
       emit(OrderError(message: e.toString()));
     }
   }

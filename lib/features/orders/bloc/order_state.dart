@@ -16,16 +16,35 @@ class OrderLoaded extends OrderState {
   final List<OrderModel> filteredOrders;
   final OrderStatus? filterStatus;
   final String searchQuery;
+  final Set<String> deliveringOrderIds;
 
   const OrderLoaded({
     required this.orders,
     required this.filteredOrders,
     this.filterStatus,
     this.searchQuery = '',
+    this.deliveringOrderIds = const {},
   });
 
+  OrderLoaded copyWith({
+    List<OrderModel>? orders,
+    List<OrderModel>? filteredOrders,
+    OrderStatus? filterStatus,
+    String? searchQuery,
+    Set<String>? deliveringOrderIds,
+  }) {
+    return OrderLoaded(
+      orders: orders ?? this.orders,
+      filteredOrders: filteredOrders ?? this.filteredOrders,
+      filterStatus: filterStatus ?? this.filterStatus,
+      searchQuery: searchQuery ?? this.searchQuery,
+      deliveringOrderIds: deliveringOrderIds ?? this.deliveringOrderIds,
+    );
+  }
+
   @override
-  List<Object?> get props => [orders, filteredOrders, filterStatus, searchQuery];
+  List<Object?> get props =>
+      [orders, filteredOrders, filterStatus, searchQuery, deliveringOrderIds];
 }
 
 class OrderOperationSuccess extends OrderState {

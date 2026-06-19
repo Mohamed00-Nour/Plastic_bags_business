@@ -184,6 +184,36 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                 onPressed:
                                     () => _showOrderDetails(context, order),
                               ),
+                              if (order.status == OrderStatus.approved)
+                                (state is OrderLoaded &&
+                                        state.deliveringOrderIds.contains(order.id))
+                                    ? const SizedBox(
+                                        width: 40,
+                                        height: 40,
+                                        child: Center(
+                                          child: SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: AppTheme.infoColor,
+                                            ),
+                                          ),
+                                        ),
+                                      )
+                                    : IconButton(
+                                        icon: const Icon(
+                                          Icons.local_shipping_outlined,
+                                          size: 20,
+                                          color: AppTheme.infoColor,
+                                        ),
+                                        tooltip: l10n.markDelivered,
+                                        onPressed: () {
+                                          context.read<OrderBloc>().add(
+                                            OrderMarkDelivered(orderId: order.id),
+                                          );
+                                        },
+                                      ),
                               if (order.status == OrderStatus.pending) ...[
                                 IconButton(
                                   icon: const Icon(
@@ -222,20 +252,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                           _showRejectDialog(context, order.id),
                                 ),
                               ],
-                              if (order.status == OrderStatus.approved)
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.local_shipping_outlined,
-                                    size: 20,
-                                    color: AppTheme.infoColor,
-                                  ),
-                                  tooltip: l10n.markDelivered,
-                                  onPressed: () {
-                                    context.read<OrderBloc>().add(
-                                      OrderMarkDelivered(orderId: order.id),
-                                    );
-                                  },
-                                ),
+
                             ],
                           ),
                         ),
