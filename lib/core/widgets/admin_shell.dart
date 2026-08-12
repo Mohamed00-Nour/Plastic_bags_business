@@ -20,6 +20,10 @@ import '../../features/users/presentation/screens/users_screen.dart';
 import '../../features/stock_logs/presentation/screens/stock_logs_screen.dart';
 import '../../features/manufacturing/presentation/screens/manufacturing_shell.dart';
 import '../../features/announcements/presentation/screens/announcements_screen.dart';
+import '../../screens/sales_invoice_page.dart';
+import '../../screens/buying_invoice_page.dart';
+import '../../screens/clients_page.dart';
+import '../../screens/suppliers_page.dart';
 
 class AdminShell extends StatefulWidget {
   const AdminShell({super.key});
@@ -33,11 +37,32 @@ class _AdminShellState extends State<AdminShell> {
 
   List<_NavItem> _getNavItems(BuildContext context, UserRole role) {
     final l10n = AppLocalizations.of(context)!;
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
     return [
       _NavItem(
         icon: Icons.dashboard_rounded,
         label: l10n.dashboard,
         screen: const DashboardScreen(),
+      ),
+      _NavItem(
+        icon: Icons.point_of_sale_rounded,
+        label: isArabic ? 'فواتير المبيعات' : 'Sales Invoices',
+        screen: const SalesInvoicePage(),
+      ),
+      _NavItem(
+        icon: Icons.add_business_rounded,
+        label: isArabic ? 'فواتير الشراء' : 'Buying Invoices',
+        screen: const BuyingInvoicePage(),
+      ),
+      _NavItem(
+        icon: Icons.people_alt_rounded,
+        label: isArabic ? 'العملاء' : 'Clients',
+        screen: const ClientsPage(),
+      ),
+      _NavItem(
+        icon: Icons.business_center_rounded,
+        label: isArabic ? 'الموردين (ERP)' : 'Suppliers (ERP)',
+        screen: const SuppliersPage(),
       ),
       _NavItem(
         icon: Icons.inventory_2_rounded,

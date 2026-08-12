@@ -52,24 +52,52 @@ class _ProductsScreenState extends State<ProductsScreen> {
           child: Column(
             children: [
               // Header
-              Row(
-                children: [
-                  Expanded(
-                    child: SearchField(
-                      hint: l10n.searchProducts,
-                      onChanged:
-                          (query) => context.read<ProductBloc>().add(
-                            ProductSearchRequested(query: query),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isMobile = constraints.maxWidth < 600;
+                  if (isMobile) {
+                    return Column(
+                      children: [
+                        SearchField(
+                          hint: l10n.searchProducts,
+                          onChanged:
+                              (query) => context.read<ProductBloc>().add(
+                                ProductSearchRequested(query: query),
+                              ),
+                        ),
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: ElevatedButton.icon(
+                            onPressed: () => _showProductForm(context),
+                            icon: const Icon(Icons.add, size: 18),
+                            label: Text(l10n.addProduct),
                           ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  ElevatedButton.icon(
-                    onPressed: () => _showProductForm(context),
-                    icon: const Icon(Icons.add, size: 18),
-                    label: Text(l10n.addProduct),
-                  ),
-                ],
+                        ),
+                      ],
+                    );
+                  }
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: SearchField(
+                          hint: l10n.searchProducts,
+                          onChanged:
+                              (query) => context.read<ProductBloc>().add(
+                                ProductSearchRequested(query: query),
+                              ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      ElevatedButton.icon(
+                        onPressed: () => _showProductForm(context),
+                        icon: const Icon(Icons.add, size: 18),
+                        label: Text(l10n.addProduct),
+                      ),
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: 20),
               // Product table
@@ -252,8 +280,14 @@ class _ProductsScreenState extends State<ProductsScreen> {
     final isEditing = product != null;
     final nameCtrl = TextEditingController(text: product?.name ?? '');
     final sizeCtrl = TextEditingController(text: product?.size ?? '');
-    final priceCtrl = TextEditingController(
-      text: product?.price.toString() ?? '',
+    final price1Ctrl = TextEditingController(
+      text: product?.price1.toString() ?? product?.price.toString() ?? '',
+    );
+    final price2Ctrl = TextEditingController(
+      text: product?.price2?.toString() ?? '',
+    );
+    final price3Ctrl = TextEditingController(
+      text: product?.price3?.toString() ?? '',
     );
     final costCtrl = TextEditingController(
       text: product?.costPrice.toString() ?? '',
@@ -336,10 +370,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                   ),
                                   keyboardType: TextInputType.number,
                                   validator: (v) {
-                                    if (v?.trim().isEmpty == true)
-                                      return l10n.required_field;
-                                    if (double.tryParse(v!) == null)
-                                      return l10n.invalid_value;
+                                    if (v?.trim().isEmpty == true) return l10n.required_field;
+                                    if (double.tryParse(v!) == null) return l10n.invalid_value;
                                     return null;
                                   },
                                 ),
@@ -347,16 +379,50 @@ class _ProductsScreenState extends State<ProductsScreen> {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: TextFormField(
-                                  controller: priceCtrl,
-                                  decoration: InputDecoration(
-                                    labelText: l10n.sellingPrice,
+                                  controller: price1Ctrl,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Selling Price 1 (Default) *',
                                   ),
                                   keyboardType: TextInputType.number,
                                   validator: (v) {
-                                    if (v?.trim().isEmpty == true)
-                                      return l10n.required_field;
-                                    if (double.tryParse(v!) == null)
+                                    if (v?.trim().isEmpty == true) return l10n.required_field;
+                                    if (double.tryParse(v!) == null) return l10n.invalid_value;
+                                    return null;
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextFormField(
+                                  controller: price2Ctrl,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Selling Price 2 (Optional)',
+                                  ),
+                                  keyboardType: TextInputType.number,
+                                  validator: (v) {
+                                    if (v != null && v.trim().isNotEmpty && double.tryParse(v) == null) {
                                       return l10n.invalid_value;
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: TextFormField(
+                                  controller: price3Ctrl,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Selling Price 3 (Optional)',
+                                  ),
+                                  keyboardType: TextInputType.number,
+                                  validator: (v) {
+                                    if (v != null && v.trim().isNotEmpty && double.tryParse(v) == null) {
+                                      return l10n.invalid_value;
+                                    }
                                     return null;
                                   },
                                 ),
@@ -452,12 +518,19 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         : () {
                       if (formKey.currentState!.validate()) {
                         final now = DateTime.now();
+                        final p1Val = double.parse(price1Ctrl.text.trim());
+                        final p2Val = price2Ctrl.text.trim().isNotEmpty ? double.tryParse(price2Ctrl.text.trim()) : null;
+                        final p3Val = price3Ctrl.text.trim().isNotEmpty ? double.tryParse(price3Ctrl.text.trim()) : null;
+
                         final p = ProductModel(
                           id: product?.id ?? const Uuid().v4(),
                           name: nameCtrl.text.trim(),
                           size: sizeCtrl.text.trim(),
-                          price: double.parse(priceCtrl.text),
-                          costPrice: double.parse(costCtrl.text),
+                          price: p1Val,
+                          costPrice: double.parse(costCtrl.text.trim()),
+                          price1: p1Val,
+                          price2: p2Val,
+                          price3: p3Val,
                           stockQuantity:
                               isEditing
                                   ? product.stockQuantity
