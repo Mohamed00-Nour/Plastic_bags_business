@@ -1,5 +1,4 @@
 import 'package:equatable/equatable.dart';
-import '../../../data/models/order_model.dart';
 import '../../../data/models/product_model_new.dart';
 import 'dashboard_event.dart';
 
@@ -14,31 +13,43 @@ class DashboardInitial extends DashboardState {}
 class DashboardLoading extends DashboardState {}
 
 class DashboardLoaded extends DashboardState {
-  final double totalSales; // Actual sales (Delivered)
-  final double expectedSales; // Pending / Approved
+  final double totalSalesRevenue;
+  final double totalCashCollected;
+  final double totalPurchasesAmount;
+  final double totalReturnsAmount;
+  final double totalClientsDebt;
+  final double totalSuppliersDebt;
+  final double totalInventoryCostValue;
   final double totalProfit;
-  final int activeShops;
-  final int totalProducts;
-  final int pendingOrders;
+  final int activeProductsCount;
   final int lowStockCount;
+  final int totalClientsCount;
+  final int totalSuppliersCount;
   final List<ProductModel> topProducts;
-  final List<OrderModel> recentOrders;
-  final Map<String, double> monthlySales;
+  final List<Map<String, dynamic>> recentSalesInvoices;
+  final Map<String, double> monthlySalesRevenue;
+  final Map<String, double> monthlyPurchases;
   final DashboardDateRange selectedRange;
   final DateTime? customStart;
   final DateTime? customEnd;
 
   const DashboardLoaded({
-    required this.totalSales,
-    required this.expectedSales,
+    required this.totalSalesRevenue,
+    required this.totalCashCollected,
+    required this.totalPurchasesAmount,
+    required this.totalReturnsAmount,
+    required this.totalClientsDebt,
+    required this.totalSuppliersDebt,
+    required this.totalInventoryCostValue,
     required this.totalProfit,
-    required this.activeShops,
-    required this.totalProducts,
-    required this.pendingOrders,
+    required this.activeProductsCount,
     required this.lowStockCount,
+    required this.totalClientsCount,
+    required this.totalSuppliersCount,
     required this.topProducts,
-    required this.recentOrders,
-    required this.monthlySales,
+    required this.recentSalesInvoices,
+    required this.monthlySalesRevenue,
+    required this.monthlyPurchases,
     this.selectedRange = DashboardDateRange.all,
     this.customStart,
     this.customEnd,
@@ -46,13 +57,18 @@ class DashboardLoaded extends DashboardState {
 
   @override
   List<Object?> get props => [
-        totalSales,
-        expectedSales,
+        totalSalesRevenue,
+        totalCashCollected,
+        totalPurchasesAmount,
+        totalReturnsAmount,
+        totalClientsDebt,
+        totalSuppliersDebt,
+        totalInventoryCostValue,
         totalProfit,
-        activeShops,
-        totalProducts,
-        pendingOrders,
+        activeProductsCount,
         lowStockCount,
+        totalClientsCount,
+        totalSuppliersCount,
         selectedRange,
         customStart,
         customEnd,

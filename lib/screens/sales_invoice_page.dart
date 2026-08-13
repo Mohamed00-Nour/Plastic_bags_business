@@ -2,6 +2,9 @@ import 'dart:ui' as ui;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../features/products/bloc/product_bloc_new.dart';
+import '../features/products/bloc/product_event.dart';
 import '../services/client_invoice_balance_sync_service.dart';
 import '../services/client_statement_pdf_service.dart';
 import '../services/sales_invoice_actions_service.dart';
@@ -217,10 +220,19 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
   }
 
   void _addLineItem(Map<String, dynamic> product) {
+    final stockInDb = (product['stockQuantity'] ?? 0) as int;
+    final existingIndex = _lineItems.indexWhere(
+      (i) => i['productId'] == product['id'],
+    );
+
+    if (existingIndex >= 0) {
+      final currentQty = (_lineItems[existingIndex]['quantity'] as num).toInt();
+      if (stockInDb > 0 && currentQty >= stockInDb) return;
+    } else {
+      if (stockInDb <= 0) return;
+    }
+
     setState(() {
-      final existingIndex = _lineItems.indexWhere(
-        (i) => i['productId'] == product['id'],
-      );
       final p1 = (product['price1'] ?? product['price'] ?? 0.0).toDouble();
       final p2 =
           product['price2'] != null
@@ -240,6 +252,7 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
         _lineItems.add({
           'productId': product['id'],
           'productName': product['name'] ?? '',
+          'stockQuantity': stockInDb,
           'quantity': 1,
           'price1': p1,
           'price2': p2,
@@ -363,6 +376,10 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
         _generateInvoiceNumber();
       });
 
+      try {
+        context.read<ProductBloc>().add(ProductLoadRequested());
+      } catch (_) {}
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -468,6 +485,10 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
         _returnProductSearchQuery = '';
         _generateReturnNumber();
       });
+
+      try {
+        context.read<ProductBloc>().add(ProductLoadRequested());
+      } catch (_) {}
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -890,7 +911,16 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                               filteredDocs.map((doc) {
                                 final data = doc.data() as Map<String, dynamic>;
                                 data['id'] = doc.id;
-                                final stock = data['stockQuantity'] ?? 0;
+                                final stock =
+                                    (data['stockQuantity'] ?? 0) as int;
+
+                                final draftItem = _lineItems.firstWhere(
+                                  (item) => item['productId'] == doc.id,
+                                  orElse: () => {'quantity': 0},
+                                );
+                                final draftQty =
+                                    (draftItem['quantity'] ?? 0) as int;
+                                final availableStock = stock - draftQty;
 
                                 return ActionChip(
                                   avatar: const Icon(
@@ -898,10 +928,10 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                                     size: 16,
                                   ),
                                   label: Text(
-                                    '${data['name']} (\$${data['price']}) [Stock: $stock]',
+                                    '${data['name']} (\$${data['price']}) [${isArabic ? "المتبقي" : "Stock"}: $availableStock]',
                                   ),
                                   onPressed:
-                                      stock <= 0
+                                      availableStock <= 0
                                           ? null
                                           : () => _addLineItem(data),
                                 );

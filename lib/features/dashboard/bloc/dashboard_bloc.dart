@@ -1,6 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../../data/models/order_model.dart';
 import '../../../data/models/product_model_new.dart';
 import 'dashboard_event.dart';
 import 'dashboard_state.dart';
@@ -50,8 +49,22 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
   ) async {
     _currentRange = DashboardDateRange.custom;
     _customStart = event.start;
-    _customEnd = DateTime(event.end.year, event.end.month, event.end.day, 23, 59, 59);
+    _customEnd = DateTime(
+      event.end.year,
+      event.end.month,
+      event.end.day,
+      23,
+      59,
+      59,
+    );
     await _onLoad(DashboardLoadRequested(), emit);
+  }
+
+  static DateTime _parseDate(dynamic value) {
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    if (value is String) return DateTime.tryParse(value) ?? DateTime.now();
+    return DateTime.now();
   }
 
   Future<void> _onLoad(
@@ -62,111 +75,176 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     try {
       final startDate = _getStartDate();
 
-      Future<QuerySnapshot> getOrders(List<String> statuses) {
-        var query = _firestore
-            .collection('orders')
-            .where('status', whereIn: statuses);
-        if (startDate != null) {
-          query = query.where(
-            'createdAt',
-            isGreaterThanOrEqualTo: Timestamp.fromDate(startDate),
-          );
-        }
-        if (_currentRange == DashboardDateRange.custom && _customEnd != null) {
-          query = query.where(
-            'createdAt',
-            isLessThanOrEqualTo: Timestamp.fromDate(_customEnd!),
-          );
-        }
-        return query.get();
-      }
-
-      // We can fetch all needed data in parallel
+      // Parallel fetch of Commercial ERP collections
       final results = await Future.wait([
-        getOrders(['delivered']), // 0: Actual Sales(profitable)
-        getOrders(['pending', 'approved']), // 1: Expected Sales
-        _firestore
-            .collection('shops')
-            .where('isActive', isEqualTo: true)
-            .get(), // 2
-        _firestore
-            .collection('products')
-            .where('isActive', isEqualTo: true)
-            .get(), // 3
-        _firestore
-            .collection('orders')
-            .orderBy('createdAt', descending: true)
-            .limit(10)
-            .get(), // 4
+        _firestore.collection('sales_invoices').get(), // 0
+        _firestore.collection('buying_invoices').get(), // 1
+        _firestore.collection('clients').where('isActive', isEqualTo: true).get(), // 2
+        _firestore.collection('suppliers').where('isActive', isEqualTo: true).get(), // 3
+        _firestore.collection('products').where('isActive', isEqualTo: true).get(), // 4
+        _firestore.collection('return_invoices').get(), // 5
       ]);
 
-      final deliveredOrders = results[0];
-      final pendingAndApprovedOrders = results[1];
-      final shops = results[2];
-      final products = results[3];
-      final recentOrdersSnap = results[4];
+      final salesSnap = results[0];
+      final purchasesSnap = results[1];
+      final clientsSnap = results[2];
+      final suppliersSnap = results[3];
+      final productsSnap = results[4];
+      final returnsSnap = results[5];
 
-      double totalSales = 0;
-      double expectedSales = 0;
-      double totalProfit = 0;
-      final monthlySales = <String, double>{};
+      double totalSalesRevenue = 0.0;
+      double totalCashCollected = 0.0;
+      double totalPurchasesAmount = 0.0;
+      double totalReturnsAmount = 0.0;
+      double totalProfit = 0.0;
+      final monthlySalesRevenue = <String, double>{};
+      final monthlyPurchases = <String, double>{};
 
       final productList =
-          products.docs.map((doc) => ProductModel.fromFirestore(doc)).toList();
+          productsSnap.docs
+              .map((doc) => ProductModel.fromFirestore(doc))
+              .toList();
+
       final productCostMap = <String, double>{};
-      for (final product in productList) {
-        productCostMap[product.id] = product.costPrice;
+      for (final p in productList) {
+        productCostMap[p.id] = p.costPrice;
       }
 
-      // Actual Sales (Delivered Only)
-      for (final doc in deliveredOrders.docs) {
-        final data = doc.data() as Map<String, dynamic>;
-        final amount = (data['totalPrice'] ?? 0).toDouble();
-        totalSales += amount;
+      final recentSalesInvoices = <Map<String, dynamic>>[];
 
+      // Process Sales Invoices
+      for (final doc in salesSnap.docs) {
+        final data = doc.data();
+        final dt = _parseDate(data['timestamp'] ?? data['createdAt'] ?? data['date']);
+
+        if (startDate != null && dt.isBefore(startDate)) continue;
+        if (_currentRange == DashboardDateRange.custom &&
+            _customEnd != null &&
+            dt.isAfter(_customEnd!)) {
+          continue;
+        }
+
+        final total = (data['totalAmount'] ?? 0).toDouble();
+        final paid = (data['paidAmount'] ?? 0).toDouble();
+
+        totalSalesRevenue += total;
+        totalCashCollected += paid;
+
+        // Calculate line item profit
         final items = data['items'] as List<dynamic>? ?? [];
         for (final item in items) {
-          final itemMap = item as Map<String, dynamic>;
-          final qty = (itemMap['quantity'] ?? 0).toInt();
-          final unitPrice = (itemMap['unitPrice'] ?? 0).toDouble();
-          final costPrice = productCostMap[itemMap['productId']] ?? 0.0;
-          totalProfit += qty * (unitPrice - costPrice);
+          if (item is Map<String, dynamic>) {
+            final qty = (item['quantity'] ?? 1).toDouble();
+            final price = (item['unitPrice'] ?? item['price'] ?? 0).toDouble();
+            final cost = (item['costPrice'] ?? productCostMap[item['productId']] ?? 0).toDouble();
+            totalProfit += qty * (price - cost);
+          }
         }
 
-        // monthly chart stats
-        final date = (data['createdAt'] as Timestamp?)?.toDate();
-        if (date != null) {
-          final key = '${date.year}-${date.month.toString().padLeft(2, '0')}';
-          monthlySales[key] = (monthlySales[key] ?? 0) + amount;
+        // Monthly grouping
+        final monthKey = '${dt.year}-${dt.month.toString().padLeft(2, '0')}';
+        monthlySalesRevenue[monthKey] = (monthlySalesRevenue[monthKey] ?? 0) + total;
+
+        recentSalesInvoices.add({
+          'id': doc.id,
+          'invoiceNumber': data['invoiceNumber'] ?? 'INV-000',
+          'clientName': data['clientName'] ?? 'عميل نقدي',
+          'totalAmount': total,
+          'paidAmount': paid,
+          'remainingAmount': (data['remainingAmount'] ?? (total - paid)).toDouble(),
+          'date': dt,
+        });
+      }
+
+      // Sort recent invoices by date descending
+      recentSalesInvoices.sort((a, b) => (b['date'] as DateTime).compareTo(a['date'] as DateTime));
+
+      // Process Purchasing Invoices
+      for (final doc in purchasesSnap.docs) {
+        final data = doc.data();
+        final dt = _parseDate(data['createdAt'] ?? data['timestamp'] ?? data['date']);
+
+        if (startDate != null && dt.isBefore(startDate)) continue;
+        if (_currentRange == DashboardDateRange.custom &&
+            _customEnd != null &&
+            dt.isAfter(_customEnd!)) {
+          continue;
+        }
+
+        final total = (data['totalAmount'] ?? 0).toDouble();
+        totalPurchasesAmount += total;
+
+        final monthKey = '${dt.year}-${dt.month.toString().padLeft(2, '0')}';
+        monthlyPurchases[monthKey] = (monthlyPurchases[monthKey] ?? 0) + total;
+      }
+
+      // Process Sales Returns
+      for (final doc in returnsSnap.docs) {
+        final data = doc.data();
+        final dt = _parseDate(data['createdAt'] ?? data['timestamp'] ?? data['date']);
+
+        if (startDate != null && dt.isBefore(startDate)) continue;
+        if (_currentRange == DashboardDateRange.custom &&
+            _customEnd != null &&
+            dt.isAfter(_customEnd!)) {
+          continue;
+        }
+
+        final total = (data['totalAmount'] ?? data['netTotal'] ?? 0).toDouble();
+        totalReturnsAmount += total;
+      }
+
+      // Process Clients Debt
+      double totalClientsDebt = 0.0;
+      for (final doc in clientsSnap.docs) {
+        final data = doc.data();
+        final bal = (data['balance'] ?? 0).toDouble();
+        if (bal > 0) {
+          totalClientsDebt += bal;
         }
       }
 
-      // Expected Sales (Pending / Approved)
-      for (final doc in pendingAndApprovedOrders.docs) {
-        final data = doc.data() as Map<String, dynamic>;
-        expectedSales += (data['totalPrice'] ?? 0).toDouble();
+      // Process Suppliers Debt
+      double totalSuppliersDebt = 0.0;
+      for (final doc in suppliersSnap.docs) {
+        final data = doc.data();
+        final bal = (data['balance'] ?? 0).toDouble();
+        if (bal > 0) {
+          totalSuppliersDebt += bal;
+        }
       }
 
-      final lowStockCount = productList.where((p) => p.isLowStock).length;
+      // Process Inventory Valuation & Low Stock
+      double totalInventoryCostValue = 0.0;
+      int lowStockCount = 0;
+      for (final p in productList) {
+        totalInventoryCostValue += p.stockQuantity * p.costPrice;
+        if (p.isLowStock) {
+          lowStockCount++;
+        }
+      }
+
       final topProducts = List<ProductModel>.from(productList)
-        ..sort((a, b) => b.price.compareTo(a.price));
-      final recentOrders =
-          recentOrdersSnap.docs
-              .map((doc) => OrderModel.fromFirestore(doc))
-              .toList();
+        ..sort((a, b) => (b.stockQuantity * b.price).compareTo(a.stockQuantity * a.price));
 
       emit(
         DashboardLoaded(
-          totalSales: totalSales,
-          expectedSales: expectedSales,
-          totalProfit: totalProfit,
-          activeShops: shops.size,
-          totalProducts: products.size,
-          pendingOrders: pendingAndApprovedOrders.size,
+          totalSalesRevenue: totalSalesRevenue,
+          totalCashCollected: totalCashCollected,
+          totalPurchasesAmount: totalPurchasesAmount,
+          totalReturnsAmount: totalReturnsAmount,
+          totalClientsDebt: totalClientsDebt,
+          totalSuppliersDebt: totalSuppliersDebt,
+          totalInventoryCostValue: totalInventoryCostValue,
+          totalProfit: totalProfit - totalReturnsAmount,
+          activeProductsCount: productList.length,
           lowStockCount: lowStockCount,
-          topProducts: topProducts.take(5).toList(),
-          recentOrders: recentOrders,
-          monthlySales: monthlySales,
+          totalClientsCount: clientsSnap.size,
+          totalSuppliersCount: suppliersSnap.size,
+          topProducts: topProducts.take(6).toList(),
+          recentSalesInvoices: recentSalesInvoices.take(8).toList(),
+          monthlySalesRevenue: monthlySalesRevenue,
+          monthlyPurchases: monthlyPurchases,
           selectedRange: _currentRange,
           customStart: _customStart,
           customEnd: _customEnd,
