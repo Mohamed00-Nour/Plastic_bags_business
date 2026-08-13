@@ -14,20 +14,18 @@ class ClientDetailsPage extends StatefulWidget {
   final Map<String, dynamic>? clientData;
   final String? clientId;
 
-  const ClientDetailsPage({
-    super.key,
-    this.clientData,
-    this.clientId,
-  });
+  const ClientDetailsPage({super.key, this.clientData, this.clientId});
 
   @override
   State<ClientDetailsPage> createState() => _ClientDetailsPageState();
 }
 
-class _ClientDetailsPageState extends State<ClientDetailsPage> with SingleTickerProviderStateMixin {
+class _ClientDetailsPageState extends State<ClientDetailsPage>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final DateFormat _dateFormat = DateFormat('yyyy/MM/dd HH:mm');
-  final ClientInvoiceBalanceSyncService _syncService = ClientInvoiceBalanceSyncService();
+  final ClientInvoiceBalanceSyncService _syncService =
+      ClientInvoiceBalanceSyncService();
 
   @override
   void initState() {
@@ -59,12 +57,18 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> with SingleTicker
         centerTitle: true,
       ),
       body: StreamBuilder<DocumentSnapshot>(
-        stream: _effectiveClientId.isNotEmpty
-            ? FirebaseFirestore.instance.collection('clients').doc(_effectiveClientId).snapshots()
-            : null,
+        stream:
+            _effectiveClientId.isNotEmpty
+                ? FirebaseFirestore.instance
+                    .collection('clients')
+                    .doc(_effectiveClientId)
+                    .snapshots()
+                : null,
         builder: (context, snapshot) {
           Map<String, dynamic> client = widget.clientData ?? {};
-          if (snapshot.hasData && snapshot.data != null && snapshot.data!.exists) {
+          if (snapshot.hasData &&
+              snapshot.data != null &&
+              snapshot.data!.exists) {
             client = Map<String, dynamic>.from(snapshot.data!.data() as Map);
             client['id'] = snapshot.data!.id;
           }
@@ -94,8 +98,14 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> with SingleTicker
                   labelColor: AppTheme.primaryColor,
                   unselectedLabelColor: Colors.grey,
                   tabs: const [
-                    Tab(icon: Icon(Icons.receipt_long_rounded), text: 'الفواتير'),
-                    Tab(icon: Icon(Icons.assignment_return_rounded), text: 'المرتجعات'),
+                    Tab(
+                      icon: Icon(Icons.receipt_long_rounded),
+                      text: 'الفواتير',
+                    ),
+                    Tab(
+                      icon: Icon(Icons.assignment_return_rounded),
+                      text: 'المرتجعات',
+                    ),
                     Tab(icon: Icon(Icons.history_rounded), text: 'سجل الرصيد'),
                   ],
                 ),
@@ -152,9 +162,13 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> with SingleTicker
               children: [
                 CircleAvatar(
                   radius: 28,
-                  backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.15),
+                  backgroundColor: AppTheme.primaryColor.withValues(
+                    alpha: 0.15,
+                  ),
                   child: Text(
-                    clientName.isNotEmpty ? clientName.substring(0, 1).toUpperCase() : 'C',
+                    clientName.isNotEmpty
+                        ? clientName.substring(0, 1).toUpperCase()
+                        : 'C',
                     style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
@@ -169,15 +183,28 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> with SingleTicker
                     children: [
                       Text(
                         clientName,
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       if (clientPhone.isNotEmpty) ...[
                         const SizedBox(height: 2),
                         Row(
                           children: [
-                            const Icon(Icons.phone_rounded, size: 14, color: Colors.grey),
+                            const Icon(
+                              Icons.phone_rounded,
+                              size: 14,
+                              color: Colors.grey,
+                            ),
                             const SizedBox(width: 4),
-                            Text(clientPhone, style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                            Text(
+                              clientPhone,
+                              style: const TextStyle(
+                                color: Colors.grey,
+                                fontSize: 13,
+                              ),
+                            ),
                           ],
                         ),
                       ],
@@ -185,12 +212,19 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> with SingleTicker
                         const SizedBox(height: 2),
                         Row(
                           children: [
-                            const Icon(Icons.location_on_rounded, size: 14, color: Colors.grey),
+                            const Icon(
+                              Icons.location_on_rounded,
+                              size: 14,
+                              color: Colors.grey,
+                            ),
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
                                 clientAddress,
-                                style: const TextStyle(color: Colors.grey, fontSize: 12),
+                                style: const TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 12,
+                                ),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -202,18 +236,27 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> with SingleTicker
                 ),
                 // Balance Badge
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
                     color: balanceColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: balanceColor.withValues(alpha: 0.3)),
+                    border: Border.all(
+                      color: balanceColor.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
                         balanceTitle,
-                        style: TextStyle(fontSize: 10, color: balanceColor, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: balanceColor,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -242,11 +285,20 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> with SingleTicker
                       backgroundColor: AppTheme.primaryColor,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
-                    icon: const Icon(Icons.account_balance_wallet_rounded, size: 18),
-                    label: const Text('تعديل الرصيد', style: TextStyle(fontWeight: FontWeight.bold)),
-                    onPressed: () => _showBalanceAdjustmentModal(context, client),
+                    icon: const Icon(
+                      Icons.account_balance_wallet_rounded,
+                      size: 18,
+                    ),
+                    label: const Text(
+                      'تعديل الرصيد',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    onPressed:
+                        () => _showBalanceAdjustmentModal(context, client),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -256,11 +308,17 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> with SingleTicker
                       foregroundColor: AppTheme.primaryColor,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       side: const BorderSide(color: AppTheme.primaryColor),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                     icon: const Icon(Icons.picture_as_pdf_rounded, size: 18),
-                    label: const Text('كشف الحساب', style: TextStyle(fontWeight: FontWeight.bold)),
-                    onPressed: () => _showStatementFilterDialog(context, client),
+                    label: const Text(
+                      'كشف الحساب',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    onPressed:
+                        () => _showStatementFilterDialog(context, client),
                   ),
                 ),
               ],
@@ -272,14 +330,18 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> with SingleTicker
   }
 
   // Invoices Tab (Collapsible List for Sales or Returns)
-  Widget _buildInvoicesTab({required String clientName, required bool isSales}) {
+  Widget _buildInvoicesTab({
+    required String clientName,
+    required bool isSales,
+  }) {
     final collectionName = isSales ? 'sales_invoices' : 'return_invoices';
 
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection(collectionName)
-          .where('clientName', isEqualTo: clientName)
-          .snapshots(),
+      stream:
+          FirebaseFirestore.instance
+              .collection(collectionName)
+              .where('clientName', isEqualTo: clientName)
+              .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -292,13 +354,17 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> with SingleTicker
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
-                  isSales ? Icons.receipt_long_outlined : Icons.assignment_return_outlined,
+                  isSales
+                      ? Icons.receipt_long_outlined
+                      : Icons.assignment_return_outlined,
                   size: 64,
                   color: Colors.grey,
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  isSales ? 'لا يوجد فواتير مبيعات لهذا العميل' : 'لا يوجد فواتير مرتجعات لهذا العميل',
+                  isSales
+                      ? 'لا يوجد فواتير مبيعات لهذا العميل'
+                      : 'لا يوجد فواتير مرتجعات لهذا العميل',
                   style: const TextStyle(fontSize: 16, color: Colors.grey),
                 ),
               ],
@@ -306,20 +372,21 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> with SingleTicker
           );
         }
 
-        final invoices = docs.map((doc) {
-          final data = Map<String, dynamic>.from(doc.data() as Map);
-          data['id'] = doc.id;
-          return data;
-        }).toList()
-          ..sort((a, b) {
-            final da = a['createdAt'] ?? a['date'];
-            final db = b['createdAt'] ?? b['date'];
-            DateTime ta = DateTime.now();
-            DateTime tb = DateTime.now();
-            if (da is Timestamp) ta = da.toDate();
-            if (db is Timestamp) tb = db.toDate();
-            return tb.compareTo(ta);
-          });
+        final invoices =
+            docs.map((doc) {
+                final data = Map<String, dynamic>.from(doc.data() as Map);
+                data['id'] = doc.id;
+                return data;
+              }).toList()
+              ..sort((a, b) {
+                final da = a['createdAt'] ?? a['date'];
+                final db = b['createdAt'] ?? b['date'];
+                DateTime ta = DateTime.now();
+                DateTime tb = DateTime.now();
+                if (da is Timestamp) ta = da.toDate();
+                if (db is Timestamp) tb = db.toDate();
+                return tb.compareTo(ta);
+              });
 
         return ListView.builder(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -334,12 +401,21 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> with SingleTicker
   }
 
   // Collapsible Invoice Card Item
-  Widget _buildCollapsibleInvoiceCard({required Map<String, dynamic> invoice, required bool isSales}) {
+  Widget _buildCollapsibleInvoiceCard({
+    required Map<String, dynamic> invoice,
+    required bool isSales,
+  }) {
     final invoiceNumber = invoice['invoiceNumber']?.toString() ?? 'INV-000';
     final totalAmount = (invoice['totalAmount'] ?? 0.0).toDouble();
     final paidAmount = (invoice['paidAmount'] ?? 0.0).toDouble();
-    final remainingAmount = (invoice['remainingAmount'] ?? (totalAmount - paidAmount)).toDouble();
-    final items = (invoice['items'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    final remainingAmount =
+        (invoice['remainingAmount'] ?? (totalAmount - paidAmount)).toDouble();
+    final discount = (invoice['discount'] ?? 0.0).toDouble();
+    final subtotal =
+        (invoice['subtotal'] ?? (totalAmount + discount)).toDouble();
+    final notes = invoice['notes']?.toString().trim() ?? '';
+    final items =
+        (invoice['items'] as List?)?.cast<Map<String, dynamic>>() ?? [];
     final paymentMethod = invoice['paymentMethod']?.toString() ?? 'نقدي';
 
     final rawDate = invoice['createdAt'] ?? invoice['date'];
@@ -366,9 +442,10 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> with SingleTicker
       child: ExpansionTile(
         tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         leading: CircleAvatar(
-          backgroundColor: isSales
-              ? AppTheme.successColor.withValues(alpha: 0.15)
-              : Colors.orange.withValues(alpha: 0.15),
+          backgroundColor:
+              isSales
+                  ? AppTheme.successColor.withValues(alpha: 0.15)
+                  : Colors.orange.withValues(alpha: 0.15),
           child: Icon(
             isSales ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
             color: isSales ? AppTheme.successColor : Colors.orange,
@@ -390,7 +467,11 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> with SingleTicker
               ),
               child: Text(
                 statusText,
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: statusColor),
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: statusColor,
+                ),
               ),
             ),
           ],
@@ -410,7 +491,11 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> with SingleTicker
             if (remainingAmount > 0)
               Text(
                 'متبقي: \$${remainingAmount.toStringAsFixed(2)}',
-                style: const TextStyle(fontSize: 11, color: AppTheme.dangerColor, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppTheme.dangerColor,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
           ],
         ),
@@ -430,38 +515,138 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> with SingleTicker
                   decoration: BoxDecoration(
                     color: Theme.of(context).cardColor,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+                    border: Border.all(
+                      color: Colors.grey.withValues(alpha: 0.2),
+                    ),
                   ),
                   child: Column(
-                    children: items.map((item) {
-                      final name = item['productName'] ?? item['name'] ?? 'منتج';
-                      final qty = item['quantity'] ?? 1;
-                      final price = (item['price'] ?? 0.0).toDouble();
-                      final total = price * qty;
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        child: Row(
-                          children: [
-                            Expanded(child: Text(name, style: const TextStyle(fontSize: 13))),
-                            Text('x$qty', style: const TextStyle(color: Colors.grey, fontSize: 13)),
-                            const SizedBox(width: 16),
-                            Text('\$${price.toStringAsFixed(2)}', style: const TextStyle(color: Colors.grey, fontSize: 13)),
-                            const SizedBox(width: 16),
-                            Text('\$${total.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                          ],
-                        ),
-                      );
-                    }).toList(),
+                    children:
+                        items.map((item) {
+                          final name =
+                              item['productName'] ?? item['name'] ?? 'منتج';
+                          final qty = item['quantity'] ?? 1;
+                          final price = (item['price'] ?? 0.0).toDouble();
+                          final total = price * qty;
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    name,
+                                    style: const TextStyle(fontSize: 13),
+                                  ),
+                                ),
+                                Text(
+                                  'x$qty',
+                                  style: const TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Text(
+                                  '\$${price.toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Text(
+                                  '\$${total.toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
                   ),
                 ),
                 const SizedBox(height: 12),
+                if (discount > 0) ...[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'المجموع قبل الخصم: \$${subtotal.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 13,
+                        ),
+                      ),
+                      Text(
+                        'الخصم: \$${discount.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          color: Colors.orange,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                ],
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('المدفوع: \$${paidAmount.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                    Text('المتبقي: \$${remainingAmount.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.dangerColor)),
+                    Text(
+                      'المدفوع: \$${paidAmount.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                    Text(
+                      'المتبقي: \$${remainingAmount.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.dangerColor,
+                        fontSize: 13,
+                      ),
+                    ),
                   ],
                 ),
+                if (notes.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Colors.blue.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.note_alt_rounded,
+                          size: 16,
+                          color: Colors.blue,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'ملاحظات: $notes',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.blue,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 12),
                 const Divider(),
 
@@ -470,14 +655,19 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> with SingleTicker
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     TextButton.icon(
-                      style: TextButton.styleFrom(foregroundColor: AppTheme.primaryColor),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppTheme.primaryColor,
+                      ),
                       icon: const Icon(Icons.edit_rounded, size: 18),
                       label: const Text('تعديل'),
                       onPressed: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => SalesInvoicePage(initialInvoiceData: invoice),
+                            builder:
+                                (context) => SalesInvoicePage(
+                                  initialInvoiceData: invoice,
+                                ),
                           ),
                         );
                       },
@@ -499,9 +689,10 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> with SingleTicker
                       icon: const Icon(Icons.print_rounded, size: 18),
                       label: const Text('طباعة'),
                       onPressed: () async {
-                        final pdfBytes = await ClientStatementPdfService.generateSalesInvoicePdf(
-                          invoiceData: invoice,
-                        );
+                        final pdfBytes =
+                            await ClientStatementPdfService.generateSalesInvoicePdf(
+                              invoiceData: invoice,
+                            );
                         await Printing.layoutPdf(onLayout: (_) => pdfBytes);
                       },
                     ),
@@ -514,9 +705,10 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> with SingleTicker
                       icon: const Icon(Icons.share_rounded, size: 18),
                       label: const Text('مشاركة واتساب'),
                       onPressed: () async {
-                        final pdfBytes = await ClientStatementPdfService.generateSalesInvoicePdf(
-                          invoiceData: invoice,
-                        );
+                        final pdfBytes =
+                            await ClientStatementPdfService.generateSalesInvoicePdf(
+                              invoiceData: invoice,
+                            );
                         if (!mounted) return;
                         await WhatsappInvoiceShareService.showShareOptions(
                           context: context,
@@ -539,9 +731,10 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> with SingleTicker
   // Balance History Tab
   Widget _buildBalanceHistoryTab({required Map<String, dynamic> client}) {
     return StreamBuilder<List<ClientBalanceRecord>>(
-      stream: _effectiveClientId.isNotEmpty
-          ? _syncService.getClientBalanceHistoryStream(_effectiveClientId)
-          : Stream.value([]),
+      stream:
+          _effectiveClientId.isNotEmpty
+              ? _syncService.getClientBalanceHistoryStream(_effectiveClientId)
+              : Stream.value([]),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -557,13 +750,17 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> with SingleTicker
           );
         }
 
+        final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+
         return ListView.builder(
           padding: const EdgeInsets.all(16),
           itemCount: records.length,
           itemBuilder: (context, index) {
             final rec = records[index];
-            final isPayment = rec.type == 'payment' || rec.type == 'sales_return';
-            final isInvoice = rec.type == 'sales_invoice' || rec.type == 'opening';
+            final isPayment =
+                rec.type == 'payment' || rec.type == 'sales_return';
+            final isInvoice =
+                rec.type == 'sales_invoice' || rec.type == 'opening';
 
             Color amountColor = Colors.grey;
             IconData icon = Icons.swap_horiz_rounded;
@@ -576,12 +773,18 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> with SingleTicker
             }
 
             final String typeDesc;
-            if (rec.type == 'manual_debt' || rec.type == 'debt' || (rec.type == 'sales_invoice' && rec.invoiceNumber.isEmpty)) {
+            if (rec.type == 'manual_debt' ||
+                rec.type == 'debt' ||
+                (rec.type == 'sales_invoice' && rec.invoiceNumber.isEmpty)) {
               typeDesc = 'إضافة مديونية';
             } else if (rec.type == 'sales_invoice') {
-              typeDesc = 'فاتورة مبيعات ${rec.invoiceNumber.isNotEmpty ? "#${rec.invoiceNumber}" : ""}';
+              typeDesc =
+                  'فاتورة مبيعات ${rec.invoiceNumber.isNotEmpty ? "#${rec.invoiceNumber}" : ""}';
             } else if (rec.type == 'payment') {
-              typeDesc = 'تحصيل دفعة مالية';
+              typeDesc =
+                  rec.invoiceNumber.isNotEmpty
+                      ? 'تحصيل من فاتورة #${rec.invoiceNumber}'
+                      : 'تحصيل دفعة مالية';
             } else if (rec.type == 'sales_return') {
               typeDesc = 'فاتورة مرتجع';
             } else if (rec.type == 'cancellation') {
@@ -597,19 +800,72 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> with SingleTicker
                   backgroundColor: amountColor.withValues(alpha: 0.15),
                   child: Icon(icon, color: amountColor),
                 ),
-                title: Text(typeDesc, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                subtitle: Text(_dateFormat.format(rec.timestamp), style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                trailing: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                title: Text(
+                  typeDesc,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                subtitle: Text(
+                  _dateFormat.format(rec.timestamp),
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      '\$${rec.amount.toStringAsFixed(2)}',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: amountColor),
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          '\$${rec.amount.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                            color: amountColor,
+                          ),
+                        ),
+                        Text(
+                          'الرصيد بعدها: \$${rec.balanceAfter.toStringAsFixed(2)}',
+                          style: const TextStyle(fontSize: 11, color: Colors.grey),
+                        ),
+                      ],
                     ),
-                    Text(
-                      'الرصيد بعدها: \$${rec.balanceAfter.toStringAsFixed(2)}',
-                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                    PopupMenuButton<String>(
+                      icon: const Icon(Icons.more_vert_rounded, color: Colors.grey),
+                      onSelected: (val) {
+                        if (val == 'edit') {
+                          _showEditBalanceRecordDialog(context, rec);
+                        } else if (val == 'delete') {
+                          _confirmDeleteBalanceRecord(context, rec);
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        PopupMenuItem<String>(
+                          value: 'edit',
+                          child: Row(
+                            children: [
+                              const Icon(Icons.edit_rounded, color: AppTheme.primaryColor, size: 20),
+                              const SizedBox(width: 8),
+                              Text(isArabic ? 'تعديل الحركة' : 'Edit Record'),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem<String>(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              const Icon(Icons.delete_forever_rounded, color: Colors.red, size: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                isArabic ? 'حذف الحركة' : 'Delete Record',
+                                style: const TextStyle(color: Colors.red),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -621,8 +877,291 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> with SingleTicker
     );
   }
 
+  void _confirmDeleteBalanceRecord(BuildContext context, ClientBalanceRecord record) {
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+    final pageContext = context;
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: Colors.red),
+            const SizedBox(width: 8),
+            Text(isArabic ? 'تأكيد حذف الحركة' : 'Confirm Delete Record'),
+          ],
+        ),
+        content: Text(
+          isArabic
+              ? 'هل أنت تأكد من حذف حركة الرصيد بقيمة \$${record.amount.toStringAsFixed(2)}؟ سيتم إعادة احتساب وتحديث رصيد العميل آلياً.'
+              : 'Are you sure you want to delete this balance record of \$${record.amount.toStringAsFixed(2)}? Client balance will be recalculated.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: Text(isArabic ? 'إلغاء' : 'Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              Navigator.pop(dialogCtx);
+
+              // Show loading overlay
+              BuildContext? loadingContext;
+              showDialog(
+                context: pageContext,
+                barrierDismissible: false,
+                builder: (lCtx) {
+                  loadingContext = lCtx;
+                  return AlertDialog(
+                    content: Row(
+                      children: [
+                        const CircularProgressIndicator(),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Text(
+                            isArabic ? 'جاري حذف حركة الرصيد...' : 'Deleting balance record...',
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              );
+
+              try {
+                await _syncService.deleteBalanceRecord(
+                  clientId: _effectiveClientId,
+                  record: record,
+                );
+
+                if (loadingContext != null && loadingContext!.mounted) {
+                  Navigator.pop(loadingContext!);
+                }
+
+                if (pageContext.mounted) {
+                  ScaffoldMessenger.of(pageContext).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        isArabic
+                            ? 'تم حذف حركة الرصيد وتحديث حساب العميل بنجاح'
+                            : 'Balance record deleted & client balance updated!',
+                      ),
+                      backgroundColor: AppTheme.successColor,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (loadingContext != null && loadingContext!.mounted) {
+                  Navigator.pop(loadingContext!);
+                }
+                if (pageContext.mounted) {
+                  ScaffoldMessenger.of(pageContext).showSnackBar(
+                    SnackBar(
+                      content: Text('Error deleting record: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            child: Text(isArabic ? 'حذف' : 'Delete', style: const TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditBalanceRecordDialog(BuildContext context, ClientBalanceRecord record) {
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+    final pageContext = context;
+
+    final amountController = TextEditingController(text: record.amount.toStringAsFixed(2));
+    final notesController = TextEditingController();
+    String selectedType = record.type;
+    DateTime selectedDate = record.timestamp;
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Row(
+                children: [
+                  const Icon(Icons.edit_note_rounded, color: AppTheme.primaryColor),
+                  const SizedBox(width: 8),
+                  Text(isArabic ? 'تعديل حركة الرصيد' : 'Edit Balance Record'),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: amountController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: InputDecoration(
+                        labelText: isArabic ? 'المبلغ (\$)' : 'Amount (\$)',
+                        prefixIcon: const Icon(Icons.attach_money),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: selectedType,
+                      decoration: InputDecoration(
+                        labelText: isArabic ? 'نوع الحركة' : 'Transaction Type',
+                        prefixIcon: const Icon(Icons.category),
+                      ),
+                      items: [
+                        DropdownMenuItem(
+                          value: 'manual_debt',
+                          child: Text(isArabic ? 'إضافة مديونية' : 'Add Debt'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'payment',
+                          child: Text(isArabic ? 'تحصيل دفعة مالية' : 'Payment Collection'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'sales_return',
+                          child: Text(isArabic ? 'فاتورة مرتجع' : 'Sales Return'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'sales_invoice',
+                          child: Text(isArabic ? 'فاتورة مبيعات' : 'Sales Invoice'),
+                        ),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) setDialogState(() => selectedType = val);
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Text(
+                          isArabic
+                              ? 'التاريخ: ${DateFormat('yyyy/MM/dd HH:mm').format(selectedDate)}'
+                              : 'Date: ${DateFormat('yyyy/MM/dd HH:mm').format(selectedDate)}',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(Icons.calendar_month, color: AppTheme.primaryColor),
+                          onPressed: () async {
+                            final picked = await showDatePicker(
+                              context: context,
+                              initialDate: selectedDate,
+                              firstDate: DateTime(2020),
+                              lastDate: DateTime.now().add(const Duration(days: 365)),
+                            );
+                            if (picked != null) {
+                              setDialogState(() => selectedDate = picked);
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: notesController,
+                      decoration: InputDecoration(
+                        labelText: isArabic ? 'ملاحظات الحركة' : 'Notes',
+                        prefixIcon: const Icon(Icons.note),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogCtx),
+                  child: Text(isArabic ? 'إلغاء' : 'Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    final newAmount = double.tryParse(amountController.text.trim()) ?? 0.0;
+                    if (newAmount <= 0) return;
+
+                    Navigator.pop(dialogCtx);
+
+                    // Show loading overlay
+                    BuildContext? loadingContext;
+                    showDialog(
+                      context: pageContext,
+                      barrierDismissible: false,
+                      builder: (lCtx) {
+                        loadingContext = lCtx;
+                        return AlertDialog(
+                          content: Row(
+                            children: [
+                              const CircularProgressIndicator(),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Text(
+                                  isArabic ? 'جاري تعديل حركة الرصيد...' : 'Updating balance record...',
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+
+                    try {
+                      await _syncService.updateBalanceRecord(
+                        clientId: _effectiveClientId,
+                        oldRecord: record,
+                        newAmount: newAmount,
+                        newType: selectedType,
+                        newDate: selectedDate,
+                        newNotes: notesController.text.trim().isNotEmpty ? notesController.text.trim() : null,
+                      );
+
+                      if (loadingContext != null && loadingContext!.mounted) {
+                        Navigator.pop(loadingContext!);
+                      }
+
+                      if (pageContext.mounted) {
+                        ScaffoldMessenger.of(pageContext).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              isArabic
+                                  ? 'تم تعديل حركة الرصيد وتحديث حساب العميل بنجاح'
+                                  : 'Balance record updated successfully!',
+                            ),
+                            backgroundColor: AppTheme.successColor,
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (loadingContext != null && loadingContext!.mounted) {
+                        Navigator.pop(loadingContext!);
+                      }
+                      if (pageContext.mounted) {
+                        ScaffoldMessenger.of(pageContext).showSnackBar(
+                          SnackBar(
+                            content: Text('Error updating record: $e'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  child: Text(isArabic ? 'حفظ التعديلات' : 'Save Changes'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   // Balance Adjustment Modal (Tabs for Add Payment / Add Debt)
-  void _showBalanceAdjustmentModal(BuildContext context, Map<String, dynamic> client) {
+  void _showBalanceAdjustmentModal(
+    BuildContext context,
+    Map<String, dynamic> client,
+  ) {
     final amountController = TextEditingController();
     final notesController = TextEditingController();
     DateTime selectedDate = DateTime.now();
@@ -663,7 +1202,9 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> with SingleTicker
                 const SizedBox(height: 16),
                 TextField(
                   controller: amountController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   decoration: const InputDecoration(
                     labelText: 'المبلغ (\$)',
                     prefixIcon: Icon(Icons.attach_money_rounded),
@@ -687,19 +1228,34 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> with SingleTicker
                     children: [
                       // Mode 1: Add Payment (Reduce Balance)
                       ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(backgroundColor: AppTheme.successColor, foregroundColor: Colors.white),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.successColor,
+                          foregroundColor: Colors.white,
+                        ),
                         icon: const Icon(Icons.check_circle_rounded),
-                        label: const Text('تسجيل الدفعة وخصم المديونية', style: TextStyle(fontWeight: FontWeight.bold)),
+                        label: const Text(
+                          'تسجيل الدفعة وخصم المديونية',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                         onPressed: () async {
-                          final amt = double.tryParse(amountController.text) ?? 0.0;
+                          final amt =
+                              double.tryParse(amountController.text) ?? 0.0;
                           if (amt <= 0) return;
                           Navigator.of(bCtx).pop();
 
-                          await _addManualPayment(amount: amt, notes: notesController.text.trim(), date: selectedDate);
+                          await _addManualPayment(
+                            amount: amt,
+                            notes: notesController.text.trim(),
+                            date: selectedDate,
+                          );
 
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('تم تسجيل الدفعة وتحديث رصيد العميل بنجاح')),
+                              const SnackBar(
+                                content: Text(
+                                  'تم تسجيل الدفعة وتحديث رصيد العميل بنجاح',
+                                ),
+                              ),
                             );
                           }
                         },
@@ -707,19 +1263,34 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> with SingleTicker
 
                       // Mode 2: Add Debt (Increase Balance)
                       ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(backgroundColor: AppTheme.dangerColor, foregroundColor: Colors.white),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.dangerColor,
+                          foregroundColor: Colors.white,
+                        ),
                         icon: const Icon(Icons.add_circle_rounded),
-                        label: const Text('إضافة مديونية جديدة على العميل', style: TextStyle(fontWeight: FontWeight.bold)),
+                        label: const Text(
+                          'إضافة مديونية جديدة على العميل',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                         onPressed: () async {
-                          final amt = double.tryParse(amountController.text) ?? 0.0;
+                          final amt =
+                              double.tryParse(amountController.text) ?? 0.0;
                           if (amt <= 0) return;
                           Navigator.of(bCtx).pop();
 
-                          await _addManualDebt(amount: amt, notes: notesController.text.trim(), date: selectedDate);
+                          await _addManualDebt(
+                            amount: amt,
+                            notes: notesController.text.trim(),
+                            date: selectedDate,
+                          );
 
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('تم إضافة المديونية وتحديث رصيد العميل بنجاح')),
+                              const SnackBar(
+                                content: Text(
+                                  'تم إضافة المديونية وتحديث رصيد العميل بنجاح',
+                                ),
+                              ),
                             );
                           }
                         },
@@ -798,7 +1369,11 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> with SingleTicker
   }
 
   // Statement Filter Dialog (Date range & Statement Type)
-  void _showStatementFilterDialog(BuildContext context, Map<String, dynamic> client) {
+  void _showStatementFilterDialog(
+    BuildContext context,
+    Map<String, dynamic> client,
+  ) {
+    final pageContext = context;
     DateTime fromDate = DateTime.now().subtract(const Duration(days: 30));
     DateTime toDate = DateTime.now();
 
@@ -806,19 +1381,25 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> with SingleTicker
       context: context,
       builder: (dCtx) {
         return StatefulBuilder(
-          builder: (context, setDialogState) {
+          builder: (dialogContext, setDialogState) {
             return AlertDialog(
-              title: const Text('كشف حساب العميل (PDF)', style: TextStyle(fontWeight: FontWeight.bold)),
+              title: const Text(
+                'كشف حساب العميل (PDF)',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   ListTile(
-                    leading: const Icon(Icons.date_range_rounded, color: AppTheme.primaryColor),
+                    leading: const Icon(
+                      Icons.date_range_rounded,
+                      color: AppTheme.primaryColor,
+                    ),
                     title: const Text('من تاريخ:'),
                     subtitle: Text(DateFormat('yyyy/MM/dd').format(fromDate)),
                     onTap: () async {
                       final picked = await showDatePicker(
-                        context: context,
+                        context: dialogContext,
                         initialDate: fromDate,
                         firstDate: DateTime(2020),
                         lastDate: DateTime.now(),
@@ -829,12 +1410,15 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> with SingleTicker
                     },
                   ),
                   ListTile(
-                    leading: const Icon(Icons.event_rounded, color: AppTheme.primaryColor),
+                    leading: const Icon(
+                      Icons.event_rounded,
+                      color: AppTheme.primaryColor,
+                    ),
                     title: const Text('إلى تاريخ:'),
                     subtitle: Text(DateFormat('yyyy/MM/dd').format(toDate)),
                     onTap: () async {
                       final picked = await showDatePicker(
-                        context: context,
+                        context: dialogContext,
                         initialDate: toDate,
                         firstDate: DateTime(2020),
                         lastDate: DateTime.now(),
@@ -852,32 +1436,146 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> with SingleTicker
                   child: const Text('إلغاء'),
                 ),
                 ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor, foregroundColor: Colors.white),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                    foregroundColor: Colors.white,
+                  ),
                   icon: const Icon(Icons.picture_as_pdf_rounded),
                   label: const Text('عرض وتصدير كشف الحساب'),
                   onPressed: () async {
                     Navigator.of(dCtx).pop();
 
-                    final recordsQuery = await FirebaseFirestore.instance
-                        .collection('clients')
-                        .doc(_effectiveClientId)
-                        .collection('balanceHistory')
-                        .get();
-
-                    final records = recordsQuery.docs
-                        .map((doc) => ClientBalanceRecord.fromFirestore(doc))
-                        .where((r) {
-                      return r.timestamp.isAfter(fromDate.subtract(const Duration(days: 1))) &&
-                          r.timestamp.isBefore(toDate.add(const Duration(days: 1)));
-                    }).toList()
-                      ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
-
-                    if (!context.mounted) return;
-
-                    await ClientStatementPdfService.printOrShareClientStatement(
-                      clientData: client,
-                      records: records,
+                    // Show Loading Overlay
+                    BuildContext? loadingDialogContext;
+                    showDialog(
+                      context: pageContext,
+                      barrierDismissible: false,
+                      builder: (lCtx) {
+                        loadingDialogContext = lCtx;
+                        return Center(
+                          child: Card(
+                            color: const Color(0xFF1E293B),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 18,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  CircularProgressIndicator(
+                                    color: AppTheme.primaryColor,
+                                  ),
+                                  SizedBox(width: 16),
+                                  Text(
+                                    'جاري إعداد وتوليد كشف الحساب PDF...',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     );
+
+                    try {
+                      debugPrint('=== STATEMENT GENERATION DEBUG ===');
+                      debugPrint('effectiveClientId: $_effectiveClientId');
+                      debugPrint('Client Map: $client');
+                      debugPrint('fromDate: $fromDate, toDate: $toDate');
+
+                      List<ClientBalanceRecord> allRecords = [];
+                      try {
+                        allRecords = await _syncService
+                            .getClientBalanceHistoryStream(_effectiveClientId)
+                            .first
+                            .timeout(const Duration(seconds: 4));
+                      } catch (err) {
+                        debugPrint('Stream first timeout/err: $err');
+                      }
+
+                      debugPrint(
+                        'Total calculated records for client: ${allRecords.length}',
+                      );
+
+                      final startLimit = DateTime(
+                        fromDate.year,
+                        fromDate.month,
+                        fromDate.day,
+                        0,
+                        0,
+                        0,
+                      );
+                      final endLimit = DateTime(
+                        toDate.year,
+                        toDate.month,
+                        toDate.day,
+                        23,
+                        59,
+                        59,
+                      );
+
+                      final filteredRecords =
+                          allRecords.where((r) {
+                              return (r.timestamp.isAfter(
+                                        startLimit.subtract(
+                                          const Duration(seconds: 1),
+                                        ),
+                                      ) &&
+                                      r.timestamp.isBefore(
+                                        endLimit.add(
+                                          const Duration(seconds: 1),
+                                        ),
+                                      )) ||
+                                  r.type == 'opening';
+                            }).toList()
+                            ..sort(
+                              (a, b) => a.timestamp.compareTo(b.timestamp),
+                            );
+
+                      debugPrint(
+                        'Filtered records count: ${filteredRecords.length}',
+                      );
+
+                      if (loadingDialogContext != null &&
+                          loadingDialogContext!.mounted) {
+                        Navigator.of(
+                          loadingDialogContext!,
+                        ).pop(); // Pop loading overlay cleanly
+                      }
+
+                      if (!pageContext.mounted) {
+                        debugPrint('pageContext no longer mounted');
+                        return;
+                      }
+
+                      await ClientStatementPdfService.showStatementActionDialog(
+                        context: pageContext,
+                        clientData: client,
+                        records: filteredRecords,
+                      );
+                    } catch (e, stackTrace) {
+                      debugPrint('Error generating statement: $e');
+                      debugPrint('StackTrace: $stackTrace');
+                      if (loadingDialogContext != null &&
+                          loadingDialogContext!.mounted) {
+                        Navigator.of(loadingDialogContext!).pop();
+                      }
+                      if (!pageContext.mounted) return;
+                      ScaffoldMessenger.of(pageContext).showSnackBar(
+                        SnackBar(
+                          content: Text('حدث خطأ أثناء إعداد كشف الحساب: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
                   },
                 ),
               ],

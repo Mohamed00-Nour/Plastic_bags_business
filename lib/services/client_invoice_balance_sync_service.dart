@@ -210,16 +210,32 @@ class ClientInvoiceBalanceSyncService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      final historyRef = clientRef.collection('balanceHistory').doc();
-      batch.set(historyRef, {
+      // Record 1: Full Invoice Total
+      final historyRef1 = clientRef.collection('balanceHistory').doc();
+      batch.set(historyRef1, {
         'type': 'sales_invoice',
         'invoiceId': invoiceId,
         'invoiceNumber': invoiceNumber,
-        'amount': remainingAmount,
+        'amount': totalAmount,
         'totalAmount': totalAmount,
         'paidAmount': paidAmount,
         'timestamp': FieldValue.serverTimestamp(),
       });
+
+      // Record 2: Paid Amount (if > 0)
+      if (paidAmount > 0) {
+        final historyRef2 = clientRef.collection('balanceHistory').doc();
+        batch.set(historyRef2, {
+          'type': 'payment',
+          'invoiceId': invoiceId,
+          'invoiceNumber': invoiceNumber,
+          'description': 'تحصيل من فاتورة #$invoiceNumber',
+          'amount': paidAmount,
+          'totalAmount': totalAmount,
+          'paidAmount': paidAmount,
+          'timestamp': FieldValue.serverTimestamp(),
+        });
+      }
     }
 
     await batch.commit();
@@ -229,35 +245,52 @@ class ClientInvoiceBalanceSyncService {
   /// Process Sales Return with atomic WriteBatch:
   /// 1. Increment Stock level in products/{id} (FieldValue.increment(+qty))
   /// 2. Log stock movement in products/{id}/changes
-  /// 3. Create document in sales_returns
+  /// 3. Create document in return_invoices & sales_returns
   /// 4. Write entry into clients/{id}/balanceHistory (type: 'sales_return')
   /// 5. Decrement client balance in clients/{id}
   Future<String> processSalesReturn({
     required String clientId,
     required String clientName,
-    required String originalInvoiceId,
-    required String originalInvoiceNumber,
     required String returnNumber,
-    required List<Map<String, dynamic>> returnedItems, // [{productId, productName, quantity, price, total}]
+    required List<Map<String, dynamic>> returnedItems,
+    required double subtotal,
+    required double discount,
     required double returnTotalAmount,
+    required double refundAmount,
+    DateTime? returnDate,
     String? reason,
+    String? originalInvoiceId,
+    String? originalInvoiceNumber,
   }) async {
     final batch = _firestore.batch();
-    final returnRef = _firestore.collection('sales_returns').doc();
+    final returnRef = _firestore.collection('return_invoices').doc();
     final returnId = returnRef.id;
+    final timestamp = returnDate != null ? Timestamp.fromDate(returnDate) : FieldValue.serverTimestamp();
 
     // 1. Write Sales Return document
-    batch.set(returnRef, {
+    final returnData = {
       'returnNumber': returnNumber,
-      'originalInvoiceId': originalInvoiceId,
-      'originalInvoiceNumber': originalInvoiceNumber,
+      'invoiceNumber': returnNumber,
+      'originalInvoiceId': originalInvoiceId ?? '',
+      'originalInvoiceNumber': originalInvoiceNumber ?? '',
       'clientId': clientId,
       'clientName': clientName,
       'items': returnedItems,
+      'subtotal': subtotal,
+      'discount': discount,
       'returnTotalAmount': returnTotalAmount,
+      'totalAmount': returnTotalAmount,
+      'paidAmount': refundAmount,
+      'remainingAmount': (returnTotalAmount - refundAmount) < 0 ? 0.0 : (returnTotalAmount - refundAmount),
+      'isReturn': true,
       'reason': reason ?? '',
+      'notes': reason ?? '',
+      'date': timestamp,
       'createdAt': FieldValue.serverTimestamp(),
-    });
+    };
+
+    batch.set(returnRef, returnData);
+    batch.set(_firestore.collection('sales_returns').doc(returnId), returnData);
 
     // 2. Increment Stock level & log changes
     for (final item in returnedItems) {
@@ -288,21 +321,40 @@ class ClientInvoiceBalanceSyncService {
     // 3. Update Client Balance & write balanceHistory
     if (clientId.isNotEmpty) {
       final clientRef = _firestore.collection('clients').doc(clientId);
+      final netCredit = returnTotalAmount - refundAmount;
       batch.update(clientRef, {
-        'balance': FieldValue.increment(-returnTotalAmount),
+        'balance': FieldValue.increment(-netCredit),
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      final historyRef = clientRef.collection('balanceHistory').doc();
-      batch.set(historyRef, {
+      // Record 1: Return Invoice Total (Reduces debt by returnTotalAmount)
+      final historyRef1 = clientRef.collection('balanceHistory').doc();
+      batch.set(historyRef1, {
         'type': 'sales_return',
         'invoiceId': returnId,
         'invoiceNumber': returnNumber,
-        'amount': -returnTotalAmount,
+        'amount': returnTotalAmount,
         'totalAmount': returnTotalAmount,
-        'paidAmount': 0.0,
-        'timestamp': FieldValue.serverTimestamp(),
+        'paidAmount': refundAmount,
+        'timestamp': timestamp,
+        'createdAt': FieldValue.serverTimestamp(),
       });
+
+      // Record 2: Refunded Cash Amount (if refundAmount > 0)
+      if (refundAmount > 0) {
+        final historyRef2 = clientRef.collection('balanceHistory').doc();
+        batch.set(historyRef2, {
+          'type': 'manual_debt',
+          'invoiceId': returnId,
+          'invoiceNumber': returnNumber,
+          'description': 'استرداد نقدي لمرتجع #$returnNumber',
+          'amount': refundAmount,
+          'totalAmount': returnTotalAmount,
+          'paidAmount': refundAmount,
+          'timestamp': timestamp,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
     }
 
     await batch.commit();
@@ -377,33 +429,68 @@ class ClientInvoiceBalanceSyncService {
       }
 
       for (final r in otherRecords) {
-        final double before = currentBalance;
-        final double delta = r.amount;
+        if (r.type == 'sales_invoice' && r.totalAmount > 0 && r.paidAmount > 0 && r.amount != r.totalAmount) {
+          // Legacy single record split into 2 accounting entries:
+          // 1. Invoice Total entry (+)
+          final double beforeTotal = currentBalance;
+          currentBalance += r.totalAmount;
+          calculatedRecords.add(ClientBalanceRecord(
+            id: '${r.id}_total',
+            type: 'sales_invoice',
+            invoiceId: r.invoiceId,
+            invoiceNumber: r.invoiceNumber,
+            amount: r.totalAmount,
+            totalAmount: r.totalAmount,
+            paidAmount: r.paidAmount,
+            balanceBefore: beforeTotal,
+            balanceAfter: currentBalance,
+            timestamp: r.timestamp,
+          ));
 
-        final isReduction = r.type == 'payment' ||
-            r.type == 'sales_return' ||
-            r.type == 'cancellation' ||
-            r.type == 'discount' ||
-            r.type == 'decrease';
-
-        if (isReduction) {
-          currentBalance -= delta;
+          // 2. Paid Amount entry (-)
+          final double beforePaid = currentBalance;
+          currentBalance -= r.paidAmount;
+          calculatedRecords.add(ClientBalanceRecord(
+            id: '${r.id}_paid',
+            type: 'payment',
+            invoiceId: r.invoiceId,
+            invoiceNumber: r.invoiceNumber,
+            amount: r.paidAmount,
+            totalAmount: r.totalAmount,
+            paidAmount: r.paidAmount,
+            balanceBefore: beforePaid,
+            balanceAfter: currentBalance,
+            timestamp: r.timestamp,
+          ));
         } else {
-          currentBalance += delta;
-        }
+          final double before = currentBalance;
+          final double delta = r.amount;
 
-        calculatedRecords.add(ClientBalanceRecord(
-          id: r.id,
-          type: r.type,
-          invoiceId: r.invoiceId,
-          invoiceNumber: r.invoiceNumber,
-          amount: r.amount,
-          totalAmount: r.totalAmount,
-          paidAmount: r.paidAmount,
-          balanceBefore: before,
-          balanceAfter: currentBalance,
-          timestamp: r.timestamp,
-        ));
+          final isReduction = r.type == 'payment' ||
+              r.type == 'sales_return' ||
+              r.type == 'cancellation' ||
+              r.type == 'discount' ||
+              r.type == 'decrease';
+
+          if (isReduction) {
+            currentBalance -= delta;
+          } else {
+            currentBalance += delta;
+          }
+
+          calculatedRecords.add(ClientBalanceRecord(
+            id: r.id,
+            type: r.type,
+            invoiceId: r.invoiceId,
+            invoiceNumber: r.invoiceNumber,
+            amount: r.amount,
+            totalAmount: r.totalAmount,
+            paidAmount: r.paidAmount,
+            balanceBefore: before,
+            balanceAfter: currentBalance,
+            timestamp: r.timestamp,
+          ));
+        }
       }
 
       // Prepare UI list: descending order (newest first), with 'opening' anchored at the bottom
@@ -450,5 +537,89 @@ class ClientInvoiceBalanceSyncService {
 
     // Delete root document
     await clientRef.delete();
+  }
+
+  /// Delete a client balance history record & adjust client balance
+  Future<void> deleteBalanceRecord({
+    required String clientId,
+    required ClientBalanceRecord record,
+  }) async {
+    final docId = record.id.split('_').first;
+    final batch = _firestore.batch();
+    final historyRef = _firestore
+        .collection('clients')
+        .doc(clientId)
+        .collection('balanceHistory')
+        .doc(docId);
+
+    final isReduction = record.type == 'payment' ||
+        record.type == 'sales_return' ||
+        record.type == 'cancellation' ||
+        record.type == 'discount' ||
+        record.type == 'decrease';
+
+    final double adjustment = isReduction ? record.amount : -record.amount;
+
+    final clientRef = _firestore.collection('clients').doc(clientId);
+    batch.update(clientRef, {
+      'balance': FieldValue.increment(adjustment),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+
+    batch.delete(historyRef);
+    await batch.commit();
+  }
+
+  /// Update a client balance history record & adjust client balance
+  Future<void> updateBalanceRecord({
+    required String clientId,
+    required ClientBalanceRecord oldRecord,
+    required double newAmount,
+    required String newType,
+    DateTime? newDate,
+    String? newNotes,
+  }) async {
+    final docId = oldRecord.id.split('_').first;
+    final batch = _firestore.batch();
+    final historyRef = _firestore
+        .collection('clients')
+        .doc(clientId)
+        .collection('balanceHistory')
+        .doc(docId);
+
+    // 1. Revert old record impact
+    final oldIsReduction = oldRecord.type == 'payment' ||
+        oldRecord.type == 'sales_return' ||
+        oldRecord.type == 'cancellation' ||
+        oldRecord.type == 'discount' ||
+        oldRecord.type == 'decrease';
+    final double revertAdjustment = oldIsReduction ? oldRecord.amount : -oldRecord.amount;
+
+    // 2. Apply new record impact
+    final newIsReduction = newType == 'payment' ||
+        newType == 'sales_return' ||
+        newType == 'cancellation' ||
+        newType == 'discount' ||
+        newType == 'decrease';
+    final double applyAdjustment = newIsReduction ? -newAmount : newAmount;
+
+    final double totalBalanceChange = revertAdjustment + applyAdjustment;
+
+    final clientRef = _firestore.collection('clients').doc(clientId);
+    batch.update(clientRef, {
+      'balance': FieldValue.increment(totalBalanceChange),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+
+    final Map<String, dynamic> updateData = {
+      'amount': newAmount,
+      'type': newType,
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+    if (newDate != null) updateData['timestamp'] = Timestamp.fromDate(newDate);
+    if (newNotes != null) updateData['description'] = newNotes;
+
+    batch.update(historyRef, updateData);
+    await batch.commit();
   }
 }

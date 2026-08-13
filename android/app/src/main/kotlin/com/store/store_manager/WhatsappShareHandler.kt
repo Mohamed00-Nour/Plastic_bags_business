@@ -56,14 +56,21 @@ class WhatsappShareHandler(private val context: Context) : MethodChannel.MethodC
                     return
                 }
 
+                val firstPath = paths.firstOrNull()?.lowercase() ?: ""
+                val mimeType = when {
+                    firstPath.endsWith(".pdf") -> "application/pdf"
+                    firstPath.endsWith(".jpg") || firstPath.endsWith(".jpeg") -> "image/jpeg"
+                    else -> "image/png"
+                }
+
                 val intent = if (imageUris.size == 1) {
                     Intent(Intent.ACTION_SEND).apply {
-                        type = "image/png"
+                        type = mimeType
                         putExtra(Intent.EXTRA_STREAM, imageUris[0])
                     }
                 } else {
                     Intent(Intent.ACTION_SEND_MULTIPLE).apply {
-                        type = "image/png"
+                        type = mimeType
                         putParcelableArrayListExtra(Intent.EXTRA_STREAM, imageUris)
                     }
                 }

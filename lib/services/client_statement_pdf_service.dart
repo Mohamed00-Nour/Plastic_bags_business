@@ -1,11 +1,16 @@
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import '../core/theme/app_theme.dart';
 import '../widgets/invoice_action_dialog.dart';
 import 'client_invoice_balance_sync_service.dart';
+import 'whatsapp_invoice_share_service.dart';
+import 'whatsapp_share_channel.dart';
 
 class ClientStatementPdfService {
   ClientStatementPdfService._();
@@ -197,7 +202,7 @@ class ClientStatementPdfService {
                     records.map((rec) {
                       return [
                         DateFormat('yyyy/MM/dd HH:mm').format(rec.timestamp),
-                        _formatRecordType(rec.type, true),
+                        _formatRecordType(rec.type, isArabic, invoiceNumber: rec.invoiceNumber),
                         rec.invoiceNumber.isEmpty ? '-' : rec.invoiceNumber,
                         '\$${rec.amount.toStringAsFixed(2)}',
                         '\$${rec.balanceAfter.toStringAsFixed(2)}',
@@ -532,7 +537,7 @@ class ClientStatementPdfService {
     );
   }
 
-  static String _formatRecordType(String type, bool isArabic) {
+  static String _formatRecordType(String type, bool isArabic, {String invoiceNumber = ''}) {
     if (isArabic) {
       switch (type) {
         case 'opening':
@@ -541,11 +546,11 @@ class ClientStatementPdfService {
         case 'debt':
           return 'إضافة مديونية';
         case 'sales_invoice':
-          return 'فاتورة مبيعات';
+          return invoiceNumber.isNotEmpty ? 'فاتورة مبيعات #$invoiceNumber' : 'فاتورة مبيعات';
         case 'sales_return':
-          return 'مرتجع مبيعات';
+          return invoiceNumber.isNotEmpty ? 'مرتجع فاتورة #$invoiceNumber' : 'مرتجع مبيعات';
         case 'payment':
-          return 'سداد رصيد';
+          return invoiceNumber.isNotEmpty ? 'تحصيل من فاتورة #$invoiceNumber' : 'تحصيل دفعة';
         case 'cancellation':
           return 'إلغاء فاتورة';
         default:
@@ -559,11 +564,11 @@ class ClientStatementPdfService {
         case 'debt':
           return 'Add Debt';
         case 'sales_invoice':
-          return 'Sales Invoice';
+          return invoiceNumber.isNotEmpty ? 'Invoice #$invoiceNumber' : 'Sales Invoice';
         case 'sales_return':
-          return 'Sales Return';
+          return invoiceNumber.isNotEmpty ? 'Return #$invoiceNumber' : 'Sales Return';
         case 'payment':
-          return 'Payment';
+          return invoiceNumber.isNotEmpty ? 'Payment for #$invoiceNumber' : 'Payment';
         case 'cancellation':
           return 'Invoice Cancellation';
         default:
@@ -615,6 +620,172 @@ class ClientStatementPdfService {
       pdfBytes: pdfBytes,
       locale: locale,
       isSalesInvoice: true,
+    );
+  }
+
+  /// Display Action Dialog (WhatsApp, Open/Save PDF, Print) for Client Statement
+  static Future<void> showStatementActionDialog({
+    required BuildContext context,
+    required Map<String, dynamic> clientData,
+    required List<ClientBalanceRecord> records,
+    String locale = 'ar',
+  }) async {
+    debugPrint('=== DEBUG STATEMENT PDF GENERATION ===');
+    debugPrint('Client Data: $clientData');
+    debugPrint('Records Count: ${records.length}');
+
+    final pdfBytes = await generateClientStatementPdf(
+      clientData: clientData,
+      records: records,
+      locale: locale,
+    );
+
+    debugPrint('Generated PDF Bytes Length: ${pdfBytes.length}');
+
+    if (!context.mounted) {
+      debugPrint('Context no longer mounted after PDF generation');
+      return;
+    }
+
+    final clientName = clientData['name']?.toString() ?? 'عميل';
+    final rawPhone = clientData['phone']?.toString() ?? '';
+    final targetPhone = WhatsappInvoiceShareService.cleanPhoneDigits(rawPhone);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (bContext) {
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[400],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  const Icon(Icons.picture_as_pdf_rounded, color: AppTheme.primaryColor, size: 28),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'كشف حساب العميل: $clientName',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        const SizedBox(height: 2),
+                        const Text(
+                          'اختر طريقة تصدير أو مشاركة كشف الحساب (PDF)',
+                          style: TextStyle(color: Colors.grey, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              const Divider(),
+
+              // Option 1: Share via WhatsApp
+              ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0xFF25D366),
+                  child: Icon(Icons.share_rounded, color: Colors.white),
+                ),
+                title: const Text('مشاركة كشف الحساب عبر واتساب'),
+                subtitle: Text(
+                  targetPhone.isNotEmpty
+                      ? 'إرسال مستند PDF مباشرة للعميل ($targetPhone)'
+                      : 'مشاركة مستند PDF واختيار المستلم من الواتساب',
+                ),
+                onTap: () async {
+                  Navigator.of(bContext).pop();
+                  final cleanName = clientName.replaceAll(RegExp(r'[^\w\s-]'), '_');
+                  final filename = 'Statement_$cleanName.pdf';
+
+                  if (targetPhone.isNotEmpty) {
+                    try {
+                      Directory? downloadsDir;
+                      try { downloadsDir = await getDownloadsDirectory(); } catch (_) {}
+                      downloadsDir ??= await getTemporaryDirectory();
+                      final pdfFile = File('${downloadsDir.path}/$filename');
+                      await pdfFile.writeAsBytes(pdfBytes);
+
+                      final shared = await WhatsappShareChannel.shareImages(
+                        phoneDigits: targetPhone,
+                        imagePaths: [pdfFile.path],
+                        caption: 'كشف حساب العميل: $clientName',
+                      );
+                      if (shared) return;
+                    } catch (_) {}
+                  }
+
+                  await Printing.sharePdf(
+                    bytes: pdfBytes,
+                    filename: filename,
+                    subject: 'كشف حساب العميل: $clientName',
+                  );
+                },
+              ),
+              const Divider(),
+
+              // Option 2: Save & Open PDF File
+              ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: AppTheme.primaryColor,
+                  child: Icon(Icons.file_open_rounded, color: Colors.white),
+                ),
+                title: const Text('حفظ وفتح مستند PDF'),
+                subtitle: const Text('معاينة المستند أو تنزيله على الجهاز'),
+                onTap: () async {
+                  Navigator.of(bContext).pop();
+                  final cleanName = clientName.replaceAll(RegExp(r'[^\w\s-]'), '_');
+                  final filename = 'Statement_$cleanName.pdf';
+
+                  try {
+                    Directory? downloadsDir;
+                    try { downloadsDir = await getDownloadsDirectory(); } catch (_) {}
+                    downloadsDir ??= await getTemporaryDirectory();
+                    final pdfFile = File('${downloadsDir.path}/$filename');
+                    await pdfFile.writeAsBytes(pdfBytes);
+                  } catch (_) {}
+
+                  await Printing.layoutPdf(
+                    onLayout: (_) => pdfBytes,
+                    name: filename,
+                  );
+                },
+              ),
+              const Divider(),
+
+              // Option 3: Print Statement
+              ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: Colors.blueGrey,
+                  child: Icon(Icons.print_rounded, color: Colors.white),
+                ),
+                title: const Text('طباعة كشف الحساب'),
+                subtitle: const Text('إرسال المستند مباشرة إلى الطابعة'),
+                onTap: () async {
+                  Navigator.of(bContext).pop();
+                  await Printing.layoutPdf(onLayout: (_) => pdfBytes);
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

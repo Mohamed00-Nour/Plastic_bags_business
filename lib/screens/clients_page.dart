@@ -259,7 +259,7 @@ class _ClientsPageState extends State<ClientsPage> {
                 ),
                 actions: [
                   TextButton(
-                    onPressed: () => Navigator.pop(dialogContext),
+                    onPressed: isLoading ? null : () => Navigator.pop(dialogContext),
                     child: Text(isArabic ? 'إلغاء' : 'Cancel'),
                   ),
                   ElevatedButton(
@@ -268,6 +268,33 @@ class _ClientsPageState extends State<ClientsPage> {
                         : () async {
                             if (!formKey.currentState!.validate()) return;
                             setDialogState(() => isLoading = true);
+
+                            // Show Loading Overlay
+                            showDialog(
+                              context: context,
+                              barrierDismissible: false,
+                              builder: (loadingCtx) => Center(
+                                child: Card(
+                                  color: const Color(0xFF1E293B),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const CircularProgressIndicator(color: AppTheme.primaryColor),
+                                        const SizedBox(width: 16),
+                                        Text(
+                                          isArabic ? 'جاري حفظ تعديلات العميل...' : 'Updating client info...',
+                                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+
                             try {
                               await _clientSyncService.updateClient(
                                 clientId: clientId,
@@ -276,8 +303,10 @@ class _ClientsPageState extends State<ClientsPage> {
                                 address: addressController.text.trim(),
                               );
 
-                              if (!dialogContext.mounted) return;
-                              Navigator.pop(dialogContext);
+                              if (!context.mounted) return;
+                              // Pop loading overlay & dialog
+                              Navigator.of(context, rootNavigator: true).pop();
+                              if (dialogContext.mounted) Navigator.pop(dialogContext);
 
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
@@ -288,6 +317,9 @@ class _ClientsPageState extends State<ClientsPage> {
                                 ),
                               );
                             } catch (e) {
+                              if (context.mounted) {
+                                Navigator.of(context, rootNavigator: true).pop();
+                              }
                               setDialogState(() => isLoading = false);
                               if (!dialogContext.mounted) return;
                               ScaffoldMessenger.of(dialogContext).showSnackBar(
@@ -342,9 +374,37 @@ class _ClientsPageState extends State<ClientsPage> {
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
                 onPressed: () async {
                   Navigator.pop(dialogContext);
+
+                  // Show Loading Overlay
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (loadingCtx) => Center(
+                      child: Card(
+                        color: const Color(0xFF1E293B),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const CircularProgressIndicator(color: Colors.red),
+                              const SizedBox(width: 16),
+                              Text(
+                                isArabic ? 'جاري حذف العميل وسجل المعاملات...' : 'Deleting client records...',
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+
                   try {
                     await _clientSyncService.deleteClient(clientId);
                     if (!context.mounted) return;
+                    Navigator.of(context, rootNavigator: true).pop();
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
@@ -355,6 +415,7 @@ class _ClientsPageState extends State<ClientsPage> {
                     );
                   } catch (e) {
                     if (!context.mounted) return;
+                    Navigator.of(context, rootNavigator: true).pop();
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
                     );

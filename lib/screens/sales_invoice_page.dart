@@ -11,10 +11,7 @@ import '../core/theme/app_theme.dart';
 class SalesInvoicePage extends StatefulWidget {
   final Map<String, dynamic>? initialInvoiceData;
 
-  const SalesInvoicePage({
-    super.key,
-    this.initialInvoiceData,
-  });
+  const SalesInvoicePage({super.key, this.initialInvoiceData});
 
   @override
   State<SalesInvoicePage> createState() => _SalesInvoicePageState();
@@ -52,6 +49,31 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
       TextEditingController();
   String _productSearchQuery = '';
 
+  // Return Invoice State
+  late String _returnNumber;
+  DateTime _returnDate = DateTime.now();
+  String? _returnClientId;
+  String? _returnClientName;
+  String? _returnClientPhone;
+  String _returnPaymentMethod = 'Cash';
+
+  final List<Map<String, dynamic>> _returnLineItems = [];
+  double _returnDiscount = 0.0;
+  double _returnRefundAmount = 0.0;
+  String _returnNotes = '';
+  bool _isReturnSubmitting = false;
+
+  final TextEditingController _returnDiscountController = TextEditingController(
+    text: '0.0',
+  );
+  final TextEditingController _returnRefundController = TextEditingController(
+    text: '0.0',
+  );
+  final TextEditingController _returnNotesController = TextEditingController();
+  final TextEditingController _returnProductSearchController =
+      TextEditingController();
+  String _returnProductSearchQuery = '';
+
   int _selectedHistoryYear = DateTime.now().year;
   int _selectedHistoryMonth = DateTime.now().month;
 
@@ -61,6 +83,7 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _generateReturnNumber();
     if (widget.initialInvoiceData != null) {
       _loadInvoiceForEditing(widget.initialInvoiceData!);
     } else {
@@ -72,7 +95,8 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
     _invoiceNumber = inv['invoiceNumber']?.toString() ?? 'INV-000';
     _selectedClientId = inv['clientId']?.toString();
     _selectedClientName = inv['clientName']?.toString();
-    _selectedClientPhone = inv['clientPhone']?.toString() ?? inv['phone']?.toString();
+    _selectedClientPhone =
+        inv['clientPhone']?.toString() ?? inv['phone']?.toString();
     _paymentMethod = inv['paymentMethod']?.toString() ?? 'Cash';
     _discount = (inv['discount'] ?? 0.0).toDouble();
     _paidAmount = (inv['paidAmount'] ?? 0.0).toDouble();
@@ -101,6 +125,11 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
         'INV-${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
   }
 
+  void _generateReturnNumber() {
+    _returnNumber =
+        'RET-${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
+  }
+
   @override
   void dispose() {
     _tabController.dispose();
@@ -108,7 +137,65 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
     _paidController.dispose();
     _notesController.dispose();
     _productSearchController.dispose();
+    _returnDiscountController.dispose();
+    _returnRefundController.dispose();
+    _returnNotesController.dispose();
+    _returnProductSearchController.dispose();
     super.dispose();
+  }
+
+  double get _returnSubtotal {
+    return _returnLineItems.fold(0.0, (acc, item) {
+      final qty = (item['quantity'] ?? 0) as num;
+      final price = (item['price'] ?? 0.0) as num;
+      return acc + (qty * price);
+    });
+  }
+
+  double get _returnTotalAmount {
+    final t = _returnSubtotal - _returnDiscount;
+    return t < 0 ? 0.0 : t;
+  }
+
+  double get _returnRemainingAmount {
+    final rem = _returnTotalAmount - _returnRefundAmount;
+    return rem < 0 ? 0.0 : rem;
+  }
+
+  void _addReturnLineItem(Map<String, dynamic> product) {
+    setState(() {
+      final existingIndex = _returnLineItems.indexWhere(
+        (i) => i['productId'] == product['id'],
+      );
+      final p1 = (product['price1'] ?? product['price'] ?? 0.0).toDouble();
+      final p2 =
+          product['price2'] != null
+              ? (product['price2'] as num).toDouble()
+              : null;
+      final p3 =
+          product['price3'] != null
+              ? (product['price3'] as num).toDouble()
+              : null;
+
+      if (existingIndex >= 0) {
+        _returnLineItems[existingIndex]['quantity'] += 1;
+        _returnLineItems[existingIndex]['total'] =
+            _returnLineItems[existingIndex]['quantity'] *
+            _returnLineItems[existingIndex]['price'];
+      } else {
+        _returnLineItems.add({
+          'productId': product['id'],
+          'productName': product['name'] ?? '',
+          'quantity': 1,
+          'price1': p1,
+          'price2': p2,
+          'price3': p3,
+          'selectedTier': 'price1',
+          'price': p1,
+          'total': p1,
+        });
+      }
+    });
   }
 
   double get _subtotal {
@@ -198,7 +285,9 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
 
     if (_isEditMode) {
       final newInvoiceData = {
-        'id': widget.initialInvoiceData!['id'] ?? widget.initialInvoiceData!['invoiceId'],
+        'id':
+            widget.initialInvoiceData!['id'] ??
+            widget.initialInvoiceData!['invoiceId'],
         'invoiceNumber': _invoiceNumber,
         'clientId': _selectedClientId,
         'clientName': _selectedClientName,
@@ -303,235 +392,110 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
     }
   }
 
-  void _showSalesReturnDialog(BuildContext context, bool isArabic) {
-    final returnNumController = TextEditingController(
-      text:
-          'RET-${DateTime.now().millisecondsSinceEpoch.toString().substring(6)}',
-    );
-    final origInvoiceController = TextEditingController();
-    final reasonController = TextEditingController();
-    final returnAmountController = TextEditingController();
+  void _submitSalesReturn(bool isArabic) async {
+    if (_returnClientId == null || _returnClientId!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isArabic
+                ? 'برجاء اختيار العميل أولاً'
+                : 'Please select a customer first',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
-    String? returnClientId;
-    String? returnClientName;
-    List<Map<String, dynamic>> returnItems = [];
-    bool isSaving = false;
+    if (_returnLineItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isArabic
+                ? 'برجاء إضافة منتج واحد على الأقل للمرتجع'
+                : 'Please add at least one item to return',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
-    showDialog(
-      context: context,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return Directionality(
-              textDirection:
-                  isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
-              child: AlertDialog(
-                title: Row(
-                  children: [
-                    const Icon(
-                      Icons.assignment_return_rounded,
-                      color: AppTheme.dangerColor,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      isArabic ? 'إنشاء مرتجع مبيعات' : 'Create Sales Return',
-                    ),
-                  ],
-                ),
-                content: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      StreamBuilder<List<Map<String, dynamic>>>(
-                        stream: _syncService.getClientsStream(),
-                        builder: (context, snapshot) {
-                          final clients = snapshot.data ?? [];
-                          return RawAutocomplete<Map<String, dynamic>>(
-                            displayStringForOption: (c) => c['name'] ?? '',
-                            optionsBuilder: (
-                              TextEditingValue textEditingValue,
-                            ) {
-                              if (textEditingValue.text.isEmpty) return clients;
-                              final q = textEditingValue.text.toLowerCase();
-                              return clients.where((c) {
-                                final name =
-                                    (c['name'] ?? '').toString().toLowerCase();
-                                final phone =
-                                    (c['phone'] ?? '').toString().toLowerCase();
-                                return name.contains(q) || phone.contains(q);
-                              });
-                            },
-                            onSelected: (Map<String, dynamic> c) {
-                              setDialogState(() {
-                                returnClientId = c['id'];
-                                returnClientName = c['name'];
-                              });
-                            },
-                            fieldViewBuilder: (
-                              context,
-                              controller,
-                              focusNode,
-                              onFieldSubmitted,
-                            ) {
-                              return TextFormField(
-                                controller: controller,
-                                focusNode: focusNode,
-                                decoration: InputDecoration(
-                                  labelText:
-                                      isArabic
-                                          ? 'ابحث عن العميل *'
-                                          : 'Search & Select Client *',
-                                  prefixIcon: const Icon(Icons.person_search),
-                                ),
-                              );
-                            },
-                            optionsViewBuilder: (context, onSelected, options) {
-                              return Align(
-                                alignment: Alignment.topLeft,
-                                child: Material(
-                                  elevation: 8,
-                                  child: Container(
-                                    width: 320,
-                                    constraints: const BoxConstraints(
-                                      maxHeight: 200,
-                                    ),
-                                    color: Theme.of(context).cardColor,
-                                    child: ListView.builder(
-                                      shrinkWrap: true,
-                                      itemCount: options.length,
-                                      itemBuilder: (context, index) {
-                                        final opt = options.elementAt(index);
-                                        return ListTile(
-                                          title: Text(opt['name'] ?? ''),
-                                          subtitle: Text(opt['phone'] ?? ''),
-                                          onTap: () => onSelected(opt),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: origInvoiceController,
-                        decoration: InputDecoration(
-                          labelText:
-                              isArabic
-                                  ? 'رقم الفاتورة الأصلية'
-                                  : 'Original Invoice #',
-                          prefixIcon: const Icon(Icons.receipt),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: returnAmountController,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        decoration: InputDecoration(
-                          labelText:
-                              isArabic
-                                  ? 'إجمالي قيمة المرتجع (\$)'
-                                  : 'Return Total Amount (\$)',
-                          prefixIcon: const Icon(Icons.attach_money),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: reasonController,
-                        decoration: InputDecoration(
-                          labelText: isArabic ? 'سبب الإرجاع' : 'Return Reason',
-                          prefixIcon: const Icon(Icons.notes),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(dialogContext),
-                    child: Text(isArabic ? 'إلغاء' : 'Cancel'),
-                  ),
-                  ElevatedButton(
-                    onPressed:
-                        isSaving
-                            ? null
-                            : () async {
-                              if (returnClientId == null ||
-                                  returnAmountController.text.isEmpty)
-                                return;
+    setState(() => _isReturnSubmitting = true);
 
-                              setDialogState(() => isSaving = true);
-                              try {
-                                final amount =
-                                    double.tryParse(
-                                      returnAmountController.text.trim(),
-                                    ) ??
-                                    0.0;
+    try {
+      await _syncService.processSalesReturn(
+        clientId: _returnClientId!,
+        clientName: _returnClientName ?? '',
+        returnNumber: _returnNumber,
+        returnedItems: _returnLineItems,
+        subtotal: _returnSubtotal,
+        discount: _returnDiscount,
+        returnTotalAmount: _returnTotalAmount,
+        refundAmount: _returnRefundAmount,
+        returnDate: _returnDate,
+        reason: _returnNotes,
+      );
 
-                                await _syncService.processSalesReturn(
-                                  clientId: returnClientId!,
-                                  clientName: returnClientName ?? '',
-                                  originalInvoiceId: '',
-                                  originalInvoiceNumber:
-                                      origInvoiceController.text.trim(),
-                                  returnNumber: returnNumController.text.trim(),
-                                  returnedItems: returnItems,
-                                  returnTotalAmount: amount,
-                                  reason: reasonController.text.trim(),
-                                );
+      if (!mounted) return;
 
-                                if (!dialogContext.mounted) return;
-                                Navigator.pop(dialogContext);
+      final returnDataToPrint = {
+        'invoiceNumber': _returnNumber,
+        'returnNumber': _returnNumber,
+        'clientName': _returnClientName,
+        'clientPhone': _returnClientPhone,
+        'phone': _returnClientPhone,
+        'paymentMethod': _returnPaymentMethod,
+        'date': _returnDate,
+        'items': List<Map<String, dynamic>>.from(_returnLineItems),
+        'subtotal': _returnSubtotal,
+        'discount': _returnDiscount,
+        'totalAmount': _returnTotalAmount,
+        'paidAmount': _returnRefundAmount,
+        'remainingAmount': _returnRemainingAmount,
+        'isReturn': true,
+      };
 
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      isArabic
-                                          ? 'تم معالجة المرتجع وإعادة الكميات للمخزن بنجاح'
-                                          : 'Sales return processed & inventory updated successfully!',
-                                    ),
-                                    backgroundColor: AppTheme.successColor,
-                                  ),
-                                );
-                              } catch (e) {
-                                setDialogState(() => isSaving = false);
-                                if (!dialogContext.mounted) return;
-                                ScaffoldMessenger.of(
-                                  dialogContext,
-                                ).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Error: $e'),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                              }
-                            },
-                    child:
-                        isSaving
-                            ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                            : Text(
-                              isArabic ? 'معالجة المرتجع' : 'Process Return',
-                            ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
+      setState(() {
+        _isReturnSubmitting = false;
+        _returnLineItems.clear();
+        _returnDiscount = 0.0;
+        _returnRefundAmount = 0.0;
+        _returnDiscountController.text = '0.0';
+        _returnRefundController.text = '0.0';
+        _returnNotesController.clear();
+        _returnProductSearchController.clear();
+        _returnProductSearchQuery = '';
+        _generateReturnNumber();
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isArabic
+                ? 'تم حفظ مرتجع المبيعات وتحديث المخزون والرصيد بنجاح'
+                : 'Sales return saved successfully!',
+          ),
+          backgroundColor: AppTheme.successColor,
+        ),
+      );
+
+      // Offer PDF Actions Dialog (WhatsApp, Print, Display, Save to device)
+      await ClientStatementPdfService.showSalesInvoiceActionDialog(
+        context: context,
+        invoiceData: returnDataToPrint,
+        locale: isArabic ? 'ar' : 'en',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isReturnSubmitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error saving return: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -544,25 +508,33 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
         appBar: AppBar(
           title: Text(
             _isEditMode
-                ? (isArabic ? 'تعديل فاتورة مبيعات #$_invoiceNumber' : 'Edit Sales Invoice #$_invoiceNumber')
-                : (isArabic ? 'إدارة فواتير المبيعات' : 'Sales Invoices Management'),
+                ? (isArabic
+                    ? 'تعديل فاتورة مبيعات #$_invoiceNumber'
+                    : 'Edit Sales Invoice #$_invoiceNumber')
+                : (isArabic
+                    ? 'إدارة فواتير المبيعات'
+                    : 'Sales Invoices Management'),
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
-          leading: Navigator.canPop(context)
-              ? IconButton(
-                  icon: const Icon(Icons.arrow_back_rounded),
-                  tooltip: isArabic ? 'رجوع' : 'Back',
-                  onPressed: () => Navigator.maybePop(context),
-                )
-              : null,
+          leading:
+              Navigator.canPop(context)
+                  ? IconButton(
+                    icon: const Icon(Icons.arrow_back_rounded),
+                    tooltip: isArabic ? 'رجوع' : 'Back',
+                    onPressed: () => Navigator.maybePop(context),
+                  )
+                  : null,
           bottom: TabBar(
             controller: _tabController,
             tabs: [
               Tab(
                 icon: const Icon(Icons.point_of_sale),
-                text: _isEditMode
-                    ? (isArabic ? 'تعديل الفاتورة' : 'Edit Invoice')
-                    : (isArabic ? 'فاتورة مبيعات جديدة' : 'New Sales Invoice'),
+                text:
+                    _isEditMode
+                        ? (isArabic ? 'تعديل الفاتورة' : 'Edit Invoice')
+                        : (isArabic
+                            ? 'فاتورة مبيعات جديدة'
+                            : 'New Sales Invoice'),
               ),
               Tab(
                 icon: const Icon(Icons.assignment_return),
@@ -1345,44 +1317,633 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
   }
 
   Widget _buildReturnsTab(BuildContext context, bool isArabic) {
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isDesktop = constraints.maxWidth >= 900;
+
+        final itemsSection = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(
-              Icons.assignment_return_rounded,
-              size: 72,
-              color: AppTheme.dangerColor,
+            // Top Header Card (Return Number & Date & Searchable Client)
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          '${isArabic ? "رقم المرتجع: " : "Return #: "}$_returnNumber',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: AppTheme.dangerColor,
+                          ),
+                        ),
+                        const Spacer(),
+                        TextButton.icon(
+                          icon: const Icon(
+                            Icons.calendar_today,
+                            color: AppTheme.dangerColor,
+                          ),
+                          label: Text(
+                            DateFormat('yyyy/MM/dd').format(_returnDate),
+                            style: const TextStyle(color: AppTheme.dangerColor),
+                          ),
+                          onPressed: () async {
+                            final picked = await showDatePicker(
+                              context: context,
+                              initialDate: _returnDate,
+                              firstDate: DateTime(2020),
+                              lastDate: DateTime.now().add(
+                                const Duration(days: 365),
+                              ),
+                            );
+                            if (picked != null) {
+                              setState(() => _returnDate = picked);
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Searchable Client Auto-complete Input
+                    StreamBuilder<List<Map<String, dynamic>>>(
+                      stream: _syncService.getClientsStream(),
+                      builder: (context, snapshot) {
+                        final clients = snapshot.data ?? [];
+                        return RawAutocomplete<Map<String, dynamic>>(
+                          displayStringForOption: (c) => c['name'] ?? '',
+                          optionsBuilder: (TextEditingValue textEditingValue) {
+                            if (textEditingValue.text.isEmpty) return clients;
+                            final q = textEditingValue.text.toLowerCase();
+                            return clients.where((c) {
+                              final name =
+                                  (c['name'] ?? '').toString().toLowerCase();
+                              final phone =
+                                  (c['phone'] ?? '').toString().toLowerCase();
+                              return name.contains(q) || phone.contains(q);
+                            });
+                          },
+                          onSelected: (Map<String, dynamic> c) {
+                            setState(() {
+                              _returnClientId = c['id'];
+                              _returnClientName = c['name'];
+                              _returnClientPhone = c['phone'];
+                            });
+                          },
+                          fieldViewBuilder: (
+                            context,
+                            controller,
+                            focusNode,
+                            onFieldSubmitted,
+                          ) {
+                            if (_returnClientName != null &&
+                                controller.text.isEmpty) {
+                              controller.text = _returnClientName!;
+                            }
+                            return TextFormField(
+                              controller: controller,
+                              focusNode: focusNode,
+                              decoration: InputDecoration(
+                                labelText:
+                                    isArabic
+                                        ? 'ابحث عن العميل للمرتجع *'
+                                        : 'Search Client for Return *',
+                                prefixIcon: const Icon(
+                                  Icons.person_search,
+                                  color: AppTheme.dangerColor,
+                                ),
+                                suffixIcon:
+                                    _returnClientId != null
+                                        ? IconButton(
+                                          icon: const Icon(Icons.clear),
+                                          onPressed: () {
+                                            controller.clear();
+                                            setState(() {
+                                              _returnClientId = null;
+                                              _returnClientName = null;
+                                              _returnClientPhone = null;
+                                            });
+                                          },
+                                        )
+                                        : null,
+                              ),
+                            );
+                          },
+                          optionsViewBuilder: (context, onSelected, options) {
+                            return Align(
+                              alignment: Alignment.topLeft,
+                              child: Material(
+                                elevation: 8,
+                                child: Container(
+                                  width: 340,
+                                  constraints: const BoxConstraints(
+                                    maxHeight: 220,
+                                  ),
+                                  color: Theme.of(context).cardColor,
+                                  child: ListView.builder(
+                                    shrinkWrap: true,
+                                    itemCount: options.length,
+                                    itemBuilder: (context, index) {
+                                      final option = options.elementAt(index);
+                                      return ListTile(
+                                        title: Text(
+                                          option['name'] ?? '',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        subtitle: Text(
+                                          '${option['phone'] ?? ''} • ${isArabic ? "رصيد: " : "Bal: "}\$${(option['balance'] ?? 0.0).toStringAsFixed(2)}',
+                                        ),
+                                        onTap: () => onSelected(option),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: 16),
-            Text(
-              isArabic ? 'إدارة مرتجعات المبيعات' : 'Sales Returns Management',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              isArabic
-                  ? 'قم بإنشاء طلب مرتجع لإعادة البضاعة للمخزن وتعديل رصيد العميل'
-                  : 'Create return request to restock products & adjust client balance',
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.grey),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.add),
-              label: Text(
-                isArabic ? 'إضافة طلب مرتجع جديد' : 'New Sales Return Request',
+
+            // Search Products Bar
+            TextField(
+              controller: _returnProductSearchController,
+              decoration: InputDecoration(
+                hintText:
+                    isArabic
+                        ? 'ابحث عن المنتج لإرجاعه (الاسم أو الباروكود)...'
+                        : 'Search product to return...',
+                prefixIcon: const Icon(
+                  Icons.search,
+                  color: AppTheme.dangerColor,
+                ),
+                suffixIcon:
+                    _returnProductSearchQuery.isNotEmpty
+                        ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _returnProductSearchController.clear();
+                            setState(() => _returnProductSearchQuery = '');
+                          },
+                        )
+                        : null,
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.dangerColor,
+              onChanged: (val) {
+                setState(
+                  () => _returnProductSearchQuery = val.trim().toLowerCase(),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+
+            // Products Grid / List Selector for Returns
+            StreamBuilder<QuerySnapshot>(
+              stream: _firestore.collection('products').snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final docs = snapshot.data?.docs ?? [];
+                final filtered =
+                    docs.where((doc) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      final name =
+                          (data['name'] ?? '').toString().toLowerCase();
+                      final code =
+                          (data['code'] ?? '').toString().toLowerCase();
+                      return _returnProductSearchQuery.isEmpty ||
+                          name.contains(_returnProductSearchQuery) ||
+                          code.contains(_returnProductSearchQuery);
+                    }).toList();
+
+                if (filtered.isEmpty) {
+                  return Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        isArabic
+                            ? 'لا يوجد منتجات مطابقة'
+                            : 'No matching products found',
+                        style: const TextStyle(color: Colors.grey),
+                      ),
+                    ),
+                  );
+                }
+
+                return SizedBox(
+                  height: 120,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: filtered.length,
+                    itemBuilder: (context, index) {
+                      final doc = filtered[index];
+                      final p = Map<String, dynamic>.from(doc.data() as Map);
+                      p['id'] = doc.id;
+                      final price =
+                          (p['price1'] ?? p['price'] ?? 0.0).toDouble();
+
+                      return Container(
+                        width: 150,
+                        margin: const EdgeInsets.only(right: 10),
+                        child: Card(
+                          child: InkWell(
+                            onTap: () => _addReturnLineItem(p),
+                            borderRadius: BorderRadius.circular(12),
+                            child: Padding(
+                              padding: const EdgeInsets.all(10),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    p['name'] ?? '',
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        '\$${price.toStringAsFixed(2)}',
+                                        style: const TextStyle(
+                                          color: AppTheme.dangerColor,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const Icon(
+                                        Icons.add_circle,
+                                        color: AppTheme.dangerColor,
+                                        size: 20,
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 16),
+
+            // Returned Line Items Table Card
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isArabic ? 'الأصناف المرتجعة' : 'Returned Items',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const Divider(),
+                    if (_returnLineItems.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 24),
+                        child: Center(
+                          child: Text(
+                            isArabic
+                                ? 'اضغط على المنتجات أعلاه لإضافتها لقائمة المرتجع'
+                                : 'Select products above to add to return list',
+                            style: const TextStyle(color: Colors.grey),
+                          ),
+                        ),
+                      )
+                    else
+                      ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _returnLineItems.length,
+                        separatorBuilder: (_, __) => const Divider(),
+                        itemBuilder: (context, index) {
+                          final item = _returnLineItems[index];
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Column(
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        item['productName'] ?? '',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                    Text(
+                                      '\$${(item['total'] as num).toStringAsFixed(2)}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: AppTheme.dangerColor,
+                                        fontSize: 15,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    Text(
+                                      isArabic
+                                          ? 'سعر الإرجاع: '
+                                          : 'Return Price: ',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                    DropdownButton<String>(
+                                      value: item['selectedTier'] ?? 'price1',
+                                      isDense: true,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color:
+                                            Theme.of(
+                                              context,
+                                            ).textTheme.bodyMedium?.color,
+                                      ),
+                                      items: [
+                                        DropdownMenuItem(
+                                          value: 'price1',
+                                          child: Text(
+                                            '${isArabic ? "سعر 1" : "Price 1"} (\$${((item['price1'] ?? item['price']) as num).toStringAsFixed(2)})',
+                                          ),
+                                        ),
+                                        if (item['price2'] != null)
+                                          DropdownMenuItem(
+                                            value: 'price2',
+                                            child: Text(
+                                              '${isArabic ? "سعر 2" : "Price 2"} (\$${(item['price2'] as num).toStringAsFixed(2)})',
+                                            ),
+                                          ),
+                                        if (item['price3'] != null)
+                                          DropdownMenuItem(
+                                            value: 'price3',
+                                            child: Text(
+                                              '${isArabic ? "سعر 3" : "Price 3"} (\$${(item['price3'] as num).toStringAsFixed(2)})',
+                                            ),
+                                          ),
+                                        DropdownMenuItem(
+                                          value: 'custom',
+                                          child: Text(
+                                            isArabic
+                                                ? 'سعر خاص ✏️'
+                                                : 'Custom Price ✏️',
+                                          ),
+                                        ),
+                                      ],
+                                      onChanged: (val) {
+                                        if (val == null) return;
+                                        setState(() {
+                                          item['selectedTier'] = val;
+                                          if (val == 'price1') {
+                                            item['price'] =
+                                                item['price1'] ?? item['price'];
+                                          } else if (val == 'price2') {
+                                            item['price'] = item['price2'];
+                                          } else if (val == 'price3') {
+                                            item['price'] = item['price3'];
+                                          }
+                                          item['total'] =
+                                              (item['quantity'] as num) *
+                                              (item['price'] as num);
+                                        });
+                                      },
+                                    ),
+                                    const Spacer(),
+
+                                    // Quantity Selector
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.remove_circle_outline,
+                                        size: 20,
+                                      ),
+                                      onPressed: () {
+                                        setState(() {
+                                          if (item['quantity'] > 1) {
+                                            item['quantity'] -= 1;
+                                            item['total'] =
+                                                (item['quantity'] as num) *
+                                                (item['price'] as num);
+                                          } else {
+                                            _returnLineItems.removeAt(index);
+                                          }
+                                        });
+                                      },
+                                    ),
+                                    Text(
+                                      '${item['quantity']}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.add_circle_outline,
+                                        size: 20,
+                                      ),
+                                      onPressed: () {
+                                        setState(() {
+                                          item['quantity'] += 1;
+                                          item['total'] =
+                                              (item['quantity'] as num) *
+                                              (item['price'] as num);
+                                        });
+                                      },
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.delete_outline,
+                                        color: Colors.red,
+                                        size: 20,
+                                      ),
+                                      onPressed: () {
+                                        setState(
+                                          () =>
+                                              _returnLineItems.removeAt(index),
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                  ],
+                ),
               ),
-              onPressed: () => _showSalesReturnDialog(context, isArabic),
             ),
           ],
-        ),
-      ),
+        );
+
+        final summarySection = Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isArabic ? 'ملخص مرتجع المبيعات' : 'Sales Return Summary',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _buildCalcRow(
+                  isArabic ? 'المجموع الفرعي للمرتجع' : 'Return Subtotal',
+                  '\$${_returnSubtotal.toStringAsFixed(2)}',
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _returnDiscountController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: InputDecoration(
+                    labelText:
+                        isArabic
+                            ? 'خصم على المرتجع (\$)'
+                            : 'Return Discount (\$)',
+                    prefixIcon: const Icon(
+                      Icons.discount,
+                      color: AppTheme.dangerColor,
+                    ),
+                  ),
+                  onChanged: (val) {
+                    setState(
+                      () => _returnDiscount = double.tryParse(val) ?? 0.0,
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+                _buildCalcRow(
+                  isArabic ? 'صافي إجمالي المرتجع' : 'Net Return Total',
+                  '\$${_returnTotalAmount.toStringAsFixed(2)}',
+                  isBold: true,
+                  color: AppTheme.dangerColor,
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _returnRefundController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: InputDecoration(
+                    labelText:
+                        isArabic
+                            ? 'المبلغ المسترد نقداً للعميل (\$)'
+                            : 'Refunded Cash Amount (\$)',
+                    prefixIcon: const Icon(
+                      Icons.money,
+                      color: AppTheme.dangerColor,
+                    ),
+                  ),
+                  onChanged: (val) {
+                    setState(
+                      () => _returnRefundAmount = double.tryParse(val) ?? 0.0,
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+                _buildCalcRow(
+                  isArabic ? 'المخصوم من رصيد العميل' : 'Credit to Client Debt',
+                  '\$${_returnRemainingAmount.toStringAsFixed(2)}',
+                  isBold: true,
+                  color: AppTheme.successColor,
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _returnNotesController,
+                  decoration: InputDecoration(
+                    labelText:
+                        isArabic
+                            ? 'سبب الإرجاع / ملاحظات'
+                            : 'Return Reason / Notes',
+                    prefixIcon: const Icon(
+                      Icons.note,
+                      color: AppTheme.dangerColor,
+                    ),
+                  ),
+                  onChanged: (val) => _returnNotes = val,
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.dangerColor,
+                      foregroundColor: Colors.white,
+                    ),
+                    icon: const Icon(Icons.check_circle),
+                    label: Text(
+                      isArabic
+                          ? 'حفظ وتصدير مرتجع المبيعات (PDF)'
+                          : 'Save & Export Sales Return (PDF)',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    onPressed:
+                        _isReturnSubmitting
+                            ? null
+                            : () => _submitSalesReturn(isArabic),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child:
+              isDesktop
+                  ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(flex: 3, child: itemsSection),
+                      const SizedBox(width: 16),
+                      Expanded(flex: 2, child: summarySection),
+                    ],
+                  )
+                  : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      itemsSection,
+                      const SizedBox(height: 16),
+                      summarySection,
+                    ],
+                  ),
+        );
+      },
     );
   }
 
@@ -1602,19 +2163,27 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                             },
                           ),
                           PopupMenuButton<String>(
-                            icon: const Icon(Icons.more_vert_rounded, color: Colors.grey),
+                            icon: const Icon(
+                              Icons.more_vert_rounded,
+                              color: Colors.grey,
+                            ),
                             onSelected: (value) async {
                               if (value == 'edit') {
-                                final invoiceDataWithId = Map<String, dynamic>.from(data);
+                                final invoiceDataWithId =
+                                    Map<String, dynamic>.from(data);
                                 invoiceDataWithId['id'] = docs[index].id;
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => SalesInvoicePage(initialInvoiceData: invoiceDataWithId),
+                                    builder:
+                                        (context) => SalesInvoicePage(
+                                          initialInvoiceData: invoiceDataWithId,
+                                        ),
                                   ),
                                 );
                               } else if (value == 'delete') {
-                                final invoiceDataWithId = Map<String, dynamic>.from(data);
+                                final invoiceDataWithId =
+                                    Map<String, dynamic>.from(data);
                                 invoiceDataWithId['id'] = docs[index].id;
                                 await SalesInvoiceActionsService.deleteSalesInvoice(
                                   context: context,
@@ -1622,28 +2191,48 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                                 );
                               }
                             },
-                            itemBuilder: (pCtx) => [
-                              PopupMenuItem<String>(
-                                value: 'edit',
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.edit_rounded, color: AppTheme.primaryColor, size: 20),
-                                    const SizedBox(width: 8),
-                                    Text(isArabic ? 'تعديل الفاتورة' : 'Edit Invoice'),
-                                  ],
-                                ),
-                              ),
-                              PopupMenuItem<String>(
-                                value: 'delete',
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.delete_forever_rounded, color: Colors.red, size: 20),
-                                    const SizedBox(width: 8),
-                                    Text(isArabic ? 'حذف الفاتورة' : 'Delete Invoice', style: const TextStyle(color: Colors.red)),
-                                  ],
-                                ),
-                              ),
-                            ],
+                            itemBuilder:
+                                (pCtx) => [
+                                  PopupMenuItem<String>(
+                                    value: 'edit',
+                                    child: Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.edit_rounded,
+                                          color: AppTheme.primaryColor,
+                                          size: 20,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          isArabic
+                                              ? 'تعديل الفاتورة'
+                                              : 'Edit Invoice',
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  PopupMenuItem<String>(
+                                    value: 'delete',
+                                    child: Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.delete_forever_rounded,
+                                          color: Colors.red,
+                                          size: 20,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          isArabic
+                                              ? 'حذف الفاتورة'
+                                              : 'Delete Invoice',
+                                          style: const TextStyle(
+                                            color: Colors.red,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                           ),
                         ],
                       ),
