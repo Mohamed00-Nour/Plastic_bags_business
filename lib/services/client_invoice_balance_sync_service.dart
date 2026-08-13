@@ -379,7 +379,18 @@ class ClientInvoiceBalanceSyncService {
       for (final r in otherRecords) {
         final double before = currentBalance;
         final double delta = r.amount;
-        currentBalance += delta;
+
+        final isReduction = r.type == 'payment' ||
+            r.type == 'sales_return' ||
+            r.type == 'cancellation' ||
+            r.type == 'discount' ||
+            r.type == 'decrease';
+
+        if (isReduction) {
+          currentBalance -= delta;
+        } else {
+          currentBalance += delta;
+        }
 
         calculatedRecords.add(ClientBalanceRecord(
           id: r.id,
@@ -405,5 +416,39 @@ class ClientInvoiceBalanceSyncService {
 
       return [...nonOpeningDesc, ...openingItems];
     });
+  }
+
+  /// Update Client Info (Name, Phone, Address)
+  Future<void> updateClient({
+    required String clientId,
+    required String name,
+    required String phone,
+    required String address,
+  }) async {
+    await _firestore.collection('clients').doc(clientId).update({
+      'name': name,
+      'phone': phone,
+      'address': address,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  /// Delete Client and clean up client sub-collections
+  Future<void> deleteClient(String clientId) async {
+    final clientRef = _firestore.collection('clients').doc(clientId);
+
+    // Delete subcollections
+    final invoicesSnap = await clientRef.collection('invoices').get();
+    for (final doc in invoicesSnap.docs) {
+      await doc.reference.delete();
+    }
+
+    final historySnap = await clientRef.collection('balanceHistory').get();
+    for (final doc in historySnap.docs) {
+      await doc.reference.delete();
+    }
+
+    // Delete root document
+    await clientRef.delete();
   }
 }

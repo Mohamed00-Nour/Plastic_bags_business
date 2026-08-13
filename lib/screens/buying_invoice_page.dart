@@ -23,6 +23,7 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
   DateTime _selectedDate = DateTime.now();
   String? _selectedSupplierId;
   String? _selectedSupplierName;
+  String? _selectedSupplierPhone;
   String _paymentMethod = 'Cash';
 
   final List<Map<String, dynamic>> _lineItems = [];
@@ -145,6 +146,8 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
       final invoiceDataToPrint = {
         'invoiceNumber': _invoiceNumber,
         'supplierName': _selectedSupplierName,
+        'supplierPhone': _selectedSupplierPhone,
+        'phone': _selectedSupplierPhone,
         'paymentMethod': _paymentMethod,
         'date': _selectedDate,
         'items': List<Map<String, dynamic>>.from(_lineItems),
@@ -175,8 +178,9 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
         ),
       );
 
-      // Offer PDF Print Preview
-      await SupplierStatementPdfService.printOrShareBuyingInvoice(
+      // Offer PDF Actions Dialog (WhatsApp, Print, Display, Save to device)
+      await SupplierStatementPdfService.showBuyingInvoiceActionDialog(
+        context: context,
         invoiceData: invoiceDataToPrint,
         locale: isArabic ? 'ar' : 'en',
       );
@@ -468,6 +472,7 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
                                   setState(() {
                                     _selectedSupplierId = s['id'];
                                     _selectedSupplierName = s['name'];
+                                    _selectedSupplierPhone = s['phone'];
                                   });
                                 },
                                 fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
@@ -488,6 +493,7 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
                                                 setState(() {
                                                   _selectedSupplierId = null;
                                                   _selectedSupplierName = null;
+                                                  _selectedSupplierPhone = null;
                                                 });
                                               },
                                             )
@@ -1019,7 +1025,8 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
                           IconButton(
                             icon: const Icon(Icons.print_rounded, color: AppTheme.accentColor),
                             onPressed: () {
-                              SupplierStatementPdfService.printOrShareBuyingInvoice(
+                              SupplierStatementPdfService.showBuyingInvoiceActionDialog(
+                                context: context,
                                 invoiceData: data,
                                 locale: isArabic ? 'ar' : 'en',
                               );

@@ -1,8 +1,10 @@
 import 'dart:typed_data';
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import '../widgets/invoice_action_dialog.dart';
 import 'supplier_invoice_balance_sync_service.dart';
 
 class SupplierStatementPdfService {
@@ -44,19 +46,15 @@ class SupplierStatementPdfService {
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
                       pw.Text(
-                        isArabic ? 'كشف حساب مورد' : 'Supplier Account Statement',
+                        'كشف حساب مورد',
                         style: pw.TextStyle(font: boldFont, fontSize: 20, color: PdfColor.fromHex('#0EA5E9')),
                       ),
                       pw.SizedBox(height: 4),
                       pw.Text(
-                        isArabic ? 'تاريخ التقرير: ${dateFmt.format(DateTime.now())}' : 'Report Date: ${dateFmt.format(DateTime.now())}',
+                        'تاريخ التقرير: ${dateFmt.format(DateTime.now())}',
                         style: pw.TextStyle(font: bodyFont, fontSize: 10, color: PdfColors.grey700),
                       ),
                     ],
-                  ),
-                  pw.Text(
-                    "Mr.John ERP",
-                    style: pw.TextStyle(font: boldFont, fontSize: 18, color: PdfColors.grey800),
                   ),
                 ],
               ),
@@ -80,20 +78,20 @@ class SupplierStatementPdfService {
                       crossAxisAlignment: pw.CrossAxisAlignment.start,
                       children: [
                         pw.Text(
-                          '${isArabic ? "اسم المورد: " : "Supplier Name: "}$supplierName',
+                          'اسم المورد: $supplierName',
                           style: pw.TextStyle(font: boldFont, fontSize: 12),
                         ),
                         if (supplierPhone.isNotEmpty) ...[
                           pw.SizedBox(height: 4),
                           pw.Text(
-                            '${isArabic ? "الهاتف: " : "Phone: "}$supplierPhone',
+                            'الهاتف: $supplierPhone',
                             style: pw.TextStyle(font: bodyFont, fontSize: 10),
                           ),
                         ],
                         if (supplierAddress.isNotEmpty) ...[
                           pw.SizedBox(height: 2),
                           pw.Text(
-                            '${isArabic ? "العنوان: " : "Address: "}$supplierAddress',
+                            'العنوان: $supplierAddress',
                             style: pw.TextStyle(font: bodyFont, fontSize: 10),
                           ),
                         ],
@@ -111,7 +109,7 @@ class SupplierStatementPdfService {
                       child: pw.Column(
                         children: [
                           pw.Text(
-                            isArabic ? 'رصيد المورد المستحق' : 'Supplier Credit Balance',
+                            'رصيد المورد المستحق',
                             style: pw.TextStyle(font: bodyFont, fontSize: 9, color: PdfColors.grey700),
                           ),
                           pw.SizedBox(height: 2),
@@ -148,18 +146,35 @@ class SupplierStatementPdfService {
                 headerPadding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                 oddRowDecoration: pw.BoxDecoration(color: PdfColor.fromHex('#F1F5F9')),
                 border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
-                headers: isArabic
-                    ? ['تاريخ', 'النوع', 'رقم المستند', 'المبلغ', 'الرصيد المتبقي']
-                    : ['Date', 'Type', 'Doc #', 'Amount', 'Balance After'],
+                headers: ['تاريخ', 'النوع', 'رقم المستند', 'المبلغ', 'الرصيد المتبقي'],
                 data: records.map((rec) {
                   return [
                     DateFormat('yyyy/MM/dd HH:mm').format(rec.timestamp),
-                    _formatRecordType(rec.type, isArabic),
+                    _formatRecordType(rec.type, true),
                     rec.invoiceNumber.isEmpty ? '-' : rec.invoiceNumber,
                     '\$${rec.amount.toStringAsFixed(2)}',
                     '\$${rec.balanceAfter.toStringAsFixed(2)}',
                   ];
                 }).toList(),
+              ),
+
+              pw.SizedBox(height: 12),
+
+              // Easy App Branding right after table
+              pw.Center(
+                child: pw.Column(
+                  children: [
+                    pw.Text(
+                      'برمجة شركة easy app',
+                      style: pw.TextStyle(font: boldFont, fontSize: 11, color: PdfColor.fromHex('#0EA5E9')),
+                    ),
+                    pw.SizedBox(height: 2),
+                    pw.Text(
+                      '01126697513',
+                      style: pw.TextStyle(font: bodyFont, fontSize: 10, color: PdfColors.grey800),
+                    ),
+                  ],
+                ),
               ),
 
               pw.Spacer(),
@@ -171,11 +186,11 @@ class SupplierStatementPdfService {
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
                   pw.Text(
-                    isArabic ? 'تم إنشاء التقرير آلياً عبر نظام Mr.John' : 'Generated automatically by Mr.John ERP',
+                    'تم إنشاء التقرير آلياً',
                     style: pw.TextStyle(font: bodyFont, fontSize: 8, color: PdfColors.grey600),
                   ),
                   pw.Text(
-                    'Page 1 of 1',
+                    'الصفحة 1 من 1',
                     style: pw.TextStyle(font: bodyFont, fontSize: 8, color: PdfColors.grey600),
                   ),
                 ],
@@ -195,18 +210,17 @@ class SupplierStatementPdfService {
     String locale = 'ar',
   }) async {
     final pdf = pw.Document();
-    final isArabic = locale == 'ar';
     final dateFmt = DateFormat('yyyy/MM/dd HH:mm');
 
     final headerFont = await PdfGoogleFonts.cairoSemiBold();
     final bodyFont = await PdfGoogleFonts.cairoRegular();
     final boldFont = await PdfGoogleFonts.cairoBold();
 
-    final direction = isArabic ? pw.TextDirection.rtl : pw.TextDirection.ltr;
+    final direction = pw.TextDirection.rtl;
 
     final invoiceNumber = invoiceData['invoiceNumber'] ?? 'PUR-000';
-    final supplierName = invoiceData['supplierName'] ?? (isArabic ? 'مورد نقدي' : 'Cash Supplier');
-    final paymentMethod = invoiceData['paymentMethod'] ?? 'Cash';
+    final supplierName = invoiceData['supplierName'] ?? 'مورد نقدي';
+    final paymentMethod = invoiceData['paymentMethod'] ?? 'نقدي';
     final rawDate = invoiceData['date'] ?? invoiceData['createdAt'];
     final parsedDate = SupplierInvoiceBalanceSyncService.parseInvoiceDate(rawDate);
     final items = (invoiceData['items'] as List?)?.cast<Map<String, dynamic>>() ?? [];
@@ -234,7 +248,7 @@ class SupplierStatementPdfService {
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
                       pw.Text(
-                        isArabic ? 'فاتورة شراء / توريد' : 'Purchase / Buying Invoice',
+                        'فاتورة شراء / توريد',
                         style: pw.TextStyle(font: boldFont, fontSize: 22, color: PdfColor.fromHex('#0EA5E9')),
                       ),
                       pw.SizedBox(height: 2),
@@ -247,8 +261,6 @@ class SupplierStatementPdfService {
                   pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.end,
                     children: [
-                      pw.Text("Mr.John ERP", style: pw.TextStyle(font: boldFont, fontSize: 16)),
-                      pw.SizedBox(height: 2),
                       pw.Text(dateFmt.format(parsedDate), style: pw.TextStyle(font: bodyFont, fontSize: 10, color: PdfColors.grey700)),
                     ],
                   ),
@@ -266,9 +278,9 @@ class SupplierStatementPdfService {
                   pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      pw.Text('${isArabic ? "المورد: " : "Supplier: "}$supplierName', style: pw.TextStyle(font: boldFont, fontSize: 11)),
+                      pw.Text('المورد: $supplierName', style: pw.TextStyle(font: boldFont, fontSize: 11)),
                       pw.SizedBox(height: 4),
-                      pw.Text('${isArabic ? "طريقة الدفع: " : "Payment Method: "}$paymentMethod', style: pw.TextStyle(font: bodyFont, fontSize: 10)),
+                      pw.Text('طريقة الدفع: $paymentMethod', style: pw.TextStyle(font: bodyFont, fontSize: 10)),
                     ],
                   ),
                 ],
@@ -289,9 +301,7 @@ class SupplierStatementPdfService {
                 headerStyle: pw.TextStyle(font: boldFont, fontSize: 9, color: PdfColors.white),
                 cellStyle: pw.TextStyle(font: bodyFont, fontSize: 9),
                 cellPadding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                headers: isArabic
-                    ? ['المنتج المورد', 'الكمية', 'تكلفة الوحدة', 'الإجمالي']
-                    : ['Product Supplied', 'Qty', 'Unit Cost', 'Total'],
+                headers: ['المنتج المورد', 'الكمية', 'تكلفة الوحدة', 'الإجمالي'],
                 data: items.map((item) {
                   final name = item['productName'] ?? '';
                   final qty = item['quantity'] ?? 0;
@@ -310,7 +320,7 @@ class SupplierStatementPdfService {
 
               // Calculations Box
               pw.Align(
-                alignment: isArabic ? pw.Alignment.centerLeft : pw.Alignment.centerRight,
+                alignment: pw.Alignment.centerLeft,
                 child: pw.Container(
                   width: 220,
                   padding: const pw.EdgeInsets.all(10),
@@ -321,15 +331,39 @@ class SupplierStatementPdfService {
                   ),
                   child: pw.Column(
                     children: [
-                      _buildSummaryRow(isArabic ? 'المجموع الفرعي' : 'Subtotal', subtotal, bodyFont),
+                      _buildSummaryRow('المجموع الفرعي', subtotal, bodyFont),
                       if (discount > 0)
-                        _buildSummaryRow(isArabic ? 'الخصم' : 'Discount', -discount, bodyFont),
+                        _buildSummaryRow('الخصم', -discount, bodyFont),
                       pw.Divider(color: PdfColors.grey300),
-                      _buildSummaryRow(isArabic ? 'الإجمالي النهائي' : 'Total Amount', totalAmount, boldFont, isPrimary: true),
-                      _buildSummaryRow(isArabic ? 'المبلغ المدفوع' : 'Paid Amount', paidAmount, bodyFont),
-                      _buildSummaryRow(isArabic ? 'المتبقي للمورد' : 'Remaining Due', remainingAmount, boldFont, colorHex: '#D97706'),
+                      _buildSummaryRow('الإجمالي النهائي', totalAmount, boldFont, isPrimary: true),
+                      _buildSummaryRow('المبلغ المدفوع', paidAmount, bodyFont),
+                      _buildSummaryRow('المتبقي للمورد', remainingAmount, boldFont, colorHex: '#D97706'),
                     ],
                   ),
+                ),
+              ),
+
+              pw.SizedBox(height: 14),
+
+              // Easy App Branding right after calculations box
+              pw.Center(
+                child: pw.Column(
+                  children: [
+                    pw.Text(
+                      'إيصال استلام وتوريد بضاعة معتمد',
+                      style: pw.TextStyle(font: headerFont, fontSize: 11, color: PdfColors.grey800),
+                    ),
+                    pw.SizedBox(height: 6),
+                    pw.Text(
+                      'برمجة شركة easy app',
+                      style: pw.TextStyle(font: boldFont, fontSize: 11, color: PdfColor.fromHex('#0EA5E9')),
+                    ),
+                    pw.SizedBox(height: 2),
+                    pw.Text(
+                      '01126697513',
+                      style: pw.TextStyle(font: bodyFont, fontSize: 10, color: PdfColors.grey800),
+                    ),
+                  ],
                 ),
               ),
 
@@ -338,12 +372,6 @@ class SupplierStatementPdfService {
               // Footer
               pw.Divider(color: PdfColors.grey300),
               pw.SizedBox(height: 4),
-              pw.Center(
-                child: pw.Text(
-                  isArabic ? 'إيصال استلام وتوريد بضاعة معتمد' : 'Verified Goods Receipt & Purchase Voucher',
-                  style: pw.TextStyle(font: headerFont, fontSize: 10, color: PdfColors.grey700),
-                ),
-              ),
             ],
           );
         },
@@ -427,5 +455,25 @@ class SupplierStatementPdfService {
       locale: locale,
     );
     await Printing.layoutPdf(onLayout: (_) => pdfBytes);
+  }
+
+  /// Display Action Dialog (WhatsApp, Print, View, Save) for Buying Invoice
+  static Future<void> showBuyingInvoiceActionDialog({
+    required BuildContext context,
+    required Map<String, dynamic> invoiceData,
+    String locale = 'ar',
+  }) async {
+    final pdfBytes = await generateBuyingInvoicePdf(
+      invoiceData: invoiceData,
+      locale: locale,
+    );
+    if (!context.mounted) return;
+    await InvoiceActionDialog.show(
+      context: context,
+      invoiceData: invoiceData,
+      pdfBytes: pdfBytes,
+      locale: locale,
+      isSalesInvoice: false,
+    );
   }
 }

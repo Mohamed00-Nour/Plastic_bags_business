@@ -59,21 +59,16 @@ import 'package:store_manager/core/services/firebase_desktop_init.dart';
 import 'package:store_manager/core/services/notification_service.dart';
 import 'firebase_options.dart';
 
-bool get _isMobilePlatform =>
-    !kIsWeb &&
-    (Platform.isAndroid || Platform.isIOS);
+bool get _isMobilePlatform => !kIsWeb && (Platform.isAndroid || Platform.isIOS);
 
 /// Must be a top-level function — required by FCM for background messages.
 @pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-}
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   configureFirebaseAuthForWindows();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await configureFirestoreForWindows();
   if (_isMobilePlatform) {
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
@@ -128,145 +123,148 @@ class MyApp extends StatelessWidget {
       ],
       child: MultiBlocProvider(
         providers: [
-          BlocProvider<LocaleCubit>(
-            create: (_) => LocaleCubit(),
-          ),
-          BlocProvider<ThemeCubit>(
-            create: (_) => ThemeCubit(),
-          ),
+          BlocProvider<LocaleCubit>(create: (_) => LocaleCubit()),
+          BlocProvider<ThemeCubit>(create: (_) => ThemeCubit()),
           BlocProvider<AuthBloc>(
-            create: (_) => AuthBloc(authRepository: authRepository)
-              ..add(AuthCheckRequested()),
+            create:
+                (_) =>
+                    AuthBloc(authRepository: authRepository)
+                      ..add(AuthCheckRequested()),
           ),
-          BlocProvider<DashboardBloc>(
-            create: (_) => DashboardBloc(),
-          ),
+          BlocProvider<DashboardBloc>(create: (_) => DashboardBloc()),
           BlocProvider<ProductBloc>(
-            create: (_) => ProductBloc(
-              productRepository: productRepository,
-              stockLogRepository: stockLogRepository,
-            ),
+            create:
+                (_) => ProductBloc(
+                  productRepository: productRepository,
+                  stockLogRepository: stockLogRepository,
+                ),
           ),
           BlocProvider<ShopBloc>(
-            create: (_) => ShopBloc(
-              shopRepository: shopRepository,
-              transactionRepository: transactionRepository,
-              authRepository: authRepository,
-            ),
+            create:
+                (_) => ShopBloc(
+                  shopRepository: shopRepository,
+                  transactionRepository: transactionRepository,
+                  authRepository: authRepository,
+                ),
           ),
           BlocProvider<SupplierBloc>(
-            create: (_) => SupplierBloc(
-              supplierRepository: supplierRepository,
-            ),
+            create: (_) => SupplierBloc(supplierRepository: supplierRepository),
           ),
           BlocProvider<OrderBloc>(
-            create: (_) => OrderBloc(
-              orderRepository: orderRepository,
-              productRepository: productRepository,
-              shopRepository: shopRepository,
-              transactionRepository: transactionRepository,
-              stockLogRepository: stockLogRepository,
-            ),
+            create:
+                (_) => OrderBloc(
+                  orderRepository: orderRepository,
+                  productRepository: productRepository,
+                  shopRepository: shopRepository,
+                  transactionRepository: transactionRepository,
+                  stockLogRepository: stockLogRepository,
+                ),
           ),
           BlocProvider<TransactionBloc>(
-            create: (_) => TransactionBloc(
-              transactionRepository: transactionRepository,
-            ),
+            create:
+                (_) => TransactionBloc(
+                  transactionRepository: transactionRepository,
+                ),
           ),
           BlocProvider<ReportBloc>(
-            create: (_) => ReportBloc(
-              orderRepository: orderRepository,
-              transactionRepository: transactionRepository,
-            ),
+            create:
+                (_) => ReportBloc(
+                  orderRepository: orderRepository,
+                  transactionRepository: transactionRepository,
+                ),
           ),
           BlocProvider<UserManagementBloc>(
-            create: (_) => UserManagementBloc(
-              userRepository: userRepository,
-              authRepository: authRepository,
-            ),
+            create:
+                (_) => UserManagementBloc(
+                  userRepository: userRepository,
+                  authRepository: authRepository,
+                ),
           ),
           BlocProvider<RawMaterialBloc>(
-            create: (_) => RawMaterialBloc(
-              repository: rawMaterialRepository,
-              stockLogRepository: materialStockLogRepository,
-            ),
+            create:
+                (_) => RawMaterialBloc(
+                  repository: rawMaterialRepository,
+                  stockLogRepository: materialStockLogRepository,
+                ),
           ),
           BlocProvider<ManufacturingMixBloc>(
-            create: (_) => ManufacturingMixBloc(
-              repository: manufacturingMixRepository,
-              materialRepository: rawMaterialRepository,
-            ),
+            create:
+                (_) => ManufacturingMixBloc(
+                  repository: manufacturingMixRepository,
+                  materialRepository: rawMaterialRepository,
+                ),
           ),
           BlocProvider<ProductionRunBloc>(
-            create: (_) => ProductionRunBloc(
-              repository: productionRunRepository,
-              damagedRepository: damagedInventoryRepository,
-              productRepository: productRepository,
-              stockLogRepository: stockLogRepository,
-            ),
+            create:
+                (_) => ProductionRunBloc(
+                  repository: productionRunRepository,
+                  damagedRepository: damagedInventoryRepository,
+                  productRepository: productRepository,
+                  stockLogRepository: stockLogRepository,
+                ),
           ),
           BlocProvider<MaterialSupplierBloc>(
-            create: (_) => MaterialSupplierBloc(
-              repository: materialSupplierRepository,
-            ),
+            create:
+                (_) => MaterialSupplierBloc(
+                  repository: materialSupplierRepository,
+                ),
           ),
           BlocProvider<WasteProcessingBloc>(
-            create: (_) => WasteProcessingBloc(
-              machineRepository: wasteMachineRepository,
-              processingRepository: wasteProcessingRepository,
-              materialRepository: rawMaterialRepository,
-              supplierRepository: materialSupplierRepository,
-              damagedRepository: damagedInventoryRepository,
-            ),
+            create:
+                (_) => WasteProcessingBloc(
+                  machineRepository: wasteMachineRepository,
+                  processingRepository: wasteProcessingRepository,
+                  materialRepository: rawMaterialRepository,
+                  supplierRepository: materialSupplierRepository,
+                  damagedRepository: damagedInventoryRepository,
+                ),
           ),
           BlocProvider<ManufacturingExpenseBloc>(
-            create: (_) => ManufacturingExpenseBloc(
-              repository: manufacturingExpenseRepository,
-            ),
+            create:
+                (_) => ManufacturingExpenseBloc(
+                  repository: manufacturingExpenseRepository,
+                ),
           ),
         ],
         child: BlocBuilder<LocaleCubit, Locale>(
           builder: (context, locale) {
             return BlocBuilder<ThemeCubit, ThemeMode>(
               builder: (context, themeMode) {
-            return MaterialApp(
-              title: 'Mr.John',
-              debugShowCheckedModeBanner: false,
-              localizationsDelegates: const [
-                AppLocalizations.delegate,
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
-              ],
-              supportedLocales: const [
-                Locale('en'),
-                Locale('ar'),
-              ],
-              locale: locale,
-              theme: AppTheme.lightTheme,
-              darkTheme: AppTheme.darkTheme,
-              themeMode: themeMode,
-              home: BlocBuilder<AuthBloc, AuthState>(
-                builder: (context, state) {
-                  if (state is AuthAuthenticated) {
-                    // Route based on role
-                    if (state.user.role == UserRole.admin) {
-                      return const AdminShell();
-                    } else {
-                      return const ShopAppShell();
-                    }
-                  }
-                  if (state is AdminSetupRequired) {
-                    return const AdminSetupScreen();
-                  }
-                  if (state is AuthUnauthenticated || state is AuthError) {
-                    return const LoginScreen();
-                  }
-                  // AuthInitial / AuthLoading
-                  return const _SplashScreen();
-                },
-              ),
-            );
+                return MaterialApp(
+                  title: 'Mr.John',
+                  debugShowCheckedModeBanner: false,
+                  localizationsDelegates: const [
+                    AppLocalizations.delegate,
+                    GlobalMaterialLocalizations.delegate,
+                    GlobalWidgetsLocalizations.delegate,
+                    GlobalCupertinoLocalizations.delegate,
+                  ],
+                  supportedLocales: const [Locale('en'), Locale('ar')],
+                  locale: locale,
+                  theme: AppTheme.lightTheme,
+                  darkTheme: AppTheme.darkTheme,
+                  themeMode: themeMode,
+                  home: BlocBuilder<AuthBloc, AuthState>(
+                    builder: (context, state) {
+                      if (state is AuthAuthenticated) {
+                        // Route based on role
+                        if (state.user.role == UserRole.admin) {
+                          return const AdminShell();
+                        } else {
+                          return const ShopAppShell();
+                        }
+                      }
+                      if (state is AdminSetupRequired) {
+                        return const AdminSetupScreen();
+                      }
+                      if (state is AuthUnauthenticated || state is AuthError) {
+                        return const LoginScreen();
+                      }
+                      // AuthInitial / AuthLoading
+                      return const _SplashScreen();
+                    },
+                  ),
+                );
               },
             );
           },
@@ -288,8 +286,11 @@ class _SplashScreen extends StatelessWidget {
           children: [
             const Icon(Icons.store, size: 72, color: AppTheme.primaryColor),
             const SizedBox(height: 16),
-            Text(AppLocalizations.of(context)?.splashTitle ?? 'Mr.John\'s dashboard',
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            Text(
+              AppLocalizations.of(context)?.splashTitle ??
+                  'Mr.John\'s dashboard',
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 24),
             const CircularProgressIndicator(),
           ],

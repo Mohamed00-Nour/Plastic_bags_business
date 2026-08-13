@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../services/client_invoice_balance_sync_service.dart';
 import '../services/client_statement_pdf_service.dart';
+import 'client_details_page.dart';
 import '../core/theme/app_theme.dart';
 
 class ClientsPage extends StatefulWidget {
@@ -187,6 +188,186 @@ class _ClientsPageState extends State<ClientsPage> {
     );
   }
 
+  void _showEditClientDialog(BuildContext context, Map<String, dynamic> client, bool isArabic) {
+    final nameController = TextEditingController(text: client['name'] ?? '');
+    final phoneController = TextEditingController(text: client['phone'] ?? '');
+    final addressController = TextEditingController(text: client['address'] ?? '');
+    final formKey = GlobalKey<FormState>();
+    bool isLoading = false;
+    final clientId = client['id'] ?? '';
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Directionality(
+              textDirection: isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
+              child: AlertDialog(
+                title: Row(
+                  children: [
+                    const Icon(Icons.edit_rounded, color: AppTheme.primaryColor),
+                    const SizedBox(width: 8),
+                    Text(isArabic ? 'تعديل بيانات العميل' : 'Edit Client Info'),
+                  ],
+                ),
+                content: SingleChildScrollView(
+                  child: Form(
+                    key: formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextFormField(
+                          controller: nameController,
+                          decoration: InputDecoration(
+                            labelText: isArabic ? 'اسم العميل *' : 'Client Name *',
+                            prefixIcon: const Icon(Icons.person_outline),
+                          ),
+                          validator: (val) {
+                            if (val == null || val.trim().isEmpty) {
+                              return isArabic ? 'برجاء إدخال اسم العميل' : 'Please enter client name';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: phoneController,
+                          keyboardType: TextInputType.phone,
+                          decoration: InputDecoration(
+                            labelText: isArabic ? 'رقم الهاتف *' : 'Phone Number *',
+                            prefixIcon: const Icon(Icons.phone_outlined),
+                          ),
+                          validator: (val) {
+                            if (val == null || val.trim().isEmpty) {
+                              return isArabic ? 'برجاء إدخال رقم الهاتف' : 'Please enter phone number';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: addressController,
+                          decoration: InputDecoration(
+                            labelText: isArabic ? 'العنوان' : 'Address',
+                            prefixIcon: const Icon(Icons.location_on_outlined),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    child: Text(isArabic ? 'إلغاء' : 'Cancel'),
+                  ),
+                  ElevatedButton(
+                    onPressed: isLoading
+                        ? null
+                        : () async {
+                            if (!formKey.currentState!.validate()) return;
+                            setDialogState(() => isLoading = true);
+                            try {
+                              await _clientSyncService.updateClient(
+                                clientId: clientId,
+                                name: nameController.text.trim(),
+                                phone: phoneController.text.trim(),
+                                address: addressController.text.trim(),
+                              );
+
+                              if (!dialogContext.mounted) return;
+                              Navigator.pop(dialogContext);
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    isArabic ? 'تم تحديث بيانات العميل بنجاح' : 'Client updated successfully',
+                                  ),
+                                  backgroundColor: AppTheme.successColor,
+                                ),
+                              );
+                            } catch (e) {
+                              setDialogState(() => isLoading = false);
+                              if (!dialogContext.mounted) return;
+                              ScaffoldMessenger.of(dialogContext).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error: ${e.toString()}'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          },
+                    child: isLoading
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : Text(isArabic ? 'حفظ التعديلات' : 'Update'),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _confirmDeleteClient(BuildContext context, Map<String, dynamic> client, bool isArabic) {
+    final clientId = client['id'] ?? '';
+    final clientName = client['name'] ?? '';
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return Directionality(
+          textDirection: isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
+          child: AlertDialog(
+            title: Row(
+              children: [
+                const Icon(Icons.delete_forever_rounded, color: Colors.red),
+                const SizedBox(width: 8),
+                Text(isArabic ? 'تأكيد حذف العميل' : 'Delete Client'),
+              ],
+            ),
+            content: Text(
+              isArabic
+                  ? 'هل أنت تأكد من حذف العميل ($clientName)؟\n(سيتم حذف بيانات العميل وسجل الحسابات الخاصة به)'
+                  : 'Are you sure you want to delete client ($clientName)?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: Text(isArabic ? 'إلغاء' : 'Cancel'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                onPressed: () async {
+                  Navigator.pop(dialogContext);
+                  try {
+                    await _clientSyncService.deleteClient(clientId);
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          isArabic ? 'تم حذف العميل بنجاح' : 'Client deleted successfully',
+                        ),
+                        backgroundColor: AppTheme.successColor,
+                      ),
+                    );
+                  } catch (e) {
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                    );
+                  }
+                },
+                child: Text(isArabic ? 'حذف العميل' : 'Delete'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
   void _showBalanceHistoryDialog(BuildContext context, Map<String, dynamic> clientData, bool isArabic) {
     showDialog(
       context: context,
@@ -362,6 +543,14 @@ class _ClientsPageState extends State<ClientsPage> {
                                     return Card(
                                       margin: const EdgeInsets.only(bottom: 10),
                                       child: ListTile(
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => ClientDetailsPage(clientData: client),
+                                            ),
+                                          );
+                                        },
                                         leading: CircleAvatar(
                                           backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.15),
                                           child: Text(
@@ -396,11 +585,21 @@ class _ClientsPageState extends State<ClientsPage> {
                                                 ),
                                               ],
                                             ),
-                                            const SizedBox(width: 12),
+                                            const SizedBox(width: 8),
                                             IconButton(
                                               icon: const Icon(Icons.history_rounded, color: AppTheme.primaryColor),
                                               tooltip: isArabic ? 'كشف حساب وتاريخ الرصيد' : 'Balance History & Statement',
                                               onPressed: () => _showBalanceHistoryDialog(context, client, isArabic),
+                                            ),
+                                            IconButton(
+                                              icon: const Icon(Icons.edit_rounded, color: AppTheme.primaryColor),
+                                              tooltip: isArabic ? 'تعديل بيانات العميل' : 'Edit Client Info',
+                                              onPressed: () => _showEditClientDialog(context, client, isArabic),
+                                            ),
+                                            IconButton(
+                                              icon: const Icon(Icons.delete_forever_rounded, color: Colors.red),
+                                              tooltip: isArabic ? 'حذف العميل' : 'Delete Client',
+                                              onPressed: () => _confirmDeleteClient(context, client, isArabic),
                                             ),
                                           ],
                                         ),

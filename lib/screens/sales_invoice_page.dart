@@ -4,10 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../services/client_invoice_balance_sync_service.dart';
 import '../services/client_statement_pdf_service.dart';
+import '../services/sales_invoice_actions_service.dart';
+import '../services/sales_invoice_update_service.dart';
 import '../core/theme/app_theme.dart';
 
 class SalesInvoicePage extends StatefulWidget {
-  const SalesInvoicePage({super.key});
+  final Map<String, dynamic>? initialInvoiceData;
+
+  const SalesInvoicePage({
+    super.key,
+    this.initialInvoiceData,
+  });
 
   @override
   State<SalesInvoicePage> createState() => _SalesInvoicePageState();
@@ -25,6 +32,7 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
   DateTime _selectedDate = DateTime.now();
   String? _selectedClientId;
   String? _selectedClientName;
+  String? _selectedClientPhone;
   String _paymentMethod = 'Cash';
 
   final List<Map<String, dynamic>> _lineItems = [];
@@ -47,11 +55,45 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
   int _selectedHistoryYear = DateTime.now().year;
   int _selectedHistoryMonth = DateTime.now().month;
 
+  bool get _isEditMode => widget.initialInvoiceData != null;
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _generateInvoiceNumber();
+    if (widget.initialInvoiceData != null) {
+      _loadInvoiceForEditing(widget.initialInvoiceData!);
+    } else {
+      _generateInvoiceNumber();
+    }
+  }
+
+  void _loadInvoiceForEditing(Map<String, dynamic> inv) {
+    _invoiceNumber = inv['invoiceNumber']?.toString() ?? 'INV-000';
+    _selectedClientId = inv['clientId']?.toString();
+    _selectedClientName = inv['clientName']?.toString();
+    _selectedClientPhone = inv['clientPhone']?.toString() ?? inv['phone']?.toString();
+    _paymentMethod = inv['paymentMethod']?.toString() ?? 'Cash';
+    _discount = (inv['discount'] ?? 0.0).toDouble();
+    _paidAmount = (inv['paidAmount'] ?? 0.0).toDouble();
+    _notes = inv['notes']?.toString() ?? '';
+
+    _discountController.text = _discount.toStringAsFixed(2);
+    _paidController.text = _paidAmount.toStringAsFixed(2);
+    _notesController.text = _notes;
+
+    final rawDate = inv['createdAt'] ?? inv['date'];
+    if (rawDate is Timestamp) {
+      _selectedDate = rawDate.toDate();
+    } else if (rawDate is DateTime) {
+      _selectedDate = rawDate;
+    }
+
+    _lineItems.clear();
+    final items = (inv['items'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    for (final item in items) {
+      _lineItems.add(Map<String, dynamic>.from(item));
+    }
   }
 
   void _generateInvoiceNumber() {
@@ -154,6 +196,38 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
 
     setState(() => _isSubmitting = true);
 
+    if (_isEditMode) {
+      final newInvoiceData = {
+        'id': widget.initialInvoiceData!['id'] ?? widget.initialInvoiceData!['invoiceId'],
+        'invoiceNumber': _invoiceNumber,
+        'clientId': _selectedClientId,
+        'clientName': _selectedClientName,
+        'clientPhone': _selectedClientPhone,
+        'paymentMethod': _paymentMethod,
+        'date': _selectedDate,
+        'items': List<Map<String, dynamic>>.from(_lineItems),
+        'subtotal': _subtotal,
+        'discount': _discount,
+        'totalAmount': _totalAmount,
+        'paidAmount': _paidAmount,
+        'remainingAmount': _remainingAmount,
+        'notes': _notes,
+      };
+
+      final success = await SalesInvoiceUpdateService.updateSalesInvoice(
+        context: context,
+        oldInvoice: widget.initialInvoiceData!,
+        newInvoice: newInvoiceData,
+      );
+
+      setState(() => _isSubmitting = false);
+
+      if (success && mounted) {
+        Navigator.of(context).pop();
+      }
+      return;
+    }
+
     try {
       await _syncService.createSalesInvoice(
         clientId: _selectedClientId!,
@@ -175,6 +249,8 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
       final invoiceDataToPrint = {
         'invoiceNumber': _invoiceNumber,
         'clientName': _selectedClientName,
+        'clientPhone': _selectedClientPhone,
+        'phone': _selectedClientPhone,
         'paymentMethod': _paymentMethod,
         'date': _selectedDate,
         'items': List<Map<String, dynamic>>.from(_lineItems),
@@ -209,8 +285,9 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
         ),
       );
 
-      // Offer PDF Print Preview
-      await ClientStatementPdfService.printOrShareSalesInvoice(
+      // Offer PDF Actions Dialog (WhatsApp, Print, Display, Save to device)
+      await ClientStatementPdfService.showSalesInvoiceActionDialog(
+        context: context,
         invoiceData: invoiceDataToPrint,
         locale: isArabic ? 'ar' : 'en',
       );
@@ -465,13 +542,27 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
       textDirection: isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
       child: Scaffold(
         appBar: AppBar(
-          toolbarHeight: 0,
+          title: Text(
+            _isEditMode
+                ? (isArabic ? 'تعديل فاتورة مبيعات #$_invoiceNumber' : 'Edit Sales Invoice #$_invoiceNumber')
+                : (isArabic ? 'إدارة فواتير المبيعات' : 'Sales Invoices Management'),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          leading: Navigator.canPop(context)
+              ? IconButton(
+                  icon: const Icon(Icons.arrow_back_rounded),
+                  tooltip: isArabic ? 'رجوع' : 'Back',
+                  onPressed: () => Navigator.maybePop(context),
+                )
+              : null,
           bottom: TabBar(
             controller: _tabController,
             tabs: [
               Tab(
                 icon: const Icon(Icons.point_of_sale),
-                text: isArabic ? 'فاتورة مبيعات جديدة' : 'New Sales Invoice',
+                text: _isEditMode
+                    ? (isArabic ? 'تعديل الفاتورة' : 'Edit Invoice')
+                    : (isArabic ? 'فاتورة مبيعات جديدة' : 'New Sales Invoice'),
               ),
               Tab(
                 icon: const Icon(Icons.assignment_return),
@@ -557,7 +648,8 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                                 displayStringForOption: (c) {
                                   final balStr = (c['balance'] ?? 0.0)
                                       .toStringAsFixed(2);
-                                  final prefixLabel = isArabic ? 'رصيد: ' : 'Bal: ';
+                                  final prefixLabel =
+                                      isArabic ? 'رصيد: ' : 'Bal: ';
                                   return '${c['name']} ($prefixLabel\$$balStr)';
                                 },
                                 optionsBuilder: (
@@ -569,18 +661,22 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                                   final q = textEditingValue.text.toLowerCase();
                                   return clients.where((c) {
                                     final name =
-                                        (c['name'] ?? '').toString().toLowerCase();
+                                        (c['name'] ?? '')
+                                            .toString()
+                                            .toLowerCase();
                                     final phone =
                                         (c['phone'] ?? '')
                                             .toString()
                                             .toLowerCase();
-                                    return name.contains(q) || phone.contains(q);
+                                    return name.contains(q) ||
+                                        phone.contains(q);
                                   });
                                 },
                                 onSelected: (Map<String, dynamic> c) {
                                   setState(() {
                                     _selectedClientId = c['id'];
                                     _selectedClientName = c['name'];
+                                    _selectedClientPhone = c['phone'];
                                   });
                                 },
                                 fieldViewBuilder: (
@@ -616,6 +712,7 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                                                   setState(() {
                                                     _selectedClientId = null;
                                                     _selectedClientName = null;
+                                                    _selectedClientPhone = null;
                                                   });
                                                 },
                                               )
@@ -640,9 +737,12 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                                         ),
                                         decoration: BoxDecoration(
                                           color: Theme.of(context).cardColor,
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
                                           border: Border.all(
-                                            color: Theme.of(context).dividerColor,
+                                            color:
+                                                Theme.of(context).dividerColor,
                                           ),
                                         ),
                                         child: ListView.builder(
@@ -650,10 +750,12 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                                           shrinkWrap: true,
                                           itemCount: options.length,
                                           itemBuilder: (context, index) {
-                                            final option = options.elementAt(index);
-                                            final balStr =
-                                                (option['balance'] ?? 0.0)
-                                                    .toStringAsFixed(2);
+                                            final option = options.elementAt(
+                                              index,
+                                            );
+                                            final balStr = (option['balance'] ??
+                                                    0.0)
+                                                .toStringAsFixed(2);
                                             final prefixLabel =
                                                 isArabic ? 'الرصيد: ' : 'Bal: ';
                                             return ListTile(
@@ -687,10 +789,14 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                           value: _paymentMethod,
                           items:
                               ['Cash', 'Credit', 'Card', 'Check'].map((m) {
-                                return DropdownMenuItem(value: m, child: Text(m));
+                                return DropdownMenuItem(
+                                  value: m,
+                                  child: Text(m),
+                                );
                               }).toList(),
                           onChanged: (val) {
-                            if (val != null) setState(() => _paymentMethod = val);
+                            if (val != null)
+                              setState(() => _paymentMethod = val);
                           },
                         ),
                       ],
@@ -722,7 +828,10 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                           isArabic
                               ? 'اكتب اسم المنتج أو اضغط عليه للإضافة'
                               : 'Type product name or tap chip to add',
-                          style: const TextStyle(fontSize: 11, color: Colors.grey),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey,
+                          ),
                         ),
                       ],
                     ),
@@ -733,7 +842,8 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                       controller: _productSearchController,
                       onChanged:
                           (val) => setState(
-                            () => _productSearchQuery = val.trim().toLowerCase(),
+                            () =>
+                                _productSearchQuery = val.trim().toLowerCase(),
                           ),
                       decoration: InputDecoration(
                         hintText:
@@ -772,7 +882,8 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                         final filteredDocs =
                             docs
                                 .where((doc) {
-                                  final data = doc.data() as Map<String, dynamic>;
+                                  final data =
+                                      doc.data() as Map<String, dynamic>;
                                   if (_productSearchQuery.isEmpty) return true;
                                   final name =
                                       (data['name'] ?? '')
@@ -818,7 +929,9 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                                     '${data['name']} (\$${data['price']}) [Stock: $stock]',
                                   ),
                                   onPressed:
-                                      stock <= 0 ? null : () => _addLineItem(data),
+                                      stock <= 0
+                                          ? null
+                                          : () => _addLineItem(data),
                                 );
                               }).toList(),
                         );
@@ -864,11 +977,10 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                               margin: const EdgeInsets.only(bottom: 8),
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.surfaceContainerHighest.withValues(
-                                  alpha: 0.3,
-                                ),
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerHighest
+                                    .withValues(alpha: 0.3),
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
                                   color: Theme.of(
@@ -1158,7 +1270,8 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                     decimal: true,
                   ),
                   decoration: InputDecoration(
-                    labelText: isArabic ? 'المبلغ المدفوع (\$)' : 'Paid Amount (\$)',
+                    labelText:
+                        isArabic ? 'المبلغ المدفوع (\$)' : 'Paid Amount (\$)',
                     prefixIcon: const Icon(Icons.money),
                   ),
                   onChanged: (val) {
@@ -1208,23 +1321,24 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
 
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16),
-          child: isDesktop
-              ? Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(flex: 3, child: itemsSection),
-                    const SizedBox(width: 16),
-                    Expanded(flex: 2, child: summarySection),
-                  ],
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    itemsSection,
-                    const SizedBox(height: 16),
-                    summarySection,
-                  ],
-                ),
+          child:
+              isDesktop
+                  ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(flex: 3, child: itemsSection),
+                      const SizedBox(width: 16),
+                      Expanded(flex: 2, child: summarySection),
+                    ],
+                  )
+                  : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      itemsSection,
+                      const SizedBox(height: 16),
+                      summarySection,
+                    ],
+                  ),
         );
       },
     );
@@ -1302,19 +1416,29 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Row(
               children: [
-                const Icon(Icons.filter_alt_rounded, color: AppTheme.primaryColor),
+                const Icon(
+                  Icons.filter_alt_rounded,
+                  color: AppTheme.primaryColor,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        isArabic ? 'تصفية الفواتير بالفترة' : 'Invoice Date Filter',
+                        isArabic
+                            ? 'تصفية الفواتير بالفترة'
+                            : 'Invoice Date Filter',
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                       Text(
-                        isArabic ? 'ترشيد استهلاك قراءة الفايربيس (Firebase Quota Saver)' : 'Optimizes Firebase database reads quota',
-                        style: const TextStyle(fontSize: 11, color: Colors.grey),
+                        isArabic
+                            ? 'ترشيد استهلاك قراءة الفايربيس (Firebase Quota Saver)'
+                            : 'Optimizes Firebase database reads quota',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey,
+                        ),
                       ),
                     ],
                   ),
@@ -1322,7 +1446,10 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                 // Month Selector Dropdown
                 DropdownButton<int>(
                   value: _selectedHistoryMonth,
-                  style: TextStyle(fontSize: 13, color: Theme.of(context).textTheme.bodyMedium?.color),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Theme.of(context).textTheme.bodyMedium?.color,
+                  ),
                   items: [
                     DropdownMenuItem(
                       value: 0,
@@ -1330,12 +1457,15 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                     ),
                     ...List.generate(12, (index) {
                       final m = index + 1;
-                      final monthName = DateFormat.MMMM(isArabic ? 'ar' : 'en').format(DateTime(2026, m));
+                      final monthName = DateFormat.MMMM(
+                        isArabic ? 'ar' : 'en',
+                      ).format(DateTime(2026, m));
                       return DropdownMenuItem(value: m, child: Text(monthName));
                     }),
                   ],
                   onChanged: (val) {
-                    if (val != null) setState(() => _selectedHistoryMonth = val);
+                    if (val != null)
+                      setState(() => _selectedHistoryMonth = val);
                   },
                 ),
                 const SizedBox(width: 12),
@@ -1343,7 +1473,10 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                 // Year Selector Dropdown
                 DropdownButton<int>(
                   value: _selectedHistoryYear,
-                  style: TextStyle(fontSize: 13, color: Theme.of(context).textTheme.bodyMedium?.color),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Theme.of(context).textTheme.bodyMedium?.color,
+                  ),
                   items: [
                     DropdownMenuItem(
                       value: 0,
@@ -1378,11 +1511,20 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.receipt_long_outlined, size: 54, color: Colors.grey),
+                      const Icon(
+                        Icons.receipt_long_outlined,
+                        size: 54,
+                        color: Colors.grey,
+                      ),
                       const SizedBox(height: 12),
                       Text(
-                        isArabic ? 'لا توجد فواتير مبيعات في هذه الفترة المحددة' : 'No sales invoices recorded for this selected period',
-                        style: const TextStyle(color: Colors.grey, fontSize: 15),
+                        isArabic
+                            ? 'لا توجد فواتير مبيعات في هذه الفترة المحددة'
+                            : 'No sales invoices recorded for this selected period',
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 15,
+                        ),
                       ),
                     ],
                   ),
@@ -1452,11 +1594,56 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                               color: AppTheme.primaryColor,
                             ),
                             onPressed: () {
-                              ClientStatementPdfService.printOrShareSalesInvoice(
+                              ClientStatementPdfService.showSalesInvoiceActionDialog(
+                                context: context,
                                 invoiceData: data,
                                 locale: isArabic ? 'ar' : 'en',
                               );
                             },
+                          ),
+                          PopupMenuButton<String>(
+                            icon: const Icon(Icons.more_vert_rounded, color: Colors.grey),
+                            onSelected: (value) async {
+                              if (value == 'edit') {
+                                final invoiceDataWithId = Map<String, dynamic>.from(data);
+                                invoiceDataWithId['id'] = docs[index].id;
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => SalesInvoicePage(initialInvoiceData: invoiceDataWithId),
+                                  ),
+                                );
+                              } else if (value == 'delete') {
+                                final invoiceDataWithId = Map<String, dynamic>.from(data);
+                                invoiceDataWithId['id'] = docs[index].id;
+                                await SalesInvoiceActionsService.deleteSalesInvoice(
+                                  context: context,
+                                  invoiceData: invoiceDataWithId,
+                                );
+                              }
+                            },
+                            itemBuilder: (pCtx) => [
+                              PopupMenuItem<String>(
+                                value: 'edit',
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.edit_rounded, color: AppTheme.primaryColor, size: 20),
+                                    const SizedBox(width: 8),
+                                    Text(isArabic ? 'تعديل الفاتورة' : 'Edit Invoice'),
+                                  ],
+                                ),
+                              ),
+                              PopupMenuItem<String>(
+                                value: 'delete',
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.delete_forever_rounded, color: Colors.red, size: 20),
+                                    const SizedBox(width: 8),
+                                    Text(isArabic ? 'حذف الفاتورة' : 'Delete Invoice', style: const TextStyle(color: Colors.red)),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),

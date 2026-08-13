@@ -626,8 +626,6 @@ class PdfService {
             pw.Text(title,
                 style:
                     pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
-            pw.Text('Plastic Bags Business',
-                style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey)),
           ],
         ),
         pw.SizedBox(height: 4),
@@ -642,16 +640,33 @@ class PdfService {
   static pw.Widget _buildFooter(pw.Context context) {
     return pw.Column(
       children: [
+        pw.SizedBox(height: 10),
+        pw.Center(
+          child: pw.Column(
+            children: [
+              pw.Text(
+                'برمجة شركة easy app',
+                style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex('#4338CA')),
+              ),
+              pw.SizedBox(height: 2),
+              pw.Text(
+                '01126697513',
+                style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey800),
+              ),
+            ],
+          ),
+        ),
+        pw.SizedBox(height: 10),
         pw.Divider(),
         pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [
             pw.Text(
-              'Generated on ${_dateFmt.format(DateTime.now())}',
+              'تاريخ التقرير ${_dateFmt.format(DateTime.now())}',
               style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey),
             ),
             pw.Text(
-              'Page ${context.pageNumber} of ${context.pagesCount}',
+              'صفحة ${context.pageNumber} من ${context.pagesCount}',
               style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey),
             ),
           ],

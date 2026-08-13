@@ -27,7 +27,6 @@ class OrderExportService {
     final bodyFont = await PdfGoogleFonts.cairoRegular();
     final boldFont = await PdfGoogleFonts.cairoBold();
 
-    final headerStyle = pw.TextStyle(font: boldFont, fontSize: 22);
     final labelStyle = pw.TextStyle(
       font: bodyFont,
       fontSize: 10,
@@ -60,14 +59,12 @@ class OrderExportService {
                   pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      pw.Text("Mr.John's", style: headerStyle),
-                      pw.SizedBox(height: 2),
                       pw.Text(
-                        isArabic ? 'تفاصيل الطلب' : 'Order Details',
+                        'تفاصيل الطلب',
                         style: pw.TextStyle(
-                          font: bodyFont,
-                          fontSize: 12,
-                          color: PdfColors.grey600,
+                          font: boldFont,
+                          fontSize: 18,
+                          color: PdfColor.fromHex('#6366F1'),
                         ),
                       ),
                     ],
@@ -106,22 +103,22 @@ class OrderExportService {
                       crossAxisAlignment: pw.CrossAxisAlignment.start,
                       children: [
                         _pdfInfoRow(
-                          isArabic ? 'المحل' : 'Shop',
+                          'المحل',
                           order.shopName,
                           labelStyle,
                           valueStyle,
                         ),
                         pw.SizedBox(height: 8),
                         _pdfInfoRow(
-                          isArabic ? 'الحالة' : 'Status',
-                          _statusLabel(order.status, isArabic),
+                          'الحالة',
+                          _statusLabel(order.status, true),
                           labelStyle,
                           valueStyle,
                         ),
                         if (order.approvedBy != null) ...[
                           pw.SizedBox(height: 8),
                           _pdfInfoRow(
-                            isArabic ? 'تمت الموافقة بواسطة' : 'Approved By',
+                            'تمت الموافقة بواسطة',
                             order.approvedBy!,
                             labelStyle,
                             valueStyle,
@@ -136,7 +133,7 @@ class OrderExportService {
                       children: [
                         if (order.createdBy.isNotEmpty) ...[
                           _pdfInfoRow(
-                            isArabic ? 'أنشئ بواسطة' : 'Created By',
+                            'أنشئ بواسطة',
                             order.createdBy,
                             labelStyle,
                             valueStyle,
@@ -145,7 +142,7 @@ class OrderExportService {
                         ],
                         if (order.modifiedBy.isNotEmpty) ...[
                           _pdfInfoRow(
-                            isArabic ? 'عُدل بواسطة' : 'Modified By',
+                            'عُدل بواسطة',
                             order.modifiedBy,
                             labelStyle,
                             valueStyle,
@@ -154,7 +151,7 @@ class OrderExportService {
                         ],
                         if (order.notes != null && order.notes!.isNotEmpty)
                           _pdfInfoRow(
-                            isArabic ? 'ملاحظات' : 'Notes',
+                            'ملاحظات',
                             order.notes!,
                             labelStyle,
                             valueStyle,
@@ -169,7 +166,7 @@ class OrderExportService {
 
               // Items table
               pw.TableHelper.fromTextArray(
-                headerDirection: direction,
+                headerDirection: pw.TextDirection.rtl,
                 headerDecoration: pw.BoxDecoration(
                   color: PdfColor.fromHex('#6366F1'),
                   borderRadius: pw.BorderRadius.only(
@@ -199,9 +196,7 @@ class OrderExportService {
                   horizontalInside:
                       const pw.BorderSide(color: PdfColors.grey200),
                 ),
-                headers: isArabic
-                    ? ['المجموع', 'سعر الوحدة', 'الكمية', 'الحجم', 'المنتج', '#']
-                    : ['#', 'Product', 'Size', 'Qty', 'Unit Price', 'Subtotal'],
+                headers: ['المجموع', 'سعر الوحدة', 'الكمية', 'الحجم', 'المنتج', '#'],
                 columnWidths: {
                   0: const pw.FixedColumnWidth(30),
                   1: const pw.FlexColumnWidth(3),
@@ -221,7 +216,7 @@ class OrderExportService {
                     '\$${item.unitPrice.toStringAsFixed(2)}',
                     '\$${item.total.toStringAsFixed(2)}',
                   ];
-                  return isArabic ? row.reversed.toList() : row;
+                  return row.reversed.toList();
                 }).toList(),
               ),
 
@@ -229,8 +224,7 @@ class OrderExportService {
 
               // Total
               pw.Container(
-                alignment:
-                    isArabic ? pw.Alignment.centerLeft : pw.Alignment.centerRight,
+                alignment: pw.Alignment.centerLeft,
                 padding:
                     const pw.EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: pw.BoxDecoration(
@@ -242,7 +236,7 @@ class OrderExportService {
                   mainAxisSize: pw.MainAxisSize.min,
                   children: [
                     pw.Text(
-                      isArabic ? 'الإجمالي:  ' : 'Total:  ',
+                      'الإجمالي:  ',
                       style: pw.TextStyle(font: headerFont, fontSize: 14),
                     ),
                     pw.Text(
@@ -272,7 +266,7 @@ class OrderExportService {
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
                       pw.Text(
-                        isArabic ? 'سبب الرفض' : 'Rejection Reason',
+                        'سبب الرفض',
                         style: pw.TextStyle(
                           font: boldFont,
                           fontSize: 10,
@@ -289,15 +283,32 @@ class OrderExportService {
                 ),
               ],
 
+              pw.SizedBox(height: 14),
+
+              // Easy App Branding right after table/total summary
+              pw.Center(
+                child: pw.Column(
+                  children: [
+                    pw.Text(
+                      'برمجة شركة easy app',
+                      style: pw.TextStyle(font: boldFont, fontSize: 11, color: PdfColor.fromHex('#6366F1')),
+                    ),
+                    pw.SizedBox(height: 2),
+                    pw.Text(
+                      '01126697513',
+                      style: pw.TextStyle(font: bodyFont, fontSize: 10, color: PdfColors.grey800),
+                    ),
+                  ],
+                ),
+              ),
+
               pw.Spacer(),
 
               // Footer
               pw.Divider(color: PdfColors.grey300),
               pw.SizedBox(height: 4),
               pw.Text(
-                isArabic
-                    ? 'تم الإنشاء بواسطة لوحة تحكم مستر جون'
-                    : 'Generated by Mr.John\'s Dashboard',
+                'تم إنشاء التقرير آلياً',
                 style: pw.TextStyle(
                   font: bodyFont,
                   fontSize: 8,
