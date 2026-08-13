@@ -714,21 +714,19 @@ class ClientStatementPdfService {
                   final cleanName = clientName.replaceAll(RegExp(r'[^\w\s-]'), '_');
                   final filename = 'Statement_$cleanName.pdf';
 
-                  if (targetPhone.isNotEmpty) {
-                    try {
-                      Directory? downloadsDir;
-                      try { downloadsDir = await getDownloadsDirectory(); } catch (_) {}
-                      downloadsDir ??= await getTemporaryDirectory();
-                      final pdfFile = File('${downloadsDir.path}/$filename');
-                      await pdfFile.writeAsBytes(pdfBytes);
+                  try {
+                    final tempDir = await getTemporaryDirectory();
+                    final pdfFile = File('${tempDir.path}/$filename');
+                    await pdfFile.writeAsBytes(pdfBytes);
 
-                      final shared = await WhatsappShareChannel.shareImages(
-                        phoneDigits: targetPhone,
-                        imagePaths: [pdfFile.path],
-                        caption: 'كشف حساب العميل: $clientName',
-                      );
-                      if (shared) return;
-                    } catch (_) {}
+                    final shared = await WhatsappShareChannel.shareImages(
+                      phoneDigits: targetPhone,
+                      imagePaths: [pdfFile.path],
+                      caption: 'كشف حساب العميل: $clientName',
+                    );
+                    if (shared) return;
+                  } catch (e) {
+                    debugPrint('Statement PDF share error: $e');
                   }
 
                   await Printing.sharePdf(

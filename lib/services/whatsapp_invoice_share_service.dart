@@ -413,13 +413,16 @@ class WhatsappInvoiceShareService {
                       Navigator.of(bContext).pop();
                       final invoiceNumber = invoiceData['invoiceNumber']?.toString() ?? 'INV-000';
                       try {
-                        Directory? downloadsDir;
-                        try {
-                          downloadsDir = await getDownloadsDirectory();
-                        } catch (_) {}
-                        downloadsDir ??= await getTemporaryDirectory();
-                        final pdfFile = File('${downloadsDir.path}/Invoice_$invoiceNumber.pdf');
+                        final tempDir = await getTemporaryDirectory();
+                        final pdfFile = File('${tempDir.path}/Invoice_$invoiceNumber.pdf');
                         await pdfFile.writeAsBytes(pdfBytes);
+
+                        final shared = await WhatsappShareChannel.shareImages(
+                          phoneDigits: rawPhone,
+                          imagePaths: [pdfFile.path],
+                          caption: buildInvoiceMessage(invoiceData, isSalesInvoice: isSalesInvoice),
+                        );
+                        if (shared) return;
                       } catch (_) {}
 
                       await Printing.sharePdf(

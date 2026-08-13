@@ -10,6 +10,8 @@ import '../../bloc/product_bloc_new.dart';
 import '../../bloc/product_event.dart';
 import '../../bloc/product_state.dart';
 
+import '../../../../services/product_inventory_pdf_service.dart';
+
 class ProductsScreen extends StatefulWidget {
   const ProductsScreen({super.key});
 
@@ -24,9 +26,44 @@ class _ProductsScreenState extends State<ProductsScreen> {
     context.read<ProductBloc>().add(ProductLoadRequested());
   }
 
+  void _exportInventoryAudit(BuildContext context, ProductState state) async {
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+    List<ProductModel> products = [];
+    if (state is ProductLoaded) {
+      products = state.filteredProducts.isNotEmpty ? state.filteredProducts : state.products;
+    }
+
+    if (products.isEmpty) {
+      final snap = await FirebaseFirestore.instance.collection('products').get();
+      products = snap.docs.map((doc) => ProductModel.fromFirestore(doc)).toList();
+    }
+
+    if (products.isEmpty) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              isArabic ? 'لا توجد منتجات لحفظ تقرير الجرد' : 'No products found to audit',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    await ProductInventoryPdfService.showInventoryAuditSelectionDialog(
+      context: context,
+      products: products,
+      locale: isArabic ? 'ar' : 'en',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+
     return BlocConsumer<ProductBloc, ProductState>(
       listener: (context, state) {
         if (state is ProductOperationSuccess) {
@@ -66,14 +103,28 @@ class _ProductsScreenState extends State<ProductsScreen> {
                               ),
                         ),
                         const SizedBox(height: 10),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 48,
-                          child: ElevatedButton.icon(
-                            onPressed: () => _showProductForm(context),
-                            icon: const Icon(Icons.add, size: 18),
-                            label: Text(l10n.addProduct),
-                          ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF10B981),
+                                  foregroundColor: Colors.white,
+                                ),
+                                onPressed: () => _exportInventoryAudit(context, state),
+                                icon: const Icon(Icons.inventory_rounded, size: 18),
+                                label: Text(isArabic ? 'جرد المنتجات' : 'Stock Audit'),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () => _showProductForm(context),
+                                icon: const Icon(Icons.add, size: 18),
+                                label: Text(l10n.addProduct),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     );
@@ -89,7 +140,17 @@ class _ProductsScreenState extends State<ProductsScreen> {
                               ),
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 12),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF10B981),
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed: () => _exportInventoryAudit(context, state),
+                        icon: const Icon(Icons.inventory_rounded, size: 18),
+                        label: Text(isArabic ? 'جرد المنتجات' : 'Stock Audit'),
+                      ),
+                      const SizedBox(width: 12),
                       ElevatedButton.icon(
                         onPressed: () => _showProductForm(context),
                         icon: const Icon(Icons.add, size: 18),

@@ -75,11 +75,11 @@ class WhatsappShareHandler(private val context: Context) : MethodChannel.MethodC
                     }
                 }
 
-                if (text.isNotEmpty()) {
+                if (text.isNotEmpty() && mimeType != "application/pdf") {
                     intent.putExtra(Intent.EXTRA_TEXT, text)
                 }
 
-                if (jid.isNotEmpty()) {
+                if (jid.isNotEmpty() && mimeType != "application/pdf") {
                     intent.putExtra("jid", jid)
                 }
 
