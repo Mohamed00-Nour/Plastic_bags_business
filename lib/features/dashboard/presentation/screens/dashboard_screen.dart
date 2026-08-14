@@ -34,26 +34,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
         start: now.subtract(const Duration(days: 30)),
         end: now,
       ),
-      builder: (context, child) => Theme(
-        data: Theme.of(context).copyWith(
-          colorScheme: Theme.of(context).colorScheme.copyWith(
-                primary: AppTheme.primaryColor,
-              ),
-        ),
-        child: child!,
-      ),
+      builder:
+          (context, child) => Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: Theme.of(
+                context,
+              ).colorScheme.copyWith(primary: AppTheme.primaryColor),
+            ),
+            child: child!,
+          ),
     );
     if (picked != null && context.mounted) {
       context.read<DashboardBloc>().add(
-            DashboardCustomRangeChanged(
-              start: picked.start,
-              end: picked.end,
-            ),
-          );
+        DashboardCustomRangeChanged(start: picked.start, end: picked.end),
+      );
     }
   }
 
-  String _localizedRangeLabel(AppLocalizations l10n, DashboardDateRange range, bool isArabic) {
+  String _localizedRangeLabel(
+    AppLocalizations l10n,
+    DashboardDateRange range,
+    bool isArabic,
+  ) {
     switch (range) {
       case DashboardDateRange.today:
         return isArabic ? 'اليوم' : 'Today';
@@ -151,9 +153,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 IconButton(
                   icon: const Icon(Icons.refresh_rounded),
                   tooltip: l10n.refresh,
-                  onPressed: () => context
-                      .read<DashboardBloc>()
-                      .add(DashboardRefreshRequested()),
+                  onPressed:
+                      () => context.read<DashboardBloc>().add(
+                        DashboardRefreshRequested(),
+                      ),
                 ),
               ],
             ),
@@ -167,18 +170,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ...DashboardDateRange.values
                       .where((r) => r != DashboardDateRange.custom)
                       .map((range) {
-                    final isSelected = state.selectedRange == range;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: _RangePill(
-                        label: _localizedRangeLabel(l10n, range, isArabic),
-                        selected: isSelected,
-                        onTap: () => context
-                            .read<DashboardBloc>()
-                            .add(DashboardFilterChanged(range)),
-                      ),
-                    );
-                  }),
+                        final isSelected = state.selectedRange == range;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: _RangePill(
+                            label: _localizedRangeLabel(l10n, range, isArabic),
+                            selected: isSelected,
+                            onTap:
+                                () => context.read<DashboardBloc>().add(
+                                  DashboardFilterChanged(range),
+                                ),
+                          ),
+                        );
+                      }),
                   _RangePill(
                     label: isArabic ? 'نطاق مخصص' : l10n.customRange,
                     selected: state.selectedRange == DashboardDateRange.custom,
@@ -208,19 +212,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   childAspectRatio: 1.6,
                   children: [
                     StatsCard(
-                      title: isArabic ? 'إجمالي المبيعات التجاري' : 'Commercial Sales',
+                      title: isArabic ? 'إجمالي المبيعات' : 'Total Sales',
                       value: currencyFormat.format(state.totalSalesRevenue),
                       icon: Icons.point_of_sale_rounded,
                       color: AppTheme.successColor,
                     ),
                     StatsCard(
-                      title: isArabic ? 'إجمالي المقبوضات النقدية' : 'Cash Collected',
+                      title:
+                          isArabic
+                              ? 'إجمالي المقبوضات النقدية'
+                              : 'Cash Collected',
                       value: currencyFormat.format(state.totalCashCollected),
                       icon: Icons.payments_rounded,
                       color: const Color(0xFF10B981),
                     ),
                     StatsCard(
-                      title: isArabic ? 'إجمالي المشتريات' : 'Commercial Purchases',
+                      title: isArabic ? 'إجمالي المشتريات' : 'Total Purchases',
                       value: currencyFormat.format(state.totalPurchasesAmount),
                       icon: Icons.shopping_bag_rounded,
                       color: Colors.purple,
@@ -232,20 +239,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       color: Colors.orange,
                     ),
                     StatsCard(
-                      title: isArabic ? 'صافي الأرباح التجاريه' : 'Net Commercial Profit',
+                      title: isArabic ? 'صافي الأرباح التجاريه' : 'Net Profit',
                       value: currencyFormat.format(state.totalProfit),
                       icon: Icons.attach_money_rounded,
                       color: AppTheme.primaryColor,
                     ),
                     StatsCard(
-                      title: isArabic ? 'ديون العملاء المستحقة' : 'Clients Debt',
+                      title:
+                          isArabic ? 'ديون العملاء المستحقة' : 'Clients Debt',
                       value: currencyFormat.format(state.totalClientsDebt),
                       icon: Icons.account_balance_wallet_rounded,
                       color: Colors.redAccent,
                     ),
                     StatsCard(
-                      title: isArabic ? 'قيمة المخزون التجاري' : 'Inventory Value (Cost)',
-                      value: currencyFormat.format(state.totalInventoryCostValue),
+                      title:
+                          isArabic
+                              ? 'قيمة المخزون التجاري'
+                              : 'Inventory Value (Cost)',
+                      value: currencyFormat.format(
+                        state.totalInventoryCostValue,
+                      ),
                       icon: Icons.inventory_2_rounded,
                       color: Colors.teal,
                     ),
@@ -276,7 +289,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         child: _buildSalesChart(context, state, isArabic),
                       ),
                       const SizedBox(width: 20),
-                      Expanded(child: _buildTopProducts(context, state, isArabic)),
+                      Expanded(
+                        child: _buildTopProducts(context, state, isArabic),
+                      ),
                     ],
                   );
                 }
@@ -299,7 +314,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildSalesChart(BuildContext context, DashboardLoaded state, bool isArabic) {
+  Widget _buildSalesChart(
+    BuildContext context,
+    DashboardLoaded state,
+    bool isArabic,
+  ) {
     final entries =
         state.monthlySalesRevenue.entries.toList()
           ..sort((a, b) => a.key.compareTo(b.key));
@@ -313,11 +332,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
           children: [
             Row(
               children: [
-                const Icon(Icons.bar_chart_rounded, color: AppTheme.primaryColor),
+                const Icon(
+                  Icons.bar_chart_rounded,
+                  color: AppTheme.primaryColor,
+                ),
                 const SizedBox(width: 8),
                 Text(
-                  isArabic ? 'المبيعات الشهرية التجارية' : 'Monthly Sales Revenue',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  isArabic
+                      ? 'المبيعات الشهرية التجارية'
+                      : 'Monthly Sales Revenue',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
@@ -328,7 +355,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   entries.isEmpty
                       ? Center(
                         child: Text(
-                          isArabic ? 'لا توجد بيانات مبيعات في هذه الفترة' : 'No sales data for this period',
+                          isArabic
+                              ? 'لا توجد بيانات مبيعات في هذه الفترة'
+                              : 'No sales data for this period',
                           style: const TextStyle(color: AppTheme.textSecondary),
                         ),
                       )
@@ -336,16 +365,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         BarChartData(
                           alignment: BarChartAlignment.spaceAround,
                           maxY:
-                              entries.map((e) => e.value).reduce((a, b) => a > b ? a : b) *
+                              entries
+                                  .map((e) => e.value)
+                                  .reduce((a, b) => a > b ? a : b) *
                               1.2,
                           barTouchData: BarTouchData(
                             enabled: true,
                             touchTooltipData: BarTouchTooltipData(
-                              getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                              getTooltipItem: (
+                                group,
+                                groupIndex,
+                                rod,
+                                rodIndex,
+                              ) {
                                 final label = entries[group.x.toInt()].key;
                                 return BarTooltipItem(
                                   '$label\n\$${rod.toY.toStringAsFixed(2)}',
-                                  const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                  const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 );
                               },
                             ),
@@ -362,7 +401,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     return Padding(
                                       padding: const EdgeInsets.only(top: 4),
                                       child: Text(
-                                        parts.length > 1 ? '${parts[1]}/${parts[0].substring(2)}' : entries[idx].key,
+                                        parts.length > 1
+                                            ? '${parts[1]}/${parts[0].substring(2)}'
+                                            : entries[idx].key,
                                         style: const TextStyle(fontSize: 10),
                                       ),
                                     );
@@ -408,8 +449,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildTopProducts(BuildContext context, DashboardLoaded state, bool isArabic) {
-    final currencyFormat = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
+  Widget _buildTopProducts(
+    BuildContext context,
+    DashboardLoaded state,
+    bool isArabic,
+  ) {
+    final currencyFormat = NumberFormat.currency(
+      symbol: '\$',
+      decimalDigits: 2,
+    );
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
@@ -422,8 +470,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const Icon(Icons.star_rounded, color: Colors.amber),
                 const SizedBox(width: 8),
                 Text(
-                  isArabic ? 'المنتجات الأعلى قيمة بالمخزون' : 'Top Inventory Products',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  isArabic
+                      ? 'المنتجات الأعلى قيمة بالمخزون'
+                      : 'Top Inventory Products',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
@@ -433,7 +486,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 padding: const EdgeInsets.all(20),
                 child: Center(
                   child: Text(
-                    isArabic ? 'لا توجد منتجات مسجلة حتى الآن' : 'No products found',
+                    isArabic
+                        ? 'لا توجد منتجات مسجلة حتى الآن'
+                        : 'No products found',
                     style: const TextStyle(color: AppTheme.textSecondary),
                   ),
                 ),
@@ -451,7 +506,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     children: [
                       CircleAvatar(
                         radius: 16,
-                        backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.15),
+                        backgroundColor: AppTheme.primaryColor.withValues(
+                          alpha: 0.15,
+                        ),
                         child: Text(
                           '${index + 1}',
                           style: const TextStyle(
@@ -468,13 +525,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           children: [
                             Text(
                               p.name,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                             Text(
                               '${isArabic ? "المقاس:" : "Size:"} ${p.size.isEmpty ? "-" : p.size} • ${isArabic ? "الكمية:" : "Stock:"} ${p.stockQuantity}',
-                              style: const TextStyle(fontSize: 11, color: Colors.grey),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey,
+                              ),
                             ),
                           ],
                         ),
@@ -497,8 +560,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildRecentSalesInvoices(BuildContext context, DashboardLoaded state, bool isArabic) {
-    final currencyFormat = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
+  Widget _buildRecentSalesInvoices(
+    BuildContext context,
+    DashboardLoaded state,
+    bool isArabic,
+  ) {
+    final currencyFormat = NumberFormat.currency(
+      symbol: '\$',
+      decimalDigits: 2,
+    );
     final dateFmt = DateFormat('yyyy/MM/dd HH:mm');
 
     return Card(
@@ -510,11 +580,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
           children: [
             Row(
               children: [
-                const Icon(Icons.receipt_long_rounded, color: AppTheme.primaryColor),
+                const Icon(
+                  Icons.receipt_long_rounded,
+                  color: AppTheme.primaryColor,
+                ),
                 const SizedBox(width: 8),
                 Text(
-                  isArabic ? 'أحدث فواتير المبيعات التجارية' : 'Recent Sales Invoices',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  isArabic
+                      ? 'أحدث فواتير المبيعات التجارية'
+                      : 'Recent Sales Invoices',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
@@ -524,7 +602,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 padding: const EdgeInsets.all(20),
                 child: Center(
                   child: Text(
-                    isArabic ? 'لا توجد فواتير مبيعات مسجلة مؤخراً' : 'No recent sales invoices',
+                    isArabic
+                        ? 'لا توجد فواتير مبيعات مسجلة مؤخراً'
+                        : 'No recent sales invoices',
                     style: const TextStyle(color: AppTheme.textSecondary),
                   ),
                 ),
@@ -535,63 +615,86 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: DataTable(
                     columnSpacing: 24,
                     columns: [
-                      DataColumn(label: Text(isArabic ? 'رقم الفاتورة' : 'Invoice #')),
-                      DataColumn(label: Text(isArabic ? 'اسم العميل' : 'Client')),
+                      DataColumn(
+                        label: Text(isArabic ? 'رقم الفاتورة' : 'Invoice #'),
+                      ),
+                      DataColumn(
+                        label: Text(isArabic ? 'اسم العميل' : 'Client'),
+                      ),
                       DataColumn(label: Text(isArabic ? 'التاريخ' : 'Date')),
-                      DataColumn(label: Text(isArabic ? 'الإجمالي' : 'Total'), numeric: true),
-                      DataColumn(label: Text(isArabic ? 'المدفوع' : 'Paid'), numeric: true),
-                      DataColumn(label: Text(isArabic ? 'المتبقي' : 'Remaining'), numeric: true),
+                      DataColumn(
+                        label: Text(isArabic ? 'الإجمالي' : 'Total'),
+                        numeric: true,
+                      ),
+                      DataColumn(
+                        label: Text(isArabic ? 'المدفوع' : 'Paid'),
+                        numeric: true,
+                      ),
+                      DataColumn(
+                        label: Text(isArabic ? 'المتبقي' : 'Remaining'),
+                        numeric: true,
+                      ),
                       DataColumn(label: Text(isArabic ? 'الحالة' : 'Status')),
                     ],
-                    rows: state.recentSalesInvoices.map((inv) {
-                      final total = (inv['totalAmount'] as num).toDouble();
-                      final paid = (inv['paidAmount'] as num).toDouble();
-                      final remaining = (inv['remainingAmount'] as num).toDouble();
+                    rows:
+                        state.recentSalesInvoices.map((inv) {
+                          final total = (inv['totalAmount'] as num).toDouble();
+                          final paid = (inv['paidAmount'] as num).toDouble();
+                          final remaining =
+                              (inv['remainingAmount'] as num).toDouble();
 
-                      Color statusColor = Colors.green;
-                      String statusText = isArabic ? 'مدفوع بالكامل' : 'Paid';
-                      if (remaining > 0 && paid > 0) {
-                        statusColor = Colors.orange;
-                        statusText = isArabic ? 'مدفوع جزئياً' : 'Partial';
-                      } else if (remaining > 0 && paid == 0) {
-                        statusColor = Colors.red;
-                        statusText = isArabic ? 'غير مدفوع' : 'Unpaid';
-                      }
+                          Color statusColor = Colors.green;
+                          String statusText =
+                              isArabic ? 'مدفوع بالكامل' : 'Paid';
+                          if (remaining > 0 && paid > 0) {
+                            statusColor = Colors.orange;
+                            statusText = isArabic ? 'مدفوع جزئياً' : 'Partial';
+                          } else if (remaining > 0 && paid == 0) {
+                            statusColor = Colors.red;
+                            statusText = isArabic ? 'غير مدفوع' : 'Unpaid';
+                          }
 
-                      return DataRow(
-                        cells: [
-                          DataCell(
-                            Text(
-                              inv['invoiceNumber'],
-                              style: const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                          DataCell(Text(inv['clientName'])),
-                          DataCell(Text(dateFmt.format(inv['date']))),
-                          DataCell(Text(currencyFormat.format(total))),
-                          DataCell(Text(currencyFormat.format(paid))),
-                          DataCell(Text(currencyFormat.format(remaining))),
-                          DataCell(
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: statusColor.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(color: statusColor.withValues(alpha: 0.3)),
-                              ),
-                              child: Text(
-                                statusText,
-                                style: TextStyle(
-                                  color: statusColor,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
+                          return DataRow(
+                            cells: [
+                              DataCell(
+                                Text(
+                                  inv['invoiceNumber'],
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ),
-                        ],
-                      );
-                    }).toList(),
+                              DataCell(Text(inv['clientName'])),
+                              DataCell(Text(dateFmt.format(inv['date']))),
+                              DataCell(Text(currencyFormat.format(total))),
+                              DataCell(Text(currencyFormat.format(paid))),
+                              DataCell(Text(currencyFormat.format(remaining))),
+                              DataCell(
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: statusColor.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(
+                                      color: statusColor.withValues(alpha: 0.3),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    statusText,
+                                    style: TextStyle(
+                                      color: statusColor,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        }).toList(),
                   ),
                 ),
               ),
@@ -621,18 +724,14 @@ class _RangePill extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final primary = theme.colorScheme.primary;
 
-    final unselectedBg = isDark
-        ? Colors.white.withValues(alpha: 0.06)
-        : theme.cardColor;
-    final unselectedBorder = isDark
-        ? Colors.white.withValues(alpha: 0.2)
-        : theme.dividerColor;
-    final unselectedText = isDark
-        ? Colors.white.withValues(alpha: 0.85)
-        : AppTheme.textPrimary;
-    final unselectedIcon = isDark
-        ? Colors.white.withValues(alpha: 0.7)
-        : AppTheme.textSecondary;
+    final unselectedBg =
+        isDark ? Colors.white.withValues(alpha: 0.06) : theme.cardColor;
+    final unselectedBorder =
+        isDark ? Colors.white.withValues(alpha: 0.2) : theme.dividerColor;
+    final unselectedText =
+        isDark ? Colors.white.withValues(alpha: 0.85) : AppTheme.textPrimary;
+    final unselectedIcon =
+        isDark ? Colors.white.withValues(alpha: 0.7) : AppTheme.textSecondary;
 
     return Material(
       color: Colors.transparent,
@@ -645,9 +744,7 @@ class _RangePill extends StatelessWidget {
           decoration: BoxDecoration(
             color: selected ? primary : unselectedBg,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: selected ? primary : unselectedBorder,
-            ),
+            border: Border.all(color: selected ? primary : unselectedBorder),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,

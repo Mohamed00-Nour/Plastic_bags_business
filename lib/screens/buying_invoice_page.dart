@@ -692,7 +692,7 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
                                       width: 70,
                                       height: 38,
                                       child: TextFormField(
-                                        key: ValueKey('qty_${item['productId']}'),
+                                        key: ValueKey('qty_${item['productId']}_${item['quantity']}'),
                                         initialValue: '${item['quantity']}',
                                         keyboardType: TextInputType.number,
                                         textAlign: TextAlign.center,

@@ -200,9 +200,10 @@ class ClientStatementPdfService {
                 ],
                 data:
                     records.map((rec) {
+                      final note = rec.notes.isNotEmpty ? rec.notes : rec.description;
                       return [
                         DateFormat('yyyy/MM/dd HH:mm').format(rec.timestamp),
-                        _formatRecordType(rec.type, isArabic, invoiceNumber: rec.invoiceNumber),
+                        _formatRecordType(rec.type, isArabic, invoiceNumber: rec.invoiceNumber, notes: note),
                         rec.invoiceNumber.isEmpty ? '-' : rec.invoiceNumber,
                         '\$${rec.amount.toStringAsFixed(2)}',
                         '\$${rec.balanceAfter.toStringAsFixed(2)}',
@@ -537,44 +538,71 @@ class ClientStatementPdfService {
     );
   }
 
-  static String _formatRecordType(String type, bool isArabic, {String invoiceNumber = ''}) {
+  static String _formatRecordType(
+    String type,
+    bool isArabic, {
+    String invoiceNumber = '',
+    String notes = '',
+  }) {
+    String base;
     if (isArabic) {
       switch (type) {
         case 'opening':
-          return 'رصيد افتتاحي';
+          base = 'رصيد افتتاحي';
+          break;
         case 'manual_debt':
         case 'debt':
-          return 'إضافة مديونية';
+          base = 'إضافة مديونية';
+          break;
         case 'sales_invoice':
-          return invoiceNumber.isNotEmpty ? 'فاتورة مبيعات #$invoiceNumber' : 'فاتورة مبيعات';
+          base = invoiceNumber.isNotEmpty ? 'فاتورة مبيعات #$invoiceNumber' : 'فاتورة مبيعات';
+          break;
         case 'sales_return':
-          return invoiceNumber.isNotEmpty ? 'مرتجع فاتورة #$invoiceNumber' : 'مرتجع مبيعات';
+          base = invoiceNumber.isNotEmpty ? 'مرتجع فاتورة #$invoiceNumber' : 'مرتجع مبيعات';
+          break;
         case 'payment':
-          return invoiceNumber.isNotEmpty ? 'تحصيل من فاتورة #$invoiceNumber' : 'تحصيل دفعة';
+          base = invoiceNumber.isNotEmpty ? 'تحصيل من فاتورة #$invoiceNumber' : 'تحصيل دفعة';
+          break;
         case 'cancellation':
-          return 'إلغاء فاتورة';
+          base = 'إلغاء فاتورة';
+          break;
         default:
-          return 'حركة رصيد';
+          base = 'حركة رصيد';
       }
     } else {
       switch (type) {
         case 'opening':
-          return 'Opening Balance';
+          base = 'Opening Balance';
+          break;
         case 'manual_debt':
         case 'debt':
-          return 'Add Debt';
+          base = 'Add Debt';
+          break;
         case 'sales_invoice':
-          return invoiceNumber.isNotEmpty ? 'Invoice #$invoiceNumber' : 'Sales Invoice';
+          base = invoiceNumber.isNotEmpty ? 'Invoice #$invoiceNumber' : 'Sales Invoice';
+          break;
         case 'sales_return':
-          return invoiceNumber.isNotEmpty ? 'Return #$invoiceNumber' : 'Sales Return';
+          base = invoiceNumber.isNotEmpty ? 'Return #$invoiceNumber' : 'Sales Return';
+          break;
         case 'payment':
-          return invoiceNumber.isNotEmpty ? 'Payment for #$invoiceNumber' : 'Payment';
+          base = invoiceNumber.isNotEmpty ? 'Payment for #$invoiceNumber' : 'Payment';
+          break;
         case 'cancellation':
-          return 'Invoice Cancellation';
+          base = 'Invoice Cancellation';
+          break;
         default:
-          return 'Transaction';
+          base = 'Transaction';
       }
     }
+
+    final cleanNote = notes.trim();
+    if (cleanNote.isNotEmpty &&
+        cleanNote != 'تحصيل دفعة نقداً' &&
+        cleanNote != 'إضافة مديونية' &&
+        !cleanNote.startsWith('تحصيل من فاتورة #')) {
+      return '$base\n($cleanNote)';
+    }
+    return base;
   }
 
   /// Print or Share Client Statement PDF

@@ -793,80 +793,131 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
               typeDesc = 'حركة رصيد';
             }
 
+            final hasCustomNote = rec.notes.trim().isNotEmpty;
+
             return Card(
               margin: const EdgeInsets.only(bottom: 8),
-              child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: amountColor.withValues(alpha: 0.15),
-                  child: Icon(icon, color: amountColor),
-                ),
-                title: Text(
-                  typeDesc,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-                subtitle: Text(
-                  _dateFormat.format(rec.timestamp),
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.end,
+                    Row(
                       children: [
-                        Text(
-                          '\$${rec.amount.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                            color: amountColor,
-                          ),
+                        CircleAvatar(
+                          radius: 18,
+                          backgroundColor: amountColor.withValues(alpha: 0.15),
+                          child: Icon(icon, color: amountColor, size: 20),
                         ),
-                        Text(
-                          'الرصيد بعدها: \$${rec.balanceAfter.toStringAsFixed(2)}',
-                          style: const TextStyle(fontSize: 11, color: Colors.grey),
-                        ),
-                      ],
-                    ),
-                    PopupMenuButton<String>(
-                      icon: const Icon(Icons.more_vert_rounded, color: Colors.grey),
-                      onSelected: (val) {
-                        if (val == 'edit') {
-                          _showEditBalanceRecordDialog(context, rec);
-                        } else if (val == 'delete') {
-                          _confirmDeleteBalanceRecord(context, rec);
-                        }
-                      },
-                      itemBuilder: (context) => [
-                        PopupMenuItem<String>(
-                          value: 'edit',
-                          child: Row(
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Icon(Icons.edit_rounded, color: AppTheme.primaryColor, size: 20),
-                              const SizedBox(width: 8),
-                              Text(isArabic ? 'تعديل الحركة' : 'Edit Record'),
-                            ],
-                          ),
-                        ),
-                        PopupMenuItem<String>(
-                          value: 'delete',
-                          child: Row(
-                            children: [
-                              const Icon(Icons.delete_forever_rounded, color: Colors.red, size: 20),
-                              const SizedBox(width: 8),
                               Text(
-                                isArabic ? 'حذف الحركة' : 'Delete Record',
-                                style: const TextStyle(color: Colors.red),
+                                typeDesc,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                _dateFormat.format(rec.timestamp),
+                                style: const TextStyle(fontSize: 12, color: Colors.grey),
                               ),
                             ],
                           ),
                         ),
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              '\$${rec.amount.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                                color: amountColor,
+                              ),
+                            ),
+                            Text(
+                              'الرصيد بعدها: \$${rec.balanceAfter.toStringAsFixed(2)}',
+                              style: const TextStyle(fontSize: 11, color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 4),
+                        PopupMenuButton<String>(
+                          icon: const Icon(Icons.more_vert_rounded, color: Colors.grey),
+                          onSelected: (val) {
+                            if (val == 'edit') {
+                              _showEditBalanceRecordDialog(context, rec);
+                            } else if (val == 'delete') {
+                              _confirmDeleteBalanceRecord(context, rec);
+                            }
+                          },
+                          itemBuilder: (context) => [
+                            PopupMenuItem<String>(
+                              value: 'edit',
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.edit_rounded, color: AppTheme.primaryColor, size: 20),
+                                  const SizedBox(width: 8),
+                                  Text(isArabic ? 'تعديل الحركة' : 'Edit'),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem<String>(
+                              value: 'delete',
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 20),
+                                  const SizedBox(width: 8),
+                                  Text(isArabic ? 'حذف الحركة' : 'Delete', style: const TextStyle(color: Colors.redAccent)),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
+                    if (hasCustomNote) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: AppTheme.primaryColor.withValues(alpha: 0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.sticky_note_2_rounded,
+                              size: 15,
+                              color: AppTheme.primaryLight,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                '${isArabic ? "ملاحظات: " : "Notes: "}${rec.notes}',
+                                style: const TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFFE2E8F0),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -977,7 +1028,14 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
     final pageContext = context;
 
     final amountController = TextEditingController(text: record.amount.toStringAsFixed(2));
-    final notesController = TextEditingController();
+    final existingNote = record.notes.isNotEmpty
+        ? record.notes
+        : (record.description != 'تحصيل دفعة نقداً' &&
+                record.description != 'إضافة مديونية' &&
+                !record.description.startsWith('تحصيل من فاتورة #')
+            ? record.description
+            : '');
+    final notesController = TextEditingController(text: existingNote);
     String selectedType = record.type;
     DateTime selectedDate = record.timestamp;
 
@@ -1328,6 +1386,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
       transaction.set(historyRef, {
         'type': 'payment',
         'description': notes.isEmpty ? 'تحصيل دفعة نقداً' : notes,
+        'notes': notes,
         'amount': amount,
         'balanceBefore': currentBalance,
         'balanceAfter': newBalance,
@@ -1359,6 +1418,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
       transaction.set(historyRef, {
         'type': 'manual_debt',
         'description': notes.isEmpty ? 'إضافة مديونية' : notes,
+        'notes': notes,
         'amount': amount,
         'balanceBefore': currentBalance,
         'balanceAfter': newBalance,

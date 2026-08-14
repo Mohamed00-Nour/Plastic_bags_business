@@ -83,6 +83,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
         _firestore.collection('suppliers').where('isActive', isEqualTo: true).get(), // 3
         _firestore.collection('products').where('isActive', isEqualTo: true).get(), // 4
         _firestore.collection('return_invoices').get(), // 5
+        _firestore.collectionGroup('balanceHistory').get(), // 6
       ]);
 
       final salesSnap = results[0];
@@ -91,6 +92,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
       final suppliersSnap = results[3];
       final productsSnap = results[4];
       final returnsSnap = results[5];
+      final balanceHistorySnap = results[6];
 
       double totalSalesRevenue = 0.0;
       double totalCashCollected = 0.0;
@@ -158,6 +160,34 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
 
       // Sort recent invoices by date descending
       recentSalesInvoices.sort((a, b) => (b['date'] as DateTime).compareTo(a['date'] as DateTime));
+
+      // Process Direct Client Account Payments (e.g. Add Payment from Client Page)
+      for (final doc in balanceHistorySnap.docs) {
+        // Ensure record belongs to a client subcollection
+        if (!doc.reference.path.contains('clients/')) continue;
+
+        final data = doc.data();
+        final type = data['type']?.toString().toLowerCase() ?? '';
+        if (type != 'payment') continue;
+
+        // Skip invoice payments already accounted for in salesSnap.docs paidAmount
+        final invoiceId = data['invoiceId']?.toString() ?? '';
+        if (invoiceId.isNotEmpty) continue;
+
+        final dt = _parseDate(data['timestamp'] ?? data['createdAt']);
+        if (startDate != null && dt.isBefore(startDate)) continue;
+        if (_currentRange == DashboardDateRange.custom &&
+            _customEnd != null &&
+            dt.isAfter(_customEnd!)) {
+          continue;
+        }
+
+        final amountVal = data['amount'];
+        final amt = amountVal is num
+            ? amountVal.toDouble()
+            : (double.tryParse(amountVal?.toString() ?? '0') ?? 0.0);
+        totalCashCollected += amt;
+      }
 
       // Process Purchasing Invoices
       for (final doc in purchasesSnap.docs) {

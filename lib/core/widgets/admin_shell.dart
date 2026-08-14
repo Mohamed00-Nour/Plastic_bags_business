@@ -61,7 +61,7 @@ class _AdminShellState extends State<AdminShell> {
       ),
       _NavItem(
         icon: Icons.business_center_rounded,
-        label: isArabic ? 'الموردين (ERP)' : 'Suppliers (ERP)',
+        label: isArabic ? 'الموردين' : 'Suppliers',
         screen: const SuppliersPage(),
       ),
       _NavItem(
@@ -202,20 +202,24 @@ class _DesktopLayout extends StatelessWidget {
                     // Logo
                     Padding(
                       padding: const EdgeInsets.symmetric(
-                          vertical: 32, horizontal: 20),
+                        vertical: 32,
+                        horizontal: 20,
+                      ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: AppTheme.primaryColor
-                                  .withValues(alpha: 0.2),
+                              color: AppTheme.primaryColor.withValues(
+                                alpha: 0.2,
+                              ),
                               borderRadius: BorderRadius.circular(16),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppTheme.primaryColor
-                                      .withValues(alpha: 0.35),
+                                  color: AppTheme.primaryColor.withValues(
+                                    alpha: 0.35,
+                                  ),
                                   blurRadius: 14,
                                 ),
                               ],
@@ -248,28 +252,28 @@ class _DesktopLayout extends StatelessWidget {
                     // Nav items
                     Expanded(
                       child: ListView.builder(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 14),
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
                         itemCount: navItems.length,
                         itemBuilder: (context, index) {
                           final item = navItems[index];
                           final isSelected = index == selectedIndex;
                           return Padding(
-                            padding:
-                                const EdgeInsets.symmetric(vertical: 3),
+                            padding: const EdgeInsets.symmetric(vertical: 3),
                             child: AnimatedContainer(
-                              duration:
-                                  const Duration(milliseconds: 180),
+                              duration: const Duration(milliseconds: 180),
                               decoration: BoxDecoration(
-                                color: isSelected
-                                    ? AppTheme.sidebarItemColor
-                                    : Colors.transparent,
+                                color:
+                                    isSelected
+                                        ? AppTheme.sidebarItemColor
+                                        : Colors.transparent,
                                 borderRadius: BorderRadius.circular(14),
                                 border: Border.all(
-                                  color: isSelected
-                                      ? AppTheme.primaryColor
-                                          .withValues(alpha: 0.5)
-                                      : Colors.transparent,
+                                  color:
+                                      isSelected
+                                          ? AppTheme.primaryColor.withValues(
+                                            alpha: 0.5,
+                                          )
+                                          : Colors.transparent,
                                   width: 1.5,
                                 ),
                               ),
@@ -277,32 +281,36 @@ class _DesktopLayout extends StatelessWidget {
                                 color: Colors.transparent,
                                 child: InkWell(
                                   onTap: () => onIndexChanged(index),
-                                  borderRadius:
-                                      BorderRadius.circular(14),
+                                  borderRadius: BorderRadius.circular(14),
                                   hoverColor: Colors.white10,
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(
-                                        horizontal: 14, vertical: 12),
+                                      horizontal: 14,
+                                      vertical: 12,
+                                    ),
                                     child: Row(
                                       children: [
                                         Icon(
                                           item.icon,
-                                          color: isSelected
-                                              ? AppTheme.primaryLight
-                                              : Colors.white54,
+                                          color:
+                                              isSelected
+                                                  ? AppTheme.primaryLight
+                                                  : Colors.white54,
                                           size: 21,
                                         ),
                                         const SizedBox(width: 11),
                                         Text(
                                           item.label,
                                           style: TextStyle(
-                                            color: isSelected
-                                                ? Colors.white
-                                                : Colors.white54,
+                                            color:
+                                                isSelected
+                                                    ? Colors.white
+                                                    : Colors.white54,
                                             fontSize: 14,
-                                            fontWeight: isSelected
-                                                ? FontWeight.bold
-                                                : FontWeight.w400,
+                                            fontWeight:
+                                                isSelected
+                                                    ? FontWeight.bold
+                                                    : FontWeight.w400,
                                           ),
                                         ),
                                       ],
@@ -329,8 +337,9 @@ class _DesktopLayout extends StatelessWidget {
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
-                                      color: AppTheme.primaryColor
-                                          .withValues(alpha: 0.4),
+                                      color: AppTheme.primaryColor.withValues(
+                                        alpha: 0.4,
+                                      ),
                                       blurRadius: 10,
                                     ),
                                   ],
@@ -353,8 +362,7 @@ class _DesktopLayout extends StatelessWidget {
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
                                       user?.name ?? 'User',
@@ -367,8 +375,7 @@ class _DesktopLayout extends StatelessWidget {
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                     Text(
-                                      user?.role.name.toUpperCase() ??
-                                          '',
+                                      user?.role.name.toUpperCase() ?? '',
                                       style: const TextStyle(
                                         color: AppTheme.primaryLight,
                                         fontSize: 10,
@@ -380,8 +387,11 @@ class _DesktopLayout extends StatelessWidget {
                                 ),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.logout_rounded,
-                                    color: Colors.white38, size: 20),
+                                icon: const Icon(
+                                  Icons.logout_rounded,
+                                  color: Colors.white38,
+                                  size: 20,
+                                ),
                                 onPressed: onLogout,
                                 tooltip: AppLocalizations.of(context)!.logout,
                               ),
@@ -415,8 +425,7 @@ class _DesktopLayout extends StatelessWidget {
                       // Top bar
                       Container(
                         height: 68,
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 28),
+                        padding: const EdgeInsets.symmetric(horizontal: 28),
                         child: Row(
                           children: [
                             Text(
@@ -432,39 +441,46 @@ class _DesktopLayout extends StatelessWidget {
                               icon: const Badge(
                                 smallSize: 8,
                                 child: Icon(
-                                    Icons.notifications_outlined,
-                                    size: 24),
+                                  Icons.notifications_outlined,
+                                  size: 24,
+                                ),
                               ),
-                              tooltip: AppLocalizations.of(context)!.notifications,
+                              tooltip:
+                                  AppLocalizations.of(context)!.notifications,
                             ),
                             const SizedBox(width: 4),
                             IconButton(
-                              onPressed: () =>
-                                  context.read<ThemeCubit>().toggleTheme(),
+                              onPressed:
+                                  () =>
+                                      context.read<ThemeCubit>().toggleTheme(),
                               icon: Icon(
                                 context.watch<ThemeCubit>().isDark
                                     ? Icons.light_mode_rounded
                                     : Icons.dark_mode_rounded,
                                 size: 24,
                               ),
-                              tooltip: AppLocalizations.of(context)!.toggleTheme,
+                              tooltip:
+                                  AppLocalizations.of(context)!.toggleTheme,
                             ),
                             const SizedBox(width: 4),
                             IconButton(
-                              onPressed: () => context
-                                  .read<LocaleCubit>()
-                                  .toggleLocale(),
-                              icon: const Icon(Icons.language_rounded,
-                                  size: 24),
-                              tooltip: AppLocalizations.of(context)!.toggleLanguage,
+                              onPressed:
+                                  () =>
+                                      context
+                                          .read<LocaleCubit>()
+                                          .toggleLocale(),
+                              icon: const Icon(
+                                Icons.language_rounded,
+                                size: 24,
+                              ),
+                              tooltip:
+                                  AppLocalizations.of(context)!.toggleLanguage,
                             ),
                           ],
                         ),
                       ),
                       const Divider(height: 1),
-                      Expanded(
-                        child: navItems[selectedIndex].screen,
-                      ),
+                      Expanded(child: navItems[selectedIndex].screen),
                     ],
                   ),
                 ),
@@ -528,156 +544,172 @@ class _MobileLayout extends StatelessWidget {
             onSelected: (value) {
               if (value == 'logout') onLogout();
             },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                enabled: false,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(user?.name ?? 'User',
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
-                    Text(user?.role.label ?? '',
-                        style: const TextStyle(fontSize: 12)),
-                  ],
-                ),
-              ),
-              const PopupMenuDivider(),
-              PopupMenuItem(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    const Icon(Icons.logout, size: 20),
-                    const SizedBox(width: 8),
-                    Text(AppLocalizations.of(context)!.logout),
-                  ],
-                ),
-              ),
-            ],
+            itemBuilder:
+                (context) => [
+                  PopupMenuItem(
+                    enabled: false,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          user?.name ?? 'User',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          user?.role.label ?? '',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuDivider(),
+                  PopupMenuItem(
+                    value: 'logout',
+                    child: Row(
+                      children: [
+                        const Icon(Icons.logout, size: 20),
+                        const SizedBox(width: 8),
+                        Text(AppLocalizations.of(context)!.logout),
+                      ],
+                    ),
+                  ),
+                ],
           ),
         ],
       ),
-      drawer: navItems.length > 5
-          ? Drawer(
-              child: ListView(
-                children: [
-                  UserAccountsDrawerHeader(
-                    accountName: Text(user?.name ?? 'User'),
-                    accountEmail: Text(user?.email ?? ''),
-                    currentAccountPicture: CircleAvatar(
-                      child: Text(
-                        (user?.name ?? 'U').substring(0, 1).toUpperCase(),
-                        style: const TextStyle(fontSize: 24),
+      drawer:
+          navItems.length > 5
+              ? Drawer(
+                child: ListView(
+                  children: [
+                    UserAccountsDrawerHeader(
+                      accountName: Text(user?.name ?? 'User'),
+                      accountEmail: Text(user?.email ?? ''),
+                      currentAccountPicture: CircleAvatar(
+                        child: Text(
+                          (user?.name ?? 'U').substring(0, 1).toUpperCase(),
+                          style: const TextStyle(fontSize: 24),
+                        ),
+                      ),
+                      decoration: const BoxDecoration(
+                        color: AppTheme.primaryColor,
                       ),
                     ),
-                    decoration: const BoxDecoration(
-                      color: AppTheme.primaryColor,
+                    ...navItems.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final item = entry.value;
+                      return ListTile(
+                        leading: Icon(item.icon),
+                        title: Text(item.label),
+                        selected: index == selectedIndex,
+                        onTap: () {
+                          onIndexChanged(index);
+                          Navigator.pop(context);
+                        },
+                      );
+                    }),
+                    const Divider(),
+                    ListTile(
+                      leading: const Icon(Icons.logout),
+                      title: Text(AppLocalizations.of(context)!.logout),
+                      onTap: onLogout,
                     ),
-                  ),
-                  ...navItems.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final item = entry.value;
-                    return ListTile(
-                      leading: Icon(item.icon),
-                      title: Text(item.label),
-                      selected: index == selectedIndex,
-                      onTap: () {
-                        onIndexChanged(index);
-                        Navigator.pop(context);
-                      },
-                    );
-                  }),
-                  const Divider(),
-                  ListTile(
-                    leading: const Icon(Icons.logout),
-                    title: Text(AppLocalizations.of(context)!.logout),
-                    onTap: onLogout,
-                  ),
-                ],
-              ),
-            )
-          : null,
+                  ],
+                ),
+              )
+              : null,
       body: navItems[selectedIndex].screen,
       bottomNavigationBar: Builder(
         builder: (context) {
           final colorScheme = Theme.of(context).colorScheme;
           final isDark = Theme.of(context).brightness == Brightness.dark;
-          final navBg = isDark
-              ? const Color(0xFF0F172A) // deep navy — same as sidebar
-              : colorScheme.surfaceContainer;
+          final navBg =
+              isDark
+                  ? const Color(0xFF0F172A) // deep navy — same as sidebar
+                  : colorScheme.surfaceContainer;
           final activeColor = colorScheme.primary;
           final inactiveColor = colorScheme.onSurfaceVariant;
           return Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-        child: Container(
-          height: 68,
-          decoration: BoxDecoration(
-            color: navBg,
-            borderRadius: BorderRadius.circular(28),
-            boxShadow: [
-              BoxShadow(
-                color: colorScheme.primary.withValues(alpha: isDark ? 0.30 : 0.20),
-                blurRadius: 28,
-                offset: const Offset(0, 6),
-              ),
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.50 : 0.18),
-                blurRadius: 12,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            children: List.generate(bottomNavItems.length, (index) {
-              final item = bottomNavItems[index];
-              final isSelected =
-                  index == (selectedIndex < bottomNavItems.length ? selectedIndex : 0);
-              return Expanded(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => onIndexChanged(index),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    margin:
-                        const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? activeColor.withValues(alpha: 0.15)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(20),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+            child: Container(
+              height: 68,
+              decoration: BoxDecoration(
+                color: navBg,
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: [
+                  BoxShadow(
+                    color: colorScheme.primary.withValues(
+                      alpha: isDark ? 0.30 : 0.20,
                     ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          item.icon,
-                          color: isSelected ? activeColor : inactiveColor,
-                          size: 22,
-                        ),
-                        const SizedBox(height: 3),
-                        AnimatedDefaultTextStyle(
-                          duration: const Duration(milliseconds: 200),
-                          style: TextStyle(
-                            color: isSelected ? activeColor : inactiveColor,
-                            fontSize: 10,
-                            fontWeight: isSelected
-                                ? FontWeight.w600
-                                : FontWeight.normal,
-                          ),
-                          child: Text(
-                            item.label,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
+                    blurRadius: 28,
+                    offset: const Offset(0, 6),
                   ),
-                ),
-              );
-            }),
-          ),
-        ),
-      );
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.50 : 0.18),
+                    blurRadius: 12,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: List.generate(bottomNavItems.length, (index) {
+                  final item = bottomNavItems[index];
+                  final isSelected =
+                      index ==
+                      (selectedIndex < bottomNavItems.length
+                          ? selectedIndex
+                          : 0);
+                  return Expanded(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => onIndexChanged(index),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color:
+                              isSelected
+                                  ? activeColor.withValues(alpha: 0.15)
+                                  : Colors.transparent,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              item.icon,
+                              color: isSelected ? activeColor : inactiveColor,
+                              size: 22,
+                            ),
+                            const SizedBox(height: 3),
+                            AnimatedDefaultTextStyle(
+                              duration: const Duration(milliseconds: 200),
+                              style: TextStyle(
+                                color: isSelected ? activeColor : inactiveColor,
+                                fontSize: 10,
+                                fontWeight:
+                                    isSelected
+                                        ? FontWeight.w600
+                                        : FontWeight.normal,
+                              ),
+                              child: Text(
+                                item.label,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ),
+          );
         },
       ),
     );

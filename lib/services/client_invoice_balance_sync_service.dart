@@ -6,6 +6,8 @@ class ClientBalanceRecord {
   final String type; // 'opening', 'sales_invoice', 'sales_return', 'payment'
   final String invoiceId;
   final String invoiceNumber;
+  final String description;
+  final String notes;
   final double amount;
   final double totalAmount;
   final double paidAmount;
@@ -18,6 +20,8 @@ class ClientBalanceRecord {
     required this.type,
     this.invoiceId = '',
     this.invoiceNumber = '',
+    this.description = '',
+    this.notes = '',
     required this.amount,
     this.totalAmount = 0.0,
     this.paidAmount = 0.0,
@@ -28,11 +32,26 @@ class ClientBalanceRecord {
 
   factory ClientBalanceRecord.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>? ?? {};
+    final rawNotes = data['notes']?.toString().trim() ?? '';
+    final rawDesc = data['description']?.toString().trim() ?? '';
+    final isGeneric = rawDesc == 'تحصيل دفعة نقداً' ||
+        rawDesc == 'تحصيل دفعة مالية' ||
+        rawDesc == 'إضافة مديونية' ||
+        rawDesc.startsWith('تحصيل من فاتورة #') ||
+        rawDesc.startsWith('تعديل قيمة فاتورة #') ||
+        rawDesc.startsWith('فاتورة مبيعات معدلة #') ||
+        rawDesc.startsWith('نقل فاتورة #');
+    final extractedNotes = rawNotes.isNotEmpty
+        ? rawNotes
+        : (!isGeneric && rawDesc.isNotEmpty ? rawDesc : '');
+
     return ClientBalanceRecord(
       id: doc.id,
       type: data['type'] ?? 'transaction',
       invoiceId: data['invoiceId'] ?? '',
       invoiceNumber: data['invoiceNumber'] ?? '',
+      description: rawDesc,
+      notes: extractedNotes,
       amount: (data['amount'] ?? 0).toDouble(),
       totalAmount: (data['totalAmount'] ?? 0).toDouble(),
       paidAmount: (data['paidAmount'] ?? 0).toDouble(),
@@ -419,6 +438,8 @@ class ClientInvoiceBalanceSyncService {
           type: 'opening',
           invoiceId: openingRecord.invoiceId,
           invoiceNumber: openingRecord.invoiceNumber,
+          description: openingRecord.description,
+          notes: openingRecord.notes,
           amount: openingRecord.amount,
           totalAmount: openingRecord.totalAmount,
           paidAmount: openingRecord.paidAmount,
@@ -439,6 +460,8 @@ class ClientInvoiceBalanceSyncService {
             type: 'sales_invoice',
             invoiceId: r.invoiceId,
             invoiceNumber: r.invoiceNumber,
+            description: r.description,
+            notes: r.notes,
             amount: r.totalAmount,
             totalAmount: r.totalAmount,
             paidAmount: r.paidAmount,
@@ -455,6 +478,8 @@ class ClientInvoiceBalanceSyncService {
             type: 'payment',
             invoiceId: r.invoiceId,
             invoiceNumber: r.invoiceNumber,
+            description: r.description,
+            notes: r.notes,
             amount: r.paidAmount,
             totalAmount: r.totalAmount,
             paidAmount: r.paidAmount,
@@ -483,6 +508,8 @@ class ClientInvoiceBalanceSyncService {
             type: r.type,
             invoiceId: r.invoiceId,
             invoiceNumber: r.invoiceNumber,
+            description: r.description,
+            notes: r.notes,
             amount: r.amount,
             totalAmount: r.totalAmount,
             paidAmount: r.paidAmount,
@@ -617,7 +644,10 @@ class ClientInvoiceBalanceSyncService {
       'updatedAt': FieldValue.serverTimestamp(),
     };
     if (newDate != null) updateData['timestamp'] = Timestamp.fromDate(newDate);
-    if (newNotes != null) updateData['description'] = newNotes;
+    if (newNotes != null) {
+      updateData['description'] = newNotes;
+      updateData['notes'] = newNotes;
+    }
 
     batch.update(historyRef, updateData);
     await batch.commit();

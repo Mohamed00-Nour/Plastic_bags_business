@@ -1156,7 +1156,7 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                                         height: 34,
                                         child: TextFormField(
                                           key: ValueKey(
-                                            'qty_${item['productId']}',
+                                            'qty_${item['productId']}_${item['quantity']}',
                                           ),
                                           initialValue: '${item['quantity']}',
                                           keyboardType: TextInputType.number,

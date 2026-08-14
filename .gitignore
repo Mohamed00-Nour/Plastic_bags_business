@@ -48,3 +48,11 @@ app.*.map.json
 assets/plastic-service-account.json
 **/service-account*.json
 **/*service-account*.json
+
+# Distribution & Extracted Build Artifacts
+/dist/
+*.apk
+*.aab
+*.rar
+*.zip
+

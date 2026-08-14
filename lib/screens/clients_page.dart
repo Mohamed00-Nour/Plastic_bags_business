@@ -14,7 +14,8 @@ class ClientsPage extends StatefulWidget {
 }
 
 class _ClientsPageState extends State<ClientsPage> {
-  final ClientInvoiceBalanceSyncService _clientSyncService = ClientInvoiceBalanceSyncService();
+  final ClientInvoiceBalanceSyncService _clientSyncService =
+      ClientInvoiceBalanceSyncService();
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
@@ -38,11 +39,15 @@ class _ClientsPageState extends State<ClientsPage> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return Directionality(
-              textDirection: isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
+              textDirection:
+                  isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
               child: AlertDialog(
                 title: Row(
                   children: [
-                    const Icon(Icons.person_add_rounded, color: AppTheme.primaryColor),
+                    const Icon(
+                      Icons.person_add_rounded,
+                      color: AppTheme.primaryColor,
+                    ),
                     const SizedBox(width: 8),
                     Text(isArabic ? 'إضافة عميل جديد' : 'Add New Client'),
                   ],
@@ -56,12 +61,15 @@ class _ClientsPageState extends State<ClientsPage> {
                         TextFormField(
                           controller: nameController,
                           decoration: InputDecoration(
-                            labelText: isArabic ? 'اسم العميل *' : 'Client Name *',
+                            labelText:
+                                isArabic ? 'اسم العميل *' : 'Client Name *',
                             prefixIcon: const Icon(Icons.person_outline),
                           ),
                           validator: (val) {
                             if (val == null || val.trim().isEmpty) {
-                              return isArabic ? 'برجاء إدخال اسم العميل' : 'Please enter client name';
+                              return isArabic
+                                  ? 'برجاء إدخال اسم العميل'
+                                  : 'Please enter client name';
                             }
                             return null;
                           },
@@ -71,12 +79,15 @@ class _ClientsPageState extends State<ClientsPage> {
                           controller: phoneController,
                           keyboardType: TextInputType.phone,
                           decoration: InputDecoration(
-                            labelText: isArabic ? 'رقم الهاتف *' : 'Phone Number *',
+                            labelText:
+                                isArabic ? 'رقم الهاتف *' : 'Phone Number *',
                             prefixIcon: const Icon(Icons.phone_outlined),
                           ),
                           validator: (val) {
                             if (val == null || val.trim().isEmpty) {
-                              return isArabic ? 'برجاء إدخال رقم الهاتف' : 'Please enter phone number';
+                              return isArabic
+                                  ? 'برجاء إدخال رقم الهاتف'
+                                  : 'Please enter phone number';
                             }
                             return null;
                           },
@@ -92,17 +103,29 @@ class _ClientsPageState extends State<ClientsPage> {
                         const SizedBox(height: 12),
                         TextFormField(
                           controller: openingBalanceController,
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
                           decoration: InputDecoration(
-                            labelText: isArabic ? 'الرصيد الافتتاحي (مدين)' : 'Opening Balance (Debt)',
-                            prefixIcon: const Icon(Icons.account_balance_wallet_outlined),
-                            helperText: isArabic
-                                ? 'المبلغ الذي يدين به العميل عند تسجيله'
-                                : 'Amount the client owes at registration',
+                            labelText:
+                                isArabic
+                                    ? 'الرصيد الافتتاحي (مدين)'
+                                    : 'Opening Balance (Debt)',
+                            prefixIcon: const Icon(
+                              Icons.account_balance_wallet_outlined,
+                            ),
+                            helperText:
+                                isArabic
+                                    ? 'المبلغ الذي يدين به العميل عند تسجيله'
+                                    : 'Amount the client owes at registration',
                           ),
                           validator: (val) {
-                            if (val != null && val.isNotEmpty && double.tryParse(val) == null) {
-                              return isArabic ? 'مبلغ غير صحيح' : 'Invalid amount';
+                            if (val != null &&
+                                val.isNotEmpty &&
+                                double.tryParse(val) == null) {
+                              return isArabic
+                                  ? 'مبلغ غير صحيح'
+                                  : 'Invalid amount';
                             }
                             return null;
                           },
@@ -117,67 +140,87 @@ class _ClientsPageState extends State<ClientsPage> {
                     child: Text(isArabic ? 'إلغاء' : 'Cancel'),
                   ),
                   ElevatedButton(
-                    onPressed: isLoading
-                        ? null
-                        : () async {
-                            if (!formKey.currentState!.validate()) return;
+                    onPressed:
+                        isLoading
+                            ? null
+                            : () async {
+                              if (!formKey.currentState!.validate()) return;
 
-                            setDialogState(() => isLoading = true);
-                            try {
-                              final name = nameController.text.trim();
-                              final phone = phoneController.text.trim();
-                              final address = addressController.text.trim();
-                              final openingBal = double.tryParse(openingBalanceController.text.trim()) ?? 0.0;
+                              setDialogState(() => isLoading = true);
+                              try {
+                                final name = nameController.text.trim();
+                                final phone = phoneController.text.trim();
+                                final address = addressController.text.trim();
+                                final openingBal =
+                                    double.tryParse(
+                                      openingBalanceController.text.trim(),
+                                    ) ??
+                                    0.0;
 
-                              final isDup = await _clientSyncService.isDuplicateClientName(name);
-                              if (isDup) {
-                                setDialogState(() => isLoading = false);
+                                final isDup = await _clientSyncService
+                                    .isDuplicateClientName(name);
+                                if (isDup) {
+                                  setDialogState(() => isLoading = false);
+                                  if (!dialogContext.mounted) return;
+                                  ScaffoldMessenger.of(
+                                    dialogContext,
+                                  ).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        isArabic
+                                            ? 'عفواً، يوجد عميل بنفس الاسم بالفعل!'
+                                            : 'A client with this name already exists!',
+                                      ),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                await _clientSyncService.createClient(
+                                  name: name,
+                                  phone: phone,
+                                  address: address,
+                                  openingBalance: openingBal,
+                                );
+
                                 if (!dialogContext.mounted) return;
-                                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                                Navigator.pop(dialogContext);
+
+                                ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
                                       isArabic
-                                          ? 'عفواً، يوجد عميل بنفس الاسم بالفعل!'
-                                          : 'A client with this name already exists!',
+                                          ? 'تم إضافـة العميل بنجاح'
+                                          : 'Client created successfully',
                                     ),
+                                    backgroundColor: AppTheme.successColor,
+                                  ),
+                                );
+                              } catch (e) {
+                                setDialogState(() => isLoading = false);
+                                if (!dialogContext.mounted) return;
+                                ScaffoldMessenger.of(
+                                  dialogContext,
+                                ).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Error: ${e.toString()}'),
                                     backgroundColor: Colors.red,
                                   ),
                                 );
-                                return;
                               }
-
-                              await _clientSyncService.createClient(
-                                name: name,
-                                phone: phone,
-                                address: address,
-                                openingBalance: openingBal,
-                              );
-
-                              if (!dialogContext.mounted) return;
-                              Navigator.pop(dialogContext);
-
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    isArabic ? 'تم إضافـة العميل بنجاح' : 'Client created successfully',
-                                  ),
-                                  backgroundColor: AppTheme.successColor,
-                                ),
-                              );
-                            } catch (e) {
-                              setDialogState(() => isLoading = false);
-                              if (!dialogContext.mounted) return;
-                              ScaffoldMessenger.of(dialogContext).showSnackBar(
-                                SnackBar(
-                                  content: Text('Error: ${e.toString()}'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            }
-                          },
-                    child: isLoading
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : Text(isArabic ? 'حفظ' : 'Save'),
+                            },
+                    child:
+                        isLoading
+                            ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                            : Text(isArabic ? 'حفظ' : 'Save'),
                   ),
                 ],
               ),
@@ -188,10 +231,16 @@ class _ClientsPageState extends State<ClientsPage> {
     );
   }
 
-  void _showEditClientDialog(BuildContext context, Map<String, dynamic> client, bool isArabic) {
+  void _showEditClientDialog(
+    BuildContext context,
+    Map<String, dynamic> client,
+    bool isArabic,
+  ) {
     final nameController = TextEditingController(text: client['name'] ?? '');
     final phoneController = TextEditingController(text: client['phone'] ?? '');
-    final addressController = TextEditingController(text: client['address'] ?? '');
+    final addressController = TextEditingController(
+      text: client['address'] ?? '',
+    );
     final formKey = GlobalKey<FormState>();
     bool isLoading = false;
     final clientId = client['id'] ?? '';
@@ -202,11 +251,15 @@ class _ClientsPageState extends State<ClientsPage> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return Directionality(
-              textDirection: isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
+              textDirection:
+                  isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
               child: AlertDialog(
                 title: Row(
                   children: [
-                    const Icon(Icons.edit_rounded, color: AppTheme.primaryColor),
+                    const Icon(
+                      Icons.edit_rounded,
+                      color: AppTheme.primaryColor,
+                    ),
                     const SizedBox(width: 8),
                     Text(isArabic ? 'تعديل بيانات العميل' : 'Edit Client Info'),
                   ],
@@ -220,12 +273,15 @@ class _ClientsPageState extends State<ClientsPage> {
                         TextFormField(
                           controller: nameController,
                           decoration: InputDecoration(
-                            labelText: isArabic ? 'اسم العميل *' : 'Client Name *',
+                            labelText:
+                                isArabic ? 'اسم العميل *' : 'Client Name *',
                             prefixIcon: const Icon(Icons.person_outline),
                           ),
                           validator: (val) {
                             if (val == null || val.trim().isEmpty) {
-                              return isArabic ? 'برجاء إدخال اسم العميل' : 'Please enter client name';
+                              return isArabic
+                                  ? 'برجاء إدخال اسم العميل'
+                                  : 'Please enter client name';
                             }
                             return null;
                           },
@@ -235,12 +291,15 @@ class _ClientsPageState extends State<ClientsPage> {
                           controller: phoneController,
                           keyboardType: TextInputType.phone,
                           decoration: InputDecoration(
-                            labelText: isArabic ? 'رقم الهاتف *' : 'Phone Number *',
+                            labelText:
+                                isArabic ? 'رقم الهاتف *' : 'Phone Number *',
                             prefixIcon: const Icon(Icons.phone_outlined),
                           ),
                           validator: (val) {
                             if (val == null || val.trim().isEmpty) {
-                              return isArabic ? 'برجاء إدخال رقم الهاتف' : 'Please enter phone number';
+                              return isArabic
+                                  ? 'برجاء إدخال رقم الهاتف'
+                                  : 'Please enter phone number';
                             }
                             return null;
                           },
@@ -259,80 +318,116 @@ class _ClientsPageState extends State<ClientsPage> {
                 ),
                 actions: [
                   TextButton(
-                    onPressed: isLoading ? null : () => Navigator.pop(dialogContext),
+                    onPressed:
+                        isLoading ? null : () => Navigator.pop(dialogContext),
                     child: Text(isArabic ? 'إلغاء' : 'Cancel'),
                   ),
                   ElevatedButton(
-                    onPressed: isLoading
-                        ? null
-                        : () async {
-                            if (!formKey.currentState!.validate()) return;
-                            setDialogState(() => isLoading = true);
+                    onPressed:
+                        isLoading
+                            ? null
+                            : () async {
+                              if (!formKey.currentState!.validate()) return;
+                              setDialogState(() => isLoading = true);
 
-                            // Show Loading Overlay
-                            showDialog(
-                              context: context,
-                              barrierDismissible: false,
-                              builder: (loadingCtx) => Center(
-                                child: Card(
-                                  color: const Color(0xFF1E293B),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const CircularProgressIndicator(color: AppTheme.primaryColor),
-                                        const SizedBox(width: 16),
-                                        Text(
-                                          isArabic ? 'جاري حفظ تعديلات العميل...' : 'Updating client info...',
-                                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                              // Show Loading Overlay
+                              showDialog(
+                                context: context,
+                                barrierDismissible: false,
+                                builder:
+                                    (loadingCtx) => Center(
+                                      child: Card(
+                                        color: const Color(0xFF1E293B),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
                                         ),
-                                      ],
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 24,
+                                            vertical: 18,
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const CircularProgressIndicator(
+                                                color: AppTheme.primaryColor,
+                                              ),
+                                              const SizedBox(width: 16),
+                                              Text(
+                                                isArabic
+                                                    ? 'جاري حفظ تعديلات العميل...'
+                                                    : 'Updating client info...',
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                ),
-                              ),
-                            );
-
-                            try {
-                              await _clientSyncService.updateClient(
-                                clientId: clientId,
-                                name: nameController.text.trim(),
-                                phone: phoneController.text.trim(),
-                                address: addressController.text.trim(),
                               );
 
-                              if (!context.mounted) return;
-                              // Pop loading overlay & dialog
-                              Navigator.of(context, rootNavigator: true).pop();
-                              if (dialogContext.mounted) Navigator.pop(dialogContext);
+                              try {
+                                await _clientSyncService.updateClient(
+                                  clientId: clientId,
+                                  name: nameController.text.trim(),
+                                  phone: phoneController.text.trim(),
+                                  address: addressController.text.trim(),
+                                );
 
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    isArabic ? 'تم تحديث بيانات العميل بنجاح' : 'Client updated successfully',
+                                if (!context.mounted) return;
+                                // Pop loading overlay & dialog
+                                Navigator.of(
+                                  context,
+                                  rootNavigator: true,
+                                ).pop();
+                                if (dialogContext.mounted)
+                                  Navigator.pop(dialogContext);
+
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      isArabic
+                                          ? 'تم تحديث بيانات العميل بنجاح'
+                                          : 'Client updated successfully',
+                                    ),
+                                    backgroundColor: AppTheme.successColor,
                                   ),
-                                  backgroundColor: AppTheme.successColor,
-                                ),
-                              );
-                            } catch (e) {
-                              if (context.mounted) {
-                                Navigator.of(context, rootNavigator: true).pop();
+                                );
+                              } catch (e) {
+                                if (context.mounted) {
+                                  Navigator.of(
+                                    context,
+                                    rootNavigator: true,
+                                  ).pop();
+                                }
+                                setDialogState(() => isLoading = false);
+                                if (!dialogContext.mounted) return;
+                                ScaffoldMessenger.of(
+                                  dialogContext,
+                                ).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Error: ${e.toString()}'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
                               }
-                              setDialogState(() => isLoading = false);
-                              if (!dialogContext.mounted) return;
-                              ScaffoldMessenger.of(dialogContext).showSnackBar(
-                                SnackBar(
-                                  content: Text('Error: ${e.toString()}'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            }
-                          },
-                    child: isLoading
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : Text(isArabic ? 'حفظ التعديلات' : 'Update'),
+                            },
+                    child:
+                        isLoading
+                            ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                            : Text(isArabic ? 'حفظ التعديلات' : 'Update'),
                   ),
                 ],
               ),
@@ -343,7 +438,11 @@ class _ClientsPageState extends State<ClientsPage> {
     );
   }
 
-  void _confirmDeleteClient(BuildContext context, Map<String, dynamic> client, bool isArabic) {
+  void _confirmDeleteClient(
+    BuildContext context,
+    Map<String, dynamic> client,
+    bool isArabic,
+  ) {
     final clientId = client['id'] ?? '';
     final clientName = client['name'] ?? '';
 
@@ -371,7 +470,10 @@ class _ClientsPageState extends State<ClientsPage> {
                 child: Text(isArabic ? 'إلغاء' : 'Cancel'),
               ),
               ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                ),
                 onPressed: () async {
                   Navigator.pop(dialogContext);
 
@@ -379,26 +481,39 @@ class _ClientsPageState extends State<ClientsPage> {
                   showDialog(
                     context: context,
                     barrierDismissible: false,
-                    builder: (loadingCtx) => Center(
-                      child: Card(
-                        color: const Color(0xFF1E293B),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const CircularProgressIndicator(color: Colors.red),
-                              const SizedBox(width: 16),
-                              Text(
-                                isArabic ? 'جاري حذف العميل وسجل المعاملات...' : 'Deleting client records...',
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    builder:
+                        (loadingCtx) => Center(
+                          child: Card(
+                            color: const Color(0xFF1E293B),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 18,
                               ),
-                            ],
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const CircularProgressIndicator(
+                                    color: Colors.red,
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Text(
+                                    isArabic
+                                        ? 'جاري حذف العميل وسجل المعاملات...'
+                                        : 'Deleting client records...',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ),
                   );
 
                   try {
@@ -408,7 +523,9 @@ class _ClientsPageState extends State<ClientsPage> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          isArabic ? 'تم حذف العميل بنجاح' : 'Client deleted successfully',
+                          isArabic
+                              ? 'تم حذف العميل بنجاح'
+                              : 'Client deleted successfully',
                         ),
                         backgroundColor: AppTheme.successColor,
                       ),
@@ -417,7 +534,10 @@ class _ClientsPageState extends State<ClientsPage> {
                     if (!context.mounted) return;
                     Navigator.of(context, rootNavigator: true).pop();
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                      SnackBar(
+                        content: Text('Error: $e'),
+                        backgroundColor: Colors.red,
+                      ),
                     );
                   }
                 },
@@ -429,7 +549,12 @@ class _ClientsPageState extends State<ClientsPage> {
       },
     );
   }
-  void _showBalanceHistoryDialog(BuildContext context, Map<String, dynamic> clientData, bool isArabic) {
+
+  void _showBalanceHistoryDialog(
+    BuildContext context,
+    Map<String, dynamic> clientData,
+    bool isArabic,
+  ) {
     showDialog(
       context: context,
       builder: (dialogContext) {
@@ -462,19 +587,25 @@ class _ClientsPageState extends State<ClientsPage> {
                       children: [
                         TextField(
                           controller: _searchController,
-                          onChanged: (val) => setState(() => _searchQuery = val.trim()),
+                          onChanged:
+                              (val) =>
+                                  setState(() => _searchQuery = val.trim()),
                           decoration: InputDecoration(
-                            hintText: isArabic ? 'بحث بالاسم أو رقم الهاتف...' : 'Search by name or phone...',
+                            hintText:
+                                isArabic
+                                    ? 'بحث بالاسم أو رقم الهاتف...'
+                                    : 'Search by name or phone...',
                             prefixIcon: const Icon(Icons.search),
-                            suffixIcon: _searchQuery.isNotEmpty
-                                ? IconButton(
-                                    icon: const Icon(Icons.clear),
-                                    onPressed: () {
-                                      _searchController.clear();
-                                      setState(() => _searchQuery = '');
-                                    },
-                                  )
-                                : null,
+                            suffixIcon:
+                                _searchQuery.isNotEmpty
+                                    ? IconButton(
+                                      icon: const Icon(Icons.clear),
+                                      onPressed: () {
+                                        _searchController.clear();
+                                        setState(() => _searchQuery = '');
+                                      },
+                                    )
+                                    : null,
                           ),
                         ),
                         const SizedBox(height: 10),
@@ -482,7 +613,8 @@ class _ClientsPageState extends State<ClientsPage> {
                           width: double.infinity,
                           height: 48,
                           child: ElevatedButton.icon(
-                            onPressed: () => _showAddClientDialog(context, isArabic),
+                            onPressed:
+                                () => _showAddClientDialog(context, isArabic),
                             icon: const Icon(Icons.add),
                             label: Text(isArabic ? 'إضافة عميل' : 'Add Client'),
                           ),
@@ -495,28 +627,37 @@ class _ClientsPageState extends State<ClientsPage> {
                       Expanded(
                         child: TextField(
                           controller: _searchController,
-                          onChanged: (val) => setState(() => _searchQuery = val.trim()),
+                          onChanged:
+                              (val) =>
+                                  setState(() => _searchQuery = val.trim()),
                           decoration: InputDecoration(
-                            hintText: isArabic ? 'بحث بالاسم أو رقم الهاتف...' : 'Search by name or phone...',
+                            hintText:
+                                isArabic
+                                    ? 'بحث بالاسم أو رقم الهاتف...'
+                                    : 'Search by name or phone...',
                             prefixIcon: const Icon(Icons.search),
-                            suffixIcon: _searchQuery.isNotEmpty
-                                ? IconButton(
-                                    icon: const Icon(Icons.clear),
-                                    onPressed: () {
-                                      _searchController.clear();
-                                      setState(() => _searchQuery = '');
-                                    },
-                                  )
-                                : null,
+                            suffixIcon:
+                                _searchQuery.isNotEmpty
+                                    ? IconButton(
+                                      icon: const Icon(Icons.clear),
+                                      onPressed: () {
+                                        _searchController.clear();
+                                        setState(() => _searchQuery = '');
+                                      },
+                                    )
+                                    : null,
                           ),
                         ),
                       ),
                       const SizedBox(width: 12),
                       ElevatedButton.icon(
-                        onPressed: () => _showAddClientDialog(context, isArabic),
+                        onPressed:
+                            () => _showAddClientDialog(context, isArabic),
                         icon: const Icon(Icons.add),
                         label: Text(isArabic ? 'إضافة عميل' : 'Add Client'),
-                        style: ElevatedButton.styleFrom(minimumSize: const Size(140, 48)),
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size(140, 48),
+                        ),
                       ),
                     ],
                   );
@@ -539,19 +680,26 @@ class _ClientsPageState extends State<ClientsPage> {
                     }
 
                     final clients = snapshot.data ?? [];
-                    final filteredClients = clients.where((c) {
-                      final name = (c['name'] ?? '').toString().toLowerCase();
-                      final phone = (c['phone'] ?? '').toString().toLowerCase();
-                      final q = _searchQuery.toLowerCase();
-                      return name.contains(q) || phone.contains(q);
-                    }).toList();
+                    final filteredClients =
+                        clients.where((c) {
+                          final name =
+                              (c['name'] ?? '').toString().toLowerCase();
+                          final phone =
+                              (c['phone'] ?? '').toString().toLowerCase();
+                          final q = _searchQuery.toLowerCase();
+                          return name.contains(q) || phone.contains(q);
+                        }).toList();
 
                     final totalDebt = filteredClients.fold<double>(
                       0.0,
-                      (acc, item) => acc + ((item['balance'] ?? 0.0) as num).toDouble(),
+                      (acc, item) =>
+                          acc + ((item['balance'] ?? 0.0) as num).toDouble(),
                     );
 
-                    final clientCountLabel = isArabic ? '${filteredClients.length} عملاء' : '${filteredClients.length} Clients';
+                    final clientCountLabel =
+                        isArabic
+                            ? '${filteredClients.length} عملاء'
+                            : '${filteredClients.length} Clients';
 
                     return Column(
                       children: [
@@ -559,28 +707,42 @@ class _ClientsPageState extends State<ClientsPage> {
                         Card(
                           margin: const EdgeInsets.only(bottom: 16),
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 14,
+                            ),
                             child: Row(
                               children: [
-                                const Icon(Icons.account_balance_wallet, color: AppTheme.primaryColor, size: 28),
+                                const Icon(
+                                  Icons.account_balance_wallet,
+                                  color: AppTheme.primaryColor,
+                                  size: 28,
+                                ),
                                 const SizedBox(width: 12),
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      isArabic ? 'إجمالي مستحقات الديون (العملاء)' : 'Total Outstanding Client Debts',
-                                      style: Theme.of(context).textTheme.titleSmall,
+                                      isArabic
+                                          ? 'إجمالي مستحقات الديون (العملاء)'
+                                          : 'Total Outstanding Client Debts',
+                                      style:
+                                          Theme.of(
+                                            context,
+                                          ).textTheme.titleSmall,
                                     ),
                                     Text(
                                       '\$${totalDebt.toStringAsFixed(2)}',
-                                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.dangerColor),
+                                      style: const TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppTheme.dangerColor,
+                                      ),
                                     ),
                                   ],
                                 ),
                                 const Spacer(),
-                                Chip(
-                                  label: Text(clientCountLabel),
-                                ),
+                                Chip(label: Text(clientCountLabel)),
                               ],
                             ),
                           ),
@@ -588,86 +750,144 @@ class _ClientsPageState extends State<ClientsPage> {
 
                         // Clients List
                         Expanded(
-                          child: filteredClients.isEmpty
-                              ? Center(
-                                  child: Text(
-                                    isArabic ? 'لا يوجد عملاء مطبقين للبحث' : 'No clients found',
-                                    style: const TextStyle(fontSize: 16, color: Colors.grey),
-                                  ),
-                                )
-                              : ListView.builder(
-                                  itemCount: filteredClients.length,
-                                  itemBuilder: (context, index) {
-                                    final client = filteredClients[index];
-                                    final balance = (client['balance'] ?? 0.0).toDouble();
+                          child:
+                              filteredClients.isEmpty
+                                  ? Center(
+                                    child: Text(
+                                      isArabic
+                                          ? 'لا يوجد عملاء مطبقين للبحث'
+                                          : 'No clients found',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  )
+                                  : ListView.builder(
+                                    itemCount: filteredClients.length,
+                                    itemBuilder: (context, index) {
+                                      final client = filteredClients[index];
+                                      final balance =
+                                          (client['balance'] ?? 0.0).toDouble();
 
-                                    return Card(
-                                      margin: const EdgeInsets.only(bottom: 10),
-                                      child: ListTile(
-                                        onTap: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) => ClientDetailsPage(clientData: client),
+                                      return Card(
+                                        margin: const EdgeInsets.only(
+                                          bottom: 10,
+                                        ),
+                                        child: ListTile(
+                                          onTap: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder:
+                                                    (context) =>
+                                                        ClientDetailsPage(
+                                                          clientData: client,
+                                                        ),
+                                              ),
+                                            );
+                                          },
+                                          leading: CircleAvatar(
+                                            backgroundColor: AppTheme
+                                                .primaryColor
+                                                .withValues(alpha: 0.15),
+                                            child: Text(
+                                              (client['name'] ?? 'C')
+                                                  .toString()
+                                                  .substring(0, 1)
+                                                  .toUpperCase(),
+                                              style: const TextStyle(
+                                                color: AppTheme.primaryColor,
+                                                fontWeight: FontWeight.bold,
+                                              ),
                                             ),
-                                          );
-                                        },
-                                        leading: CircleAvatar(
-                                          backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.15),
-                                          child: Text(
-                                            (client['name'] ?? 'C').toString().substring(0, 1).toUpperCase(),
-                                            style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold),
                                           ),
-                                        ),
-                                        title: Text(
-                                          client['name'] ?? '',
-                                          style: const TextStyle(fontWeight: FontWeight.bold),
-                                        ),
-                                        subtitle: Text(
-                                          '${client['phone'] ?? ''} ${client['address'] != null && client['address'].isNotEmpty ? "• ${client['address']}" : ""}',
-                                        ),
-                                        trailing: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Column(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              crossAxisAlignment: CrossAxisAlignment.end,
-                                              children: [
-                                                Text(
-                                                  isArabic ? 'الرصيد المستحق' : 'Due Balance',
-                                                  style: const TextStyle(fontSize: 10, color: Colors.grey),
-                                                ),
-                                                Text(
-                                                  '\$${balance.toStringAsFixed(2)}',
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.bold,
-                                                    color: balance > 0 ? AppTheme.dangerColor : AppTheme.successColor,
-                                                  ),
-                                                ),
-                                              ],
+                                          title: Text(
+                                            client['name'] ?? '',
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
                                             ),
-                                            const SizedBox(width: 8),
-                                            IconButton(
+                                          ),
+                                          subtitle: Text(
+                                            '${client['phone'] ?? ''} ${client['address'] != null && client['address'].isNotEmpty ? "• ${client['address']}" : ""}',
+                                          ),
+                                          trailing: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Column(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.end,
+                                                children: [
+                                                  Text(
+                                                    isArabic
+                                                        ? 'الرصيد المستحق'
+                                                        : 'Due Balance',
+                                                    style: const TextStyle(
+                                                      fontSize: 10,
+                                                      color: Colors.grey,
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    '\$${balance.toStringAsFixed(2)}',
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color:
+                                                          balance > 0
+                                                              ? AppTheme
+                                                                  .dangerColor
+                                                              : AppTheme
+                                                                  .successColor,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(width: 8),
+                                              /*IconButton(
                                               icon: const Icon(Icons.history_rounded, color: AppTheme.primaryColor),
                                               tooltip: isArabic ? 'كشف حساب وتاريخ الرصيد' : 'Balance History & Statement',
                                               onPressed: () => _showBalanceHistoryDialog(context, client, isArabic),
-                                            ),
-                                            IconButton(
-                                              icon: const Icon(Icons.edit_rounded, color: AppTheme.primaryColor),
-                                              tooltip: isArabic ? 'تعديل بيانات العميل' : 'Edit Client Info',
-                                              onPressed: () => _showEditClientDialog(context, client, isArabic),
-                                            ),
-                                            IconButton(
-                                              icon: const Icon(Icons.delete_forever_rounded, color: Colors.red),
-                                              tooltip: isArabic ? 'حذف العميل' : 'Delete Client',
-                                              onPressed: () => _confirmDeleteClient(context, client, isArabic),
-                                            ),
-                                          ],
+                                            ),*/
+                                              IconButton(
+                                                icon: const Icon(
+                                                  Icons.edit_rounded,
+                                                  color: AppTheme.primaryColor,
+                                                ),
+                                                tooltip:
+                                                    isArabic
+                                                        ? 'تعديل بيانات العميل'
+                                                        : 'Edit Client Info',
+                                                onPressed:
+                                                    () => _showEditClientDialog(
+                                                      context,
+                                                      client,
+                                                      isArabic,
+                                                    ),
+                                              ),
+                                              IconButton(
+                                                icon: const Icon(
+                                                  Icons.delete_forever_rounded,
+                                                  color: Colors.red,
+                                                ),
+                                                tooltip:
+                                                    isArabic
+                                                        ? 'حذف العميل'
+                                                        : 'Delete Client',
+                                                onPressed:
+                                                    () => _confirmDeleteClient(
+                                                      context,
+                                                      client,
+                                                      isArabic,
+                                                    ),
+                                              ),
+                                            ],
+                                          ),
                                         ),
-                                      ),
-                                    );
-                                  },
-                                ),
+                                      );
+                                    },
+                                  ),
                         ),
                       ],
                     );
@@ -694,10 +914,12 @@ class _ClientBalanceHistoryDialogContent extends StatefulWidget {
   });
 
   @override
-  State<_ClientBalanceHistoryDialogContent> createState() => _ClientBalanceHistoryDialogContentState();
+  State<_ClientBalanceHistoryDialogContent> createState() =>
+      _ClientBalanceHistoryDialogContentState();
 }
 
-class _ClientBalanceHistoryDialogContentState extends State<_ClientBalanceHistoryDialogContent> {
+class _ClientBalanceHistoryDialogContentState
+    extends State<_ClientBalanceHistoryDialogContent> {
   final ScrollController _verticalController = ScrollController();
   final ScrollController _horizontalController = ScrollController();
 
@@ -782,7 +1004,10 @@ class _ClientBalanceHistoryDialogContentState extends State<_ClientBalanceHistor
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.history_rounded, color: AppTheme.primaryColor),
+                      const Icon(
+                        Icons.history_rounded,
+                        color: AppTheme.primaryColor,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         '${isArabic ? "تاريخ الرصيد -" : "Balance History -"} $clientName',
@@ -804,9 +1029,16 @@ class _ClientBalanceHistoryDialogContentState extends State<_ClientBalanceHistor
                 children: [
                   ElevatedButton.icon(
                     icon: const Icon(Icons.picture_as_pdf_rounded, size: 18),
-                    label: Text(isArabic ? 'طباعة كشف حساب (PDF)' : 'Print Statement (PDF)'),
+                    label: Text(
+                      isArabic
+                          ? 'طباعة كشف حساب (PDF)'
+                          : 'Print Statement (PDF)',
+                    ),
                     onPressed: () async {
-                      final records = await widget.clientSyncService.getClientBalanceHistoryStream(clientId).first;
+                      final records =
+                          await widget.clientSyncService
+                              .getClientBalanceHistoryStream(clientId)
+                              .first;
                       if (!context.mounted) return;
                       await ClientStatementPdfService.printOrShareClientStatement(
                         clientData: widget.clientData,
@@ -818,7 +1050,11 @@ class _ClientBalanceHistoryDialogContentState extends State<_ClientBalanceHistor
                   const Spacer(),
                   Text(
                     '${isArabic ? "الرصيد المستحق: " : "Due Balance: "}\$${(widget.clientData['balance'] ?? 0.0).toStringAsFixed(2)}',
-                    style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryColor, fontSize: 16),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.primaryColor,
+                      fontSize: 16,
+                    ),
                   ),
                 ],
               ),
@@ -828,7 +1064,8 @@ class _ClientBalanceHistoryDialogContentState extends State<_ClientBalanceHistor
               // History Table with BOTH Vertical & Horizontal Visible Scrollbars
               Expanded(
                 child: StreamBuilder<List<ClientBalanceRecord>>(
-                  stream: widget.clientSyncService.getClientBalanceHistoryStream(clientId),
+                  stream: widget.clientSyncService
+                      .getClientBalanceHistoryStream(clientId),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator());
@@ -837,7 +1074,11 @@ class _ClientBalanceHistoryDialogContentState extends State<_ClientBalanceHistor
                     final records = snapshot.data ?? [];
                     if (records.isEmpty) {
                       return Center(
-                        child: Text(isArabic ? 'لا توجد حركات رصيد سابقة' : 'No balance history recorded'),
+                        child: Text(
+                          isArabic
+                              ? 'لا توجد حركات رصيد سابقة'
+                              : 'No balance history recorded',
+                        ),
                       );
                     }
 
@@ -857,43 +1098,118 @@ class _ClientBalanceHistoryDialogContentState extends State<_ClientBalanceHistor
                             controller: _horizontalController,
                             scrollDirection: Axis.horizontal,
                             child: ConstrainedBox(
-                              constraints: const BoxConstraints(minWidth: 720),
+                              constraints: const BoxConstraints(minWidth: 800),
                               child: DataTable(
                                 columns: [
-                                  DataColumn(label: Text(isArabic ? 'التاريخ' : 'Date')),
-                                  DataColumn(label: Text(isArabic ? 'نوع الحركة' : 'Type')),
-                                  DataColumn(label: Text(isArabic ? 'رقم الفاتورة' : 'Invoice #')),
-                                  DataColumn(label: Text(isArabic ? 'المبلغ' : 'Amount')),
-                                  DataColumn(label: Text(isArabic ? 'الرصيد المتبقي' : 'Balance After')),
+                                  DataColumn(
+                                    label: Text(isArabic ? 'التاريخ' : 'Date'),
+                                  ),
+                                  DataColumn(
+                                    label: Text(
+                                      isArabic ? 'نوع الحركة' : 'Type',
+                                    ),
+                                  ),
+                                  DataColumn(
+                                    label: Text(
+                                      isArabic ? 'رقم الفاتورة' : 'Invoice #',
+                                    ),
+                                  ),
+                                  DataColumn(
+                                    label: Text(
+                                      isArabic ? 'الملاحظات' : 'Notes',
+                                    ),
+                                  ),
+                                  DataColumn(
+                                    label: Text(isArabic ? 'المبلغ' : 'Amount'),
+                                  ),
+                                  DataColumn(
+                                    label: Text(
+                                      isArabic
+                                          ? 'الرصيد المتبقي'
+                                          : 'Balance After',
+                                    ),
+                                  ),
                                 ],
-                                rows: records.map((rec) {
-                                  final isOpening = rec.type == 'opening';
-                                  return DataRow(
-                                    color: isOpening
-                                        ? WidgetStateProperty.all(AppTheme.primaryColor.withValues(alpha: 0.08))
-                                        : null,
-                                    cells: [
-                                      DataCell(Text(DateFormat('yyyy/MM/dd HH:mm').format(rec.timestamp))),
-                                      DataCell(
-                                        Chip(
-                                          label: Text(
-                                            _getTypeLabel(rec.type, isArabic),
-                                            style: const TextStyle(fontSize: 11),
+                                rows:
+                                    records.map((rec) {
+                                      final isOpening = rec.type == 'opening';
+                                      final noteText =
+                                          rec.notes.isNotEmpty &&
+                                                  rec.notes !=
+                                                      'تحصيل دفعة نقداً' &&
+                                                  rec.notes !=
+                                                      'إضافة مديونية' &&
+                                                  !rec.notes.startsWith(
+                                                    'تحصيل من فاتورة #',
+                                                  )
+                                              ? rec.notes
+                                              : (rec.description.isNotEmpty &&
+                                                      rec.description !=
+                                                          'تحصيل دفعة نقداً' &&
+                                                      rec.description !=
+                                                          'إضافة مديونية' &&
+                                                      !rec.description
+                                                          .startsWith(
+                                                            'تحصيل من فاتورة #',
+                                                          )
+                                                  ? rec.description
+                                                  : '-');
+                                      return DataRow(
+                                        color:
+                                            isOpening
+                                                ? WidgetStateProperty.all(
+                                                  AppTheme.primaryColor
+                                                      .withValues(alpha: 0.08),
+                                                )
+                                                : null,
+                                        cells: [
+                                          DataCell(
+                                            Text(
+                                              DateFormat(
+                                                'yyyy/MM/dd HH:mm',
+                                              ).format(rec.timestamp),
+                                            ),
                                           ),
-                                          backgroundColor: _getTypeColor(rec.type).withValues(alpha: 0.2),
-                                        ),
-                                      ),
-                                      DataCell(Text(rec.invoiceNumber.isEmpty ? '-' : rec.invoiceNumber)),
-                                      DataCell(Text('\$${rec.amount.toStringAsFixed(2)}')),
-                                      DataCell(
-                                        Text(
-                                          '\$${rec.balanceAfter.toStringAsFixed(2)}',
-                                          style: const TextStyle(fontWeight: FontWeight.bold),
-                                        ),
-                                      ),
-                                    ],
-                                  );
-                                }).toList(),
+                                          DataCell(
+                                            Chip(
+                                              label: Text(
+                                                _getTypeLabel(
+                                                  rec.type,
+                                                  isArabic,
+                                                ),
+                                                style: const TextStyle(
+                                                  fontSize: 11,
+                                                ),
+                                              ),
+                                              backgroundColor: _getTypeColor(
+                                                rec.type,
+                                              ).withValues(alpha: 0.2),
+                                            ),
+                                          ),
+                                          DataCell(
+                                            Text(
+                                              rec.invoiceNumber.isEmpty
+                                                  ? '-'
+                                                  : rec.invoiceNumber,
+                                            ),
+                                          ),
+                                          DataCell(Text(noteText)),
+                                          DataCell(
+                                            Text(
+                                              '\$${rec.amount.toStringAsFixed(2)}',
+                                            ),
+                                          ),
+                                          DataCell(
+                                            Text(
+                                              '\$${rec.balanceAfter.toStringAsFixed(2)}',
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    }).toList(),
                               ),
                             ),
                           ),
