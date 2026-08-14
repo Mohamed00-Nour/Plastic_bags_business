@@ -33,11 +33,7 @@ class ShopRepository {
   }
 
   Future<void> deleteShop(String id) async {
-    await _collection.doc(id).update({
-      'isActive': false,
-      'modifiedBy': CurrentUserService.instance.userName,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+    await _collection.doc(id).delete();
   }
 
   Future<void> addToTotalPurchases(String shopId, double amount) async {

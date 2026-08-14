@@ -550,20 +550,19 @@ class ClientInvoiceBalanceSyncService {
   /// Delete Client and clean up client sub-collections
   Future<void> deleteClient(String clientId) async {
     final clientRef = _firestore.collection('clients').doc(clientId);
+    final batch = _firestore.batch();
 
-    // Delete subcollections
-    final invoicesSnap = await clientRef.collection('invoices').get();
-    for (final doc in invoicesSnap.docs) {
-      await doc.reference.delete();
-    }
-
-    final historySnap = await clientRef.collection('balanceHistory').get();
-    for (final doc in historySnap.docs) {
-      await doc.reference.delete();
+    final subcollections = ['invoices', 'balanceHistory', 'returns'];
+    for (final sub in subcollections) {
+      final snap = await clientRef.collection(sub).get();
+      for (final doc in snap.docs) {
+        batch.delete(doc.reference);
+      }
     }
 
     // Delete root document
-    await clientRef.delete();
+    batch.delete(clientRef);
+    await batch.commit();
   }
 
   /// Delete a client balance history record & adjust client balance

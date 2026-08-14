@@ -1021,14 +1021,26 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
                               Text(subText, style: const TextStyle(fontSize: 10, color: Colors.grey)),
                             ],
                           ),
-                          const SizedBox(width: 8),
                           IconButton(
                             icon: const Icon(Icons.print_rounded, color: AppTheme.accentColor),
+                            tooltip: isArabic ? 'طباعة الفاتورة' : 'Print Invoice',
                             onPressed: () {
                               SupplierStatementPdfService.showBuyingInvoiceActionDialog(
                                 context: context,
                                 invoiceData: data,
                                 locale: isArabic ? 'ar' : 'en',
+                              );
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete_forever_rounded, color: Colors.red),
+                            tooltip: isArabic ? 'حذف فاتورة الشراء' : 'Delete Buying Invoice',
+                            onPressed: () async {
+                              final invWithId = Map<String, dynamic>.from(data);
+                              invWithId['id'] = docs[index].id;
+                              await SupplierInvoiceBalanceSyncService.deleteBuyingInvoice(
+                                context: context,
+                                invoiceData: invWithId,
                               );
                             },
                           ),

@@ -48,11 +48,16 @@ class ProductRepository {
   }
 
   Future<void> deleteProduct(String id) async {
-    await _collection.doc(id).update({
-      'isActive': false,
-      'modifiedBy': CurrentUserService.instance.userName,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+    final docRef = _collection.doc(id);
+    final batch = _firestore.batch();
+    try {
+      final changesSnap = await docRef.collection('changes').get();
+      for (final doc in changesSnap.docs) {
+        batch.delete(doc.reference);
+      }
+    } catch (_) {}
+    batch.delete(docRef);
+    await batch.commit();
   }
 
   Future<void> updateStock(String productId, int newQuantity) async {

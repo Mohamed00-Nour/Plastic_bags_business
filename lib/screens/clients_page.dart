@@ -477,68 +477,76 @@ class _ClientsPageState extends State<ClientsPage> {
                 onPressed: () async {
                   Navigator.pop(dialogContext);
 
-                  // Show Loading Overlay
+                  BuildContext? loadingDialogContext;
                   showDialog(
                     context: context,
                     barrierDismissible: false,
-                    builder:
-                        (loadingCtx) => Center(
-                          child: Card(
-                            color: const Color(0xFF1E293B),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
+                    builder: (loadingCtx) {
+                      loadingDialogContext = loadingCtx;
+                      return Center(
+                        child: Card(
+                          color: const Color(0xFF1E293B),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 18,
                             ),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
-                                vertical: 18,
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const CircularProgressIndicator(
-                                    color: Colors.red,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const CircularProgressIndicator(
+                                  color: Colors.red,
+                                ),
+                                const SizedBox(width: 16),
+                                Text(
+                                  isArabic
+                                      ? 'جاري حذف العميل وسجل المعاملات...'
+                                      : 'Deleting client records...',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
                                   ),
-                                  const SizedBox(width: 16),
-                                  Text(
-                                    isArabic
-                                        ? 'جاري حذف العميل وسجل المعاملات...'
-                                        : 'Deleting client records...',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
+                      );
+                    },
                   );
 
                   try {
                     await _clientSyncService.deleteClient(clientId);
-                    if (!context.mounted) return;
-                    Navigator.of(context, rootNavigator: true).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          isArabic
-                              ? 'تم حذف العميل بنجاح'
-                              : 'Client deleted successfully',
+                    if (loadingDialogContext != null && loadingDialogContext!.mounted) {
+                      Navigator.of(loadingDialogContext!).pop();
+                    }
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            isArabic
+                                ? 'تم حذف العميل بنجاح'
+                                : 'Client deleted successfully',
+                          ),
+                          backgroundColor: AppTheme.successColor,
                         ),
-                        backgroundColor: AppTheme.successColor,
-                      ),
-                    );
+                      );
+                    }
                   } catch (e) {
-                    if (!context.mounted) return;
-                    Navigator.of(context, rootNavigator: true).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Error: $e'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
+                    if (loadingDialogContext != null && loadingDialogContext!.mounted) {
+                      Navigator.of(loadingDialogContext!).pop();
+                    }
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Error: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
                   }
                 },
                 child: Text(isArabic ? 'حذف العميل' : 'Delete'),

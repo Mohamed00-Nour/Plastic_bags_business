@@ -51,30 +51,46 @@ class SalesInvoiceActionsService {
     if (confirmed != true) return false;
 
     // 2. Loading Overlay Dialog
-    if (!context.mounted) return false;
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (loadingCtx) => const Center(
-        child: Card(
-          color: Color(0xFF1E293B),
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(color: Colors.red),
-                SizedBox(width: 16),
-                Text(
-                  'جاري حذف الفاتورة وتعديل الرصيد والمخزون...',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+    BuildContext? loadingDialogContext;
+    if (context.mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (loadingCtx) {
+          loadingDialogContext = loadingCtx;
+          return const Center(
+            child: Card(
+              color: Color(0xFF1E293B),
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(color: Colors.red),
+                    SizedBox(width: 16),
+                    Text(
+                      'جاري حذف الفاتورة وتعديل الرصيد والمخزون...',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
-        ),
-      ),
-    );
+          );
+        },
+      );
+    }
+
+    void closeLoading() {
+      if (loadingDialogContext != null && loadingDialogContext!.mounted) {
+        Navigator.of(loadingDialogContext!).pop();
+        loadingDialogContext = null;
+      } else if (context.mounted) {
+        try {
+          Navigator.of(context, rootNavigator: true).pop();
+        } catch (_) {}
+      }
+    }
 
     try {
       final firestore = FirebaseFirestore.instance;
@@ -100,80 +116,100 @@ class SalesInvoiceActionsService {
         } catch (_) {}
       }
 
-      // Execute Atomic Transaction
-      await firestore.runTransaction((transaction) async {
-        // A. Restore Stock Quantities
-        for (final item in items) {
-          final productId = item['productId']?.toString();
-          final soldQty = (item['quantity'] ?? 1) is int
-              ? (item['quantity'] as int)
-              : double.parse(item['quantity'].toString()).toInt();
+      // Resolve all product references before transaction
+      final productRefs = <DocumentReference, int>{};
+      for (final item in items) {
+        final productId = item['productId']?.toString();
+        final soldQty = (item['quantity'] ?? 1) is int
+            ? (item['quantity'] as int)
+            : double.parse(item['quantity'].toString()).toInt();
 
-          DocumentReference? productRef;
-          if (productId != null && productId.isNotEmpty) {
-            productRef = firestore.collection('products').doc(productId);
-          } else {
-            final pName = item['productName'] ?? item['name'];
-            if (pName != null) {
-              final pQuery = await firestore
-                  .collection('products')
-                  .where('name', isEqualTo: pName)
-                  .limit(1)
-                  .get();
-              if (pQuery.docs.isNotEmpty) {
-                productRef = pQuery.docs.first.reference;
-              }
-            }
-          }
-
-          if (productRef != null) {
-            final pSnap = await transaction.get(productRef);
-            if (pSnap.exists) {
-              final currentStock = (pSnap.data() as Map<String, dynamic>?)?['stockQuantity'] ??
-                  (pSnap.data() as Map<String, dynamic>?)?['quantity'] ?? 0;
-              final newStock = (currentStock is int ? currentStock : int.tryParse(currentStock.toString()) ?? 0) + soldQty;
-
-              transaction.update(productRef, {
-                'stockQuantity': newStock,
-                'quantity': newStock,
-              });
-
-              // Log stock movement
-              final changeRef = productRef.collection('changes').doc();
-              transaction.set(changeRef, {
-                'date': FieldValue.serverTimestamp(),
-                'amount': soldQty,
-                'type': 'increase',
-                'notes': 'إلغاء فاتورة مبيعات #$invoiceNumber',
-              });
+        DocumentReference? productRef;
+        if (productId != null && productId.isNotEmpty) {
+          productRef = firestore.collection('products').doc(productId);
+        } else {
+          final pName = item['productName'] ?? item['name'];
+          if (pName != null) {
+            final pQuery = await firestore
+                .collection('products')
+                .where('name', isEqualTo: pName)
+                .limit(1)
+                .get();
+            if (pQuery.docs.isNotEmpty) {
+              productRef = pQuery.docs.first.reference;
             }
           }
         }
 
-        // B. Reverse Client Balance
-        if (clientId.isNotEmpty && remainingOwed > 0) {
-          final clientRef = firestore.collection('clients').doc(clientId);
-          final cSnap = await transaction.get(clientRef);
-          if (cSnap.exists) {
-            final data = cSnap.data() as Map<String, dynamic>;
-            final currentBal = (data['balance'] ?? 0.0).toDouble();
-            final newBal = currentBal - remainingOwed;
+        if (productRef != null) {
+          productRefs[productRef] = soldQty;
+        }
+      }
 
-            transaction.update(clientRef, {'balance': newBal});
+      final clientRef = clientId.isNotEmpty ? firestore.collection('clients').doc(clientId) : null;
 
-            final historyRef = clientRef.collection('balanceHistory').doc();
-            transaction.set(historyRef, {
-              'type': 'cancellation',
-              'description': 'إلغاء فاتورة مبيعات #$invoiceNumber',
-              'invoiceId': invoiceId,
-              'invoiceNumber': invoiceNumber,
-              'amount': remainingOwed,
-              'balanceBefore': currentBal,
-              'balanceAfter': newBal,
-              'timestamp': FieldValue.serverTimestamp(),
-              'createdAt': FieldValue.serverTimestamp(),
+      // Execute Atomic Transaction: ALL READS FIRST, THEN ALL WRITES
+      await firestore.runTransaction((transaction) async {
+        // --- PHASE 1: ALL READS ---
+        final productSnapshots = <DocumentReference, DocumentSnapshot>{};
+        for (final pRef in productRefs.keys) {
+          productSnapshots[pRef] = await transaction.get(pRef);
+        }
+
+        DocumentSnapshot? cSnap;
+        if (clientRef != null && remainingOwed > 0) {
+          cSnap = await transaction.get(clientRef);
+        }
+
+        // --- PHASE 2: ALL WRITES ---
+        // A. Restore Stock Quantities
+        for (final entry in productRefs.entries) {
+          final pRef = entry.key;
+          final soldQty = entry.value;
+          final pSnap = productSnapshots[pRef];
+
+          if (pSnap != null && pSnap.exists) {
+            final currentStock = (pSnap.data() as Map<String, dynamic>?)?['stockQuantity'] ??
+                (pSnap.data() as Map<String, dynamic>?)?['quantity'] ?? 0;
+            final curInt = currentStock is int ? currentStock : int.tryParse(currentStock.toString()) ?? 0;
+            final newStock = curInt + soldQty;
+
+            transaction.update(pRef, {
+              'stockQuantity': newStock,
+              'quantity': newStock,
+            });
+
+            // Log stock movement
+            final changeRef = pRef.collection('changes').doc();
+            transaction.set(changeRef, {
+              'date': FieldValue.serverTimestamp(),
+              'amount': soldQty,
+              'type': 'increase',
+              'notes': 'إلغاء فاتورة مبيعات #$invoiceNumber',
             });
           }
+        }
+
+        // B. Reverse Client Balance
+        if (clientRef != null && cSnap != null && cSnap.exists && remainingOwed > 0) {
+          final data = cSnap.data() as Map<String, dynamic>;
+          final currentBal = (data['balance'] ?? 0.0).toDouble();
+          final newBal = currentBal - remainingOwed;
+
+          transaction.update(clientRef, {'balance': newBal});
+
+          final historyRef = clientRef.collection('balanceHistory').doc();
+          transaction.set(historyRef, {
+            'type': 'cancellation',
+            'description': 'إلغاء فاتورة مبيعات #$invoiceNumber',
+            'invoiceId': invoiceId,
+            'invoiceNumber': invoiceNumber,
+            'amount': remainingOwed,
+            'balanceBefore': currentBal,
+            'balanceAfter': newBal,
+            'timestamp': FieldValue.serverTimestamp(),
+            'createdAt': FieldValue.serverTimestamp(),
+          });
         }
 
         // C. Delete Root Invoice Document
@@ -200,15 +236,18 @@ class SalesInvoiceActionsService {
               .collection('balanceHistory')
               .where('invoiceNumber', isEqualTo: invoiceNumber)
               .get();
+          final cleanupBatch = firestore.batch();
           for (final doc in bhQuery.docs) {
-            await doc.reference.delete();
+            cleanupBatch.delete(doc.reference);
           }
+          await cleanupBatch.commit();
         } catch (_) {}
       }
 
       // Close Loading Overlay
+      closeLoading();
+
       if (context.mounted) {
-        Navigator.of(context, rootNavigator: true).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('تم حذف الفاتورة رقم (#$invoiceNumber) واسترجاع المخزون ورصيد العميل بنجاح')),
         );
@@ -218,8 +257,9 @@ class SalesInvoiceActionsService {
       return true;
     } catch (e) {
       // Close Loading Overlay on error
+      closeLoading();
+
       if (context.mounted) {
-        Navigator.of(context, rootNavigator: true).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('حدث خطأ أثناء حذف الفاتورة: $e')),
         );

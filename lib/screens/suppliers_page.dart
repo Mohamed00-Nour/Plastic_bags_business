@@ -187,6 +187,101 @@ class _SuppliersPageState extends State<SuppliersPage> {
     );
   }
 
+  void _confirmDeleteSupplier(BuildContext context, Map<String, dynamic> supplier, bool isArabic) {
+    final supplierId = supplier['id'] ?? '';
+    final supplierName = supplier['name'] ?? '';
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              const Icon(Icons.delete_forever_rounded, color: Colors.red),
+              const SizedBox(width: 8),
+              Text(isArabic ? 'تأكيد حذف المورد' : 'Delete Supplier'),
+            ],
+          ),
+          content: Text(
+            isArabic
+                ? 'هل أنت متأكد من حذف المورد ($supplierName)؟\nسيتم حذف جميع المعاملات وسجل الرصيد الخاص به.'
+                : 'Are you sure you want to delete supplier ($supplierName)?\nAll invoices and balance history will be deleted.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(isArabic ? 'إلغاء' : 'Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+              onPressed: () async {
+                Navigator.pop(dialogContext);
+
+                BuildContext? loadingDialogContext;
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (loadingCtx) {
+                    loadingDialogContext = loadingCtx;
+                    return Center(
+                      child: Card(
+                        color: const Color(0xFF1E293B),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const CircularProgressIndicator(color: Colors.red),
+                              const SizedBox(width: 16),
+                              Text(
+                                isArabic ? 'جاري حذف المورد وسجل المعاملات...' : 'Deleting supplier records...',
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                );
+
+                try {
+                  await _supplierSyncService.deleteSupplier(supplierId);
+
+                  if (loadingDialogContext != null && loadingDialogContext!.mounted) {
+                    Navigator.of(loadingDialogContext!).pop();
+                  }
+
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          isArabic ? 'تم حذف المورد بنجاح' : 'Supplier deleted successfully',
+                        ),
+                        backgroundColor: AppTheme.successColor,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (loadingDialogContext != null && loadingDialogContext!.mounted) {
+                    Navigator.of(loadingDialogContext!).pop();
+                  }
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                    );
+                  }
+                }
+              },
+              child: Text(isArabic ? 'حذف المورد' : 'Delete'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _showBalanceHistoryDialog(BuildContext context, Map<String, dynamic> supplierData, bool isArabic) {
     showDialog(
       context: context,
@@ -401,6 +496,11 @@ class _SuppliersPageState extends State<SuppliersPage> {
                                               icon: const Icon(Icons.history_rounded, color: AppTheme.accentColor),
                                               tooltip: isArabic ? 'كشف حساب وتاريخ الرصيد' : 'Balance History & Statement',
                                               onPressed: () => _showBalanceHistoryDialog(context, supplier, isArabic),
+                                            ),
+                                            IconButton(
+                                              icon: const Icon(Icons.delete_forever_rounded, color: Colors.red),
+                                              tooltip: isArabic ? 'حذف المورد' : 'Delete Supplier',
+                                              onPressed: () => _confirmDeleteSupplier(context, supplier, isArabic),
                                             ),
                                           ],
                                         ),

@@ -73,4 +73,8 @@ class OrderRepository {
         .map((doc) => OrderModel.fromFirestore(doc))
         .toList();
   }
+
+  Future<void> deleteOrder(String id) async {
+    await _collection.doc(id).delete();
+  }
 }
