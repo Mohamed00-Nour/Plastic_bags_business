@@ -240,14 +240,6 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
       (i) => i['productId'] == product['id'],
     );
 
-    if (existingIndex >= 0) {
-      final currentQty =
-          (_lineItems[existingIndex]['quantity'] as num).toDouble();
-      if (stockInDb > 0 && currentQty >= stockInDb) return;
-    } else {
-      if (stockInDb <= 0) return;
-    }
-
     setState(() {
       final p1 = (product['price1'] ?? product['price'] ?? 0.0).toDouble();
       final p2 =
@@ -964,10 +956,7 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                                   label: Text(
                                     '${data['name']} (\$${data['price']}) [${isArabic ? "المتبقي" : "Stock"}: ${formatQuantity(availableStock)}]',
                                   ),
-                                  onPressed:
-                                      availableStock <= 0
-                                          ? null
-                                          : () => _addLineItem(data),
+                                  onPressed: () => _addLineItem(data),
                                 );
                               }).toList(),
                         );
