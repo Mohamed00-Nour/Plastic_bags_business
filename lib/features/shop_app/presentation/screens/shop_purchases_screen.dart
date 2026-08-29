@@ -4,6 +4,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/quantity_formatter.dart';
 import '../../../auth/bloc/auth_bloc.dart';
 import '../../../auth/bloc/auth_state.dart';
 
@@ -172,7 +173,7 @@ class ShopPurchasesScreen extends StatelessWidget {
                                 ...items.map((item) {
                                   final itemMap = item as Map<String, dynamic>;
                                   final qty =
-                                      (itemMap['quantity'] ?? 0).toInt();
+                                      (itemMap['quantity'] ?? 0).toDouble();
                                   final unitPrice =
                                       (itemMap['unitPrice'] ?? 0).toDouble();
                                   return ListTile(
@@ -197,10 +198,10 @@ class ShopPurchasesScreen extends StatelessWidget {
                                         'Size: ${itemMap['productSize'] ?? ''}',
                                         style: const TextStyle(fontSize: 11)),
                                     trailing: Text(
-                                      '$qty × ${numberFormat.format(unitPrice)}  =  ${numberFormat.format(qty * unitPrice)}',
+                                      '${formatQuantity(qty)} × ${numberFormat.format(unitPrice)}  =  ${numberFormat.format(qty * unitPrice)}',
                                       style: const TextStyle(
                                           fontSize: 12,
-                                          fontWeight: FontWeight.w500),
+                                          fontWeight: FontWeight.w600),
                                     ),
                                   );
                                 }),

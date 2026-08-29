@@ -198,9 +198,9 @@ class ClientInvoiceBalanceSyncService {
     // 2. Decrement inventory stock & log changes
     for (final item in items) {
       final String productId = item['productId'] ?? '';
-      final int qty = (item['quantity'] ?? 0) is int
-          ? item['quantity']
-          : (item['quantity'] as num).toInt();
+      final double qty = (item['quantity'] ?? 0.0) is num
+          ? (item['quantity'] as num).toDouble()
+          : double.tryParse(item['quantity'].toString()) ?? 0.0;
 
       if (productId.isNotEmpty && qty > 0) {
         final productRef = _firestore.collection('products').doc(productId);
@@ -314,9 +314,9 @@ class ClientInvoiceBalanceSyncService {
     // 2. Increment Stock level & log changes
     for (final item in returnedItems) {
       final String productId = item['productId'] ?? '';
-      final int qty = (item['quantity'] ?? 0) is int
-          ? item['quantity']
-          : (item['quantity'] as num).toInt();
+      final double qty = (item['quantity'] ?? 0.0) is num
+          ? (item['quantity'] as num).toDouble()
+          : double.tryParse(item['quantity'].toString()) ?? 0.0;
 
       if (productId.isNotEmpty && qty > 0) {
         final productRef = _firestore.collection('products').doc(productId);

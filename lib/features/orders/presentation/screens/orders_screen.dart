@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/services/order_export_service.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/quantity_formatter.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../../../data/models/order_model.dart';
 import '../../../../data/models/shop_model_new.dart';
@@ -652,7 +653,10 @@ class _CreateOrderDialogState extends State<_CreateOrderDialog> {
                                           labelText: l10n.qty,
                                           isDense: true,
                                         ),
-                                        keyboardType: TextInputType.number,
+                                        keyboardType:
+                                            const TextInputType.numberWithOptions(
+                                              decimal: true,
+                                            ),
                                         onChanged: (v) {
                                           setState(() {});
                                         },
@@ -907,7 +911,7 @@ class _OrderDetailsDialogState extends State<_OrderDetailsDialog> {
                                 children: [
                                   _tableCell(
                                       '${item.productName} (${item.productSize})'),
-                                  _tableCell('${item.quantity}'),
+                                  _tableCell(formatQuantity(item.quantity)),
                                   _tableCell(
                                       '\$${item.unitPrice.toStringAsFixed(2)}'),
                                   _tableCell(
@@ -1066,7 +1070,7 @@ class _OrderItemEntry {
   final TextEditingController qtyCtrl = TextEditingController(text: '1');
   final TextEditingController priceCtrl = TextEditingController(text: '0');
 
-  int get quantity => int.tryParse(qtyCtrl.text) ?? 1;
+  double get quantity => double.tryParse(qtyCtrl.text) ?? 1.0;
   double get unitPrice => double.tryParse(priceCtrl.text) ?? 0;
 
   void dispose() {

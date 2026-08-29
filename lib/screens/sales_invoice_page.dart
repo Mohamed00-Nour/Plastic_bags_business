@@ -10,6 +10,7 @@ import '../services/client_statement_pdf_service.dart';
 import '../services/sales_invoice_actions_service.dart';
 import '../services/sales_invoice_update_service.dart';
 import '../core/theme/app_theme.dart';
+import '../core/utils/quantity_formatter.dart';
 
 class SalesInvoicePage extends StatefulWidget {
   final Map<String, dynamic>? initialInvoiceData;
@@ -220,13 +221,15 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
   }
 
   void _addLineItem(Map<String, dynamic> product) {
-    final stockInDb = (product['stockQuantity'] ?? 0) as int;
+    final stockInDb = (product['stockQuantity'] ?? 0) is num
+        ? (product['stockQuantity'] as num).toDouble()
+        : double.tryParse(product['stockQuantity'].toString()) ?? 0.0;
     final existingIndex = _lineItems.indexWhere(
       (i) => i['productId'] == product['id'],
     );
 
     if (existingIndex >= 0) {
-      final currentQty = (_lineItems[existingIndex]['quantity'] as num).toInt();
+      final currentQty = (_lineItems[existingIndex]['quantity'] as num).toDouble();
       if (stockInDb > 0 && currentQty >= stockInDb) return;
     } else {
       if (stockInDb <= 0) return;
@@ -244,7 +247,8 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
               : null;
 
       if (existingIndex >= 0) {
-        _lineItems[existingIndex]['quantity'] += 1;
+        _lineItems[existingIndex]['quantity'] =
+            ((_lineItems[existingIndex]['quantity'] as num).toDouble()) + 1.0;
         _lineItems[existingIndex]['total'] =
             _lineItems[existingIndex]['quantity'] *
             _lineItems[existingIndex]['price'];
@@ -253,7 +257,7 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
           'productId': product['id'],
           'productName': product['name'] ?? '',
           'stockQuantity': stockInDb,
-          'quantity': 1,
+          'quantity': 1.0,
           'price1': p1,
           'price2': p2,
           'price3': p3,
@@ -911,15 +915,17 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                               filteredDocs.map((doc) {
                                 final data = doc.data() as Map<String, dynamic>;
                                 data['id'] = doc.id;
-                                final stock =
-                                    (data['stockQuantity'] ?? 0) as int;
+                                final stock = (data['stockQuantity'] ?? 0) is num
+                                    ? (data['stockQuantity'] as num).toDouble()
+                                    : double.tryParse(data['stockQuantity'].toString()) ?? 0.0;
 
                                 final draftItem = _lineItems.firstWhere(
                                   (item) => item['productId'] == doc.id,
-                                  orElse: () => {'quantity': 0},
+                                  orElse: () => {'quantity': 0.0},
                                 );
-                                final draftQty =
-                                    (draftItem['quantity'] ?? 0) as int;
+                                final draftQty = (draftItem['quantity'] ?? 0.0) is num
+                                    ? (draftItem['quantity'] as num).toDouble()
+                                    : double.tryParse(draftItem['quantity'].toString()) ?? 0.0;
                                 final availableStock = stock - draftQty;
 
                                 return ActionChip(
@@ -928,7 +934,7 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                                     size: 16,
                                   ),
                                   label: Text(
-                                    '${data['name']} (\$${data['price']}) [${isArabic ? "المتبقي" : "Stock"}: $availableStock]',
+                                    '${data['name']} (\$${data['price']}) [${isArabic ? "المتبقي" : "Stock"}: ${formatQuantity(availableStock)}]',
                                   ),
                                   onPressed:
                                       availableStock <= 0
@@ -1152,14 +1158,14 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                                         },
                                       ),
                                       SizedBox(
-                                        width: 60,
+                                        width: 70,
                                         height: 34,
                                         child: TextFormField(
                                           key: ValueKey(
                                             'qty_${item['productId']}_${item['quantity']}',
                                           ),
-                                          initialValue: '${item['quantity']}',
-                                          keyboardType: TextInputType.number,
+                                          initialValue: formatQuantity(item['quantity']),
+                                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                           textAlign: TextAlign.center,
                                           decoration: InputDecoration(
                                             contentPadding:
@@ -1174,7 +1180,7 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                                             isDense: true,
                                           ),
                                           onChanged: (val) {
-                                            final newQty = int.tryParse(
+                                            final newQty = double.tryParse(
                                               val.trim(),
                                             );
                                             if (newQty != null && newQty > 0) {

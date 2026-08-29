@@ -188,9 +188,9 @@ class SupplierInvoiceBalanceSyncService {
     // 2. Increment inventory stock & log changes
     for (final item in items) {
       final String productId = item['productId'] ?? '';
-      final int qty = (item['quantity'] ?? 0) is int
-          ? item['quantity']
-          : (item['quantity'] as num).toInt();
+      final double qty = (item['quantity'] ?? 0.0) is num
+          ? (item['quantity'] as num).toDouble()
+          : double.tryParse(item['quantity'].toString()) ?? 0.0;
 
       if (productId.isNotEmpty && qty > 0) {
         final productRef = _firestore.collection('products').doc(productId);
@@ -272,9 +272,9 @@ class SupplierInvoiceBalanceSyncService {
     // 2. Decrement Stock level & log changes
     for (final item in returnedItems) {
       final String productId = item['productId'] ?? '';
-      final int qty = (item['quantity'] ?? 0) is int
-          ? item['quantity']
-          : (item['quantity'] as num).toInt();
+      final double qty = (item['quantity'] ?? 0.0) is num
+          ? (item['quantity'] as num).toDouble()
+          : double.tryParse(item['quantity'].toString()) ?? 0.0;
 
       if (productId.isNotEmpty && qty > 0) {
         final productRef = _firestore.collection('products').doc(productId);
@@ -542,12 +542,12 @@ class SupplierInvoiceBalanceSyncService {
       }
 
       // Resolve all product references before transaction
-      final productRefs = <DocumentReference, int>{};
+      final productRefs = <DocumentReference, double>{};
       for (final item in items) {
         final productId = item['productId']?.toString();
-        final boughtQty = (item['quantity'] ?? 1) is int
-            ? (item['quantity'] as int)
-            : double.parse(item['quantity'].toString()).toInt();
+        final boughtQty = (item['quantity'] ?? 1.0) is num
+            ? (item['quantity'] as num).toDouble()
+            : double.tryParse(item['quantity'].toString()) ?? 1.0;
 
         DocumentReference? productRef;
         if (productId != null && productId.isNotEmpty) {
@@ -596,8 +596,8 @@ class SupplierInvoiceBalanceSyncService {
           if (pSnap != null && pSnap.exists) {
             final currentStock = (pSnap.data() as Map<String, dynamic>?)?['stockQuantity'] ??
                 (pSnap.data() as Map<String, dynamic>?)?['quantity'] ?? 0;
-            final curInt = currentStock is int ? currentStock : int.tryParse(currentStock.toString()) ?? 0;
-            final newStock = (curInt - boughtQty) < 0 ? 0 : (curInt - boughtQty);
+            final curDouble = currentStock is num ? currentStock.toDouble() : double.tryParse(currentStock.toString()) ?? 0.0;
+            final newStock = (curDouble - boughtQty) < 0 ? 0.0 : (curDouble - boughtQty);
 
             transaction.update(pRef, {
               'stockQuantity': newStock,

@@ -4,6 +4,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../core/utils/quantity_formatter.dart';
 import '../../../data/models/order_model.dart';
 import '../../../data/models/transaction_model.dart';
 import '../../../data/models/product_model_new.dart';
@@ -180,7 +181,7 @@ class PdfService {
                 p.size,
                 _currFmt.format(p.price),
                 _currFmt.format(p.costPrice),
-                '${p.stockQuantity}',
+                formatQuantity(p.stockQuantity),
                 p.isLowStock ? 'LOW' : 'OK',
               ];
             }).toList(),
@@ -455,7 +456,7 @@ class PdfService {
               p.size,
               _currFmt.format(p.price),
               _currFmt.format(p.costPrice),
-              '${p.stockQuantity}',
+              formatQuantity(p.stockQuantity),
               p.isLowStock ? 'LOW' : 'OK',
             ]).toList(),
           ),

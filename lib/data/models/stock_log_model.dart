@@ -21,9 +21,9 @@ class StockLogModel extends Equatable {
   final String productId;
   final String productName;
   final StockMovementType type;
-  final int quantity;
-  final int stockBefore;
-  final int stockAfter;
+  final double quantity;
+  final double stockBefore;
+  final double stockAfter;
   final String? referenceId;
   final String? note;
   final String? supplierId;
@@ -61,9 +61,9 @@ class StockLogModel extends Equatable {
         (t) => t.name == data['type'],
         orElse: () => StockMovementType.adjustment,
       ),
-      quantity: (data['quantity'] ?? 0).toInt(),
-      stockBefore: (data['stockBefore'] ?? 0).toInt(),
-      stockAfter: (data['stockAfter'] ?? 0).toInt(),
+      quantity: (data['quantity'] ?? 0).toDouble(),
+      stockBefore: (data['stockBefore'] ?? 0).toDouble(),
+      stockAfter: (data['stockAfter'] ?? 0).toDouble(),
       referenceId: data['referenceId'],
       note: data['note'],
       supplierId: data['supplierId'],

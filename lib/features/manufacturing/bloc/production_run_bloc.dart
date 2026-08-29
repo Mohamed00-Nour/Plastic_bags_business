@@ -60,9 +60,9 @@ class ProductionRunBloc
   }
 
   static double weightedAverageCost({
-    required int currentStock,
+    required double currentStock,
     required double currentCostPrice,
-    required int addedQty,
+    required double addedQty,
     required double unitCost,
   }) {
     final totalQty = currentStock + addedQty;
@@ -228,7 +228,7 @@ class ProductionRunBloc
       if (_productRepository != null && run.outputs.isNotEmpty) {
         final unitCost = run.costPerKg;
         for (final output in run.outputs) {
-          final qty = output.quantityKg.round();
+          final qty = output.quantityKg;
           if (qty <= 0) continue;
 
           final product =

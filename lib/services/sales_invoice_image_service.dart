@@ -5,6 +5,7 @@ import 'package:intl/intl.dart' hide TextDirection;
 import 'package:path_provider/path_provider.dart';
 import 'package:printing/printing.dart';
 import 'package:screenshot/screenshot.dart';
+import '../core/utils/quantity_formatter.dart';
 
 /// Offstage Image Generator for paged Invoice Receipts using ScreenshotController.
 class SalesInvoiceImageService {
@@ -290,9 +291,11 @@ class InvoiceReceiptCard extends StatelessWidget {
           // Items List
           ...pageItems.map((item) {
             final name = item['productName'] ?? item['name'] ?? 'منتج';
-            final qty = item['quantity'] ?? 1;
+            final rawQty = item['quantity'] ?? 1;
+            final numQty = rawQty is num ? rawQty : double.tryParse(rawQty.toString()) ?? 1.0;
             final price = (item['price'] ?? 0.0).toDouble();
-            final itemTotal = price * qty;
+            final itemTotal = price * numQty;
+            final qtyStr = formatQuantity(numQty);
             return Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: const BoxDecoration(
@@ -312,7 +315,7 @@ class InvoiceReceiptCard extends StatelessWidget {
                   Expanded(
                     flex: 2,
                     child: Text(
-                      'x$qty',
+                      'x$qtyStr',
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: Color(0xFF94A3B8),

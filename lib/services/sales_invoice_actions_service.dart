@@ -117,12 +117,12 @@ class SalesInvoiceActionsService {
       }
 
       // Resolve all product references before transaction
-      final productRefs = <DocumentReference, int>{};
+      final productRefs = <DocumentReference, double>{};
       for (final item in items) {
         final productId = item['productId']?.toString();
-        final soldQty = (item['quantity'] ?? 1) is int
-            ? (item['quantity'] as int)
-            : double.parse(item['quantity'].toString()).toInt();
+        final soldQty = (item['quantity'] ?? 1.0) is num
+            ? (item['quantity'] as num).toDouble()
+            : double.tryParse(item['quantity'].toString()) ?? 1.0;
 
         DocumentReference? productRef;
         if (productId != null && productId.isNotEmpty) {
@@ -171,8 +171,8 @@ class SalesInvoiceActionsService {
           if (pSnap != null && pSnap.exists) {
             final currentStock = (pSnap.data() as Map<String, dynamic>?)?['stockQuantity'] ??
                 (pSnap.data() as Map<String, dynamic>?)?['quantity'] ?? 0;
-            final curInt = currentStock is int ? currentStock : int.tryParse(currentStock.toString()) ?? 0;
-            final newStock = curInt + soldQty;
+            final curDouble = currentStock is num ? currentStock.toDouble() : double.tryParse(currentStock.toString()) ?? 0.0;
+            final newStock = curDouble + soldQty;
 
             transaction.update(pRef, {
               'stockQuantity': newStock,

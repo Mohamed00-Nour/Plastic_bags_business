@@ -67,26 +67,26 @@ class SalesInvoiceUpdateService {
 
       await firestore.runTransaction((transaction) async {
         // 1. Inventory Stock Adjustment (Quantity Diffing)
-        final Map<String, int> oldQtyMap = {};
-        final Map<String, int> newQtyMap = {};
+        final Map<String, double> oldQtyMap = {};
+        final Map<String, double> newQtyMap = {};
 
         for (final item in oldItems) {
           final key = item['productId']?.toString() ?? item['productName'] ?? item['name'] ?? '';
-          final qty = (item['quantity'] ?? 1) is int ? (item['quantity'] as int) : int.tryParse(item['quantity'].toString()) ?? 1;
-          oldQtyMap[key] = (oldQtyMap[key] ?? 0) + qty;
+          final qty = (item['quantity'] ?? 1.0) is num ? (item['quantity'] as num).toDouble() : double.tryParse(item['quantity'].toString()) ?? 1.0;
+          oldQtyMap[key] = (oldQtyMap[key] ?? 0.0) + qty;
         }
 
         for (final item in newItems) {
           final key = item['productId']?.toString() ?? item['productName'] ?? item['name'] ?? '';
-          final qty = (item['quantity'] ?? 1) is int ? (item['quantity'] as int) : int.tryParse(item['quantity'].toString()) ?? 1;
-          newQtyMap[key] = (newQtyMap[key] ?? 0) + qty;
+          final qty = (item['quantity'] ?? 1.0) is num ? (item['quantity'] as num).toDouble() : double.tryParse(item['quantity'].toString()) ?? 1.0;
+          newQtyMap[key] = (newQtyMap[key] ?? 0.0) + qty;
         }
 
         final allKeys = {...oldQtyMap.keys, ...newQtyMap.keys};
 
         for (final key in allKeys) {
-          final oldQty = oldQtyMap[key] ?? 0;
-          final newQty = newQtyMap[key] ?? 0;
+          final oldQty = oldQtyMap[key] ?? 0.0;
+          final newQty = newQtyMap[key] ?? 0.0;
           final diff = newQty - oldQty; // diff > 0 means more sold, diff < 0 means returned
 
           if (diff != 0) {
@@ -109,8 +109,8 @@ class SalesInvoiceUpdateService {
               if (pSnap.exists) {
                 final currentStock = (pSnap.data() as Map<String, dynamic>?)?['stockQuantity'] ??
                     (pSnap.data() as Map<String, dynamic>?)?['quantity'] ?? 0;
-                final curInt = currentStock is int ? currentStock : int.tryParse(currentStock.toString()) ?? 0;
-                final updatedStock = curInt - diff; // if diff > 0, stock decreases; if diff < 0, stock increases
+                final curDouble = currentStock is num ? currentStock.toDouble() : double.tryParse(currentStock.toString()) ?? 0.0;
+                final updatedStock = curDouble - diff; // if diff > 0, stock decreases; if diff < 0, stock increases
 
                 transaction.update(productRef, {
                   'stockQuantity': updatedStock,

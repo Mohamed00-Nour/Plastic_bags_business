@@ -3,6 +3,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/quantity_formatter.dart';
 
 class ShopProductsScreen extends StatelessWidget {
   const ShopProductsScreen({super.key});
@@ -54,7 +55,7 @@ class ShopProductsScreen extends StatelessWidget {
             final name = data['name'] ?? '';
             final size = data['size'] ?? '';
             final price = (data['price'] ?? 0).toDouble();
-            final stock = (data['stockQuantity'] ?? 0).toInt();
+            final stock = (data['stockQuantity'] ?? 0).toDouble();
             final isLow = stock < 10;
 
             return Padding(
@@ -78,7 +79,7 @@ class ShopProductsScreen extends StatelessWidget {
                             fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                       Text(
-                        '${l10n.stockLabel}: $stock',
+                        '${l10n.stockLabel}: ${formatQuantity(stock)}',
                         style: TextStyle(
                           fontSize: 12,
                           color: isLow

@@ -4,6 +4,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/quantity_formatter.dart';
 
 /// Full-screen, step-by-step order placement screen.
 /// Designed for maximum simplicity — large touch targets, clear visuals.
@@ -23,7 +24,7 @@ class PlaceOrderScreen extends StatefulWidget {
 
 class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
   // Map productId → quantity chosen (0 = not in order)
-  final Map<String, int> _quantities = {};
+  final Map<String, double> _quantities = {};
   List<QueryDocumentSnapshot> _products = [];
   bool _loading = true;
   bool _submitting = false;
@@ -50,21 +51,21 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
     }
   }
 
-  int _qty(String id) => _quantities[id] ?? 0;
+  double _qty(String id) => _quantities[id] ?? 0.0;
 
   double get _total {
     double t = 0;
     for (final doc in _products) {
       final qty = _qty(doc.id);
       if (qty > 0) {
-        t += qty * (doc.data() as Map<String, dynamic>)['price'].toDouble();
+        t += qty * ((doc.data() as Map<String, dynamic>)['price'] ?? 0).toDouble();
       }
     }
     return t;
   }
 
   int get _itemCount =>
-      _quantities.values.fold(0, (s, q) => s + q);
+      _quantities.values.where((q) => q > 0).length;
 
   bool get _hasItems => _itemCount > 0;
 
@@ -372,7 +373,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
               final name = data['name'] as String? ?? '';
               final size = data['size'] as String? ?? '';
               final price = (data['price'] ?? 0).toDouble();
-              final stock = (data['stockQuantity'] ?? 0).toInt();
+              final stock = (data['stockQuantity'] ?? 0).toDouble();
               final qty = _qty(doc.id);
               final inOrder = qty > 0;
               final outOfStock = stock <= 0;
@@ -391,19 +392,59 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                   onAdd: outOfStock
                       ? null
                       : () => setState(() =>
-                          _quantities[doc.id] = (_quantities[doc.id] ?? 0) + 1),
+                          _quantities[doc.id] = (_quantities[doc.id] ?? 0.0) + 1.0),
                   onIncrement: qty < stock
-                      ? () => setState(() => _quantities[doc.id] = qty + 1)
+                      ? () => setState(() => _quantities[doc.id] = (qty + 1.0 > stock ? stock : qty + 1.0))
                       : null,
                   onDecrement: qty > 0
                       ? () => setState(() {
-                            if (qty - 1 == 0) {
+                            if (qty <= 1.0) {
                               _quantities.remove(doc.id);
                             } else {
-                              _quantities[doc.id] = qty - 1;
+                              _quantities[doc.id] = qty - 1.0;
                             }
                           })
                       : null,
+                  onEditQuantity: () async {
+                    final ctrl = TextEditingController(text: formatQuantity(qty));
+                    final result = await showDialog<double>(
+                      context: context,
+                      builder: (dialogCtx) => AlertDialog(
+                        title: Text(name),
+                        content: TextField(
+                          controller: ctrl,
+                          autofocus: true,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          decoration: InputDecoration(
+                            labelText: l10n.quantity,
+                            suffixText: size,
+                          ),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(dialogCtx),
+                            child: Text(l10n.cancel),
+                          ),
+                          ElevatedButton(
+                            onPressed: () {
+                              final val = double.tryParse(ctrl.text.trim());
+                              Navigator.pop(dialogCtx, val);
+                            },
+                            child: Text(l10n.confirm),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (result != null) {
+                      setState(() {
+                        if (result <= 0) {
+                          _quantities.remove(doc.id);
+                        } else {
+                          _quantities[doc.id] = result > stock ? stock : result;
+                        }
+                      });
+                    }
+                  },
                 ),
               );
             },
@@ -420,14 +461,15 @@ class _ProductCard extends StatelessWidget {
   final String name;
   final String size;
   final double price;
-  final int stock;
-  final int quantity;
+  final double stock;
+  final double quantity;
   final bool inOrder;
   final bool outOfStock;
   final NumberFormat numFmt;
   final VoidCallback? onAdd;
   final VoidCallback? onIncrement;
   final VoidCallback? onDecrement;
+  final VoidCallback? onEditQuantity;
 
   const _ProductCard({
     required this.name,
@@ -441,6 +483,7 @@ class _ProductCard extends StatelessWidget {
     required this.onAdd,
     required this.onIncrement,
     required this.onDecrement,
+    this.onEditQuantity,
   });
 
   @override
@@ -545,6 +588,7 @@ class _ProductCard extends StatelessWidget {
                       quantity: quantity,
                       onDecrement: onDecrement,
                       onIncrement: onIncrement,
+                      onTapBadge: onEditQuantity,
                     )
                   : SizedBox(
                       height: 52,
@@ -572,14 +616,16 @@ class _ProductCard extends StatelessWidget {
 // ── Quantity stepper ───────────────────────────────────────────────────────────
 
 class _QuantityControl extends StatelessWidget {
-  final int quantity;
+  final double quantity;
   final VoidCallback? onDecrement;
   final VoidCallback? onIncrement;
+  final VoidCallback? onTapBadge;
 
   const _QuantityControl({
     required this.quantity,
     required this.onDecrement,
     required this.onIncrement,
+    this.onTapBadge,
   });
 
   @override
@@ -596,14 +642,18 @@ class _QuantityControl extends StatelessWidget {
             icon: Icons.remove_rounded,
             onTap: onDecrement,
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Text(
-              '$quantity',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+          InkWell(
+            onTap: onTapBadge,
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              child: Text(
+                formatQuantity(quantity),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),

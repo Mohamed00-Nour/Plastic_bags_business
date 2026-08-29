@@ -10,10 +10,10 @@ class ProductModel extends Equatable {
   final double price1; // Selling Price 1
   final double? price2; // Selling Price 2
   final double? price3; // Selling Price 3
-  final int stockQuantity;
+  final double stockQuantity;
   final String? supplierId;
   final String? supplierName;
-  final int lowStockThreshold;
+  final double lowStockThreshold;
   final bool isActive;
   final String createdBy;
   final String modifiedBy;
@@ -29,10 +29,10 @@ class ProductModel extends Equatable {
     double? price1,
     this.price2,
     this.price3,
-    this.stockQuantity = 0,
+    this.stockQuantity = 0.0,
     this.supplierId,
     this.supplierName,
-    this.lowStockThreshold = 10,
+    this.lowStockThreshold = 10.0,
     this.isActive = true,
     this.createdBy = '',
     this.modifiedBy = '',
@@ -60,10 +60,10 @@ class ProductModel extends Equatable {
           data['price2'] != null ? (data['price2'] as num).toDouble() : null,
       price3:
           data['price3'] != null ? (data['price3'] as num).toDouble() : null,
-      stockQuantity: (data['stockQuantity'] ?? 0).toInt(),
+      stockQuantity: (data['stockQuantity'] ?? 0).toDouble(),
       supplierId: data['supplierId'],
       supplierName: data['supplierName'],
-      lowStockThreshold: (data['lowStockThreshold'] ?? 10).toInt(),
+      lowStockThreshold: (data['lowStockThreshold'] ?? 10).toDouble(),
       isActive: data['isActive'] ?? true,
       createdBy: data['createdBy'] ?? '',
       modifiedBy: data['modifiedBy'] ?? '',
@@ -100,10 +100,10 @@ class ProductModel extends Equatable {
     double? price1,
     double? price2,
     double? price3,
-    int? stockQuantity,
+    double? stockQuantity,
     String? supplierId,
     String? supplierName,
-    int? lowStockThreshold,
+    double? lowStockThreshold,
     bool? isActive,
     String? createdBy,
     String? modifiedBy,

@@ -22,7 +22,7 @@ class OrderItem extends Equatable {
   final String productId;
   final String productName;
   final String productSize;
-  final int quantity;
+  final double quantity;
   final double unitPrice;
 
   const OrderItem({
@@ -40,7 +40,7 @@ class OrderItem extends Equatable {
       productId: map['productId'] ?? '',
       productName: map['productName'] ?? '',
       productSize: map['productSize'] ?? '',
-      quantity: (map['quantity'] ?? 0).toInt(),
+      quantity: (map['quantity'] ?? 0).toDouble(),
       unitPrice: (map['unitPrice'] ?? 0).toDouble(),
     );
   }

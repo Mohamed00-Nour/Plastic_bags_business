@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../services/supplier_invoice_balance_sync_service.dart';
 import '../services/supplier_statement_pdf_service.dart';
 import '../core/theme/app_theme.dart';
+import '../core/utils/quantity_formatter.dart';
 
 class BuyingInvoicePage extends StatefulWidget {
   const BuyingInvoicePage({super.key});
@@ -86,14 +87,15 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
       final cost = (product['costPrice'] ?? product['price'] ?? 0.0).toDouble();
 
       if (existingIndex >= 0) {
-        _lineItems[existingIndex]['quantity'] += 1;
+        _lineItems[existingIndex]['quantity'] =
+            ((_lineItems[existingIndex]['quantity'] as num).toDouble()) + 1.0;
         _lineItems[existingIndex]['total'] =
             _lineItems[existingIndex]['quantity'] * _lineItems[existingIndex]['costPrice'];
       } else {
         _lineItems.add({
           'productId': product['id'],
           'productName': product['name'] ?? '',
-          'quantity': 1,
+          'quantity': 1.0,
           'costPrice': cost,
           'price': cost,
           'total': cost,
@@ -693,8 +695,8 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
                                       height: 38,
                                       child: TextFormField(
                                         key: ValueKey('qty_${item['productId']}_${item['quantity']}'),
-                                        initialValue: '${item['quantity']}',
-                                        keyboardType: TextInputType.number,
+                                        initialValue: formatQuantity(item['quantity']),
+                                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                         textAlign: TextAlign.center,
                                         decoration: InputDecoration(
                                           contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
@@ -702,7 +704,7 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
                                           isDense: true,
                                         ),
                                         onChanged: (val) {
-                                          final newQty = int.tryParse(val.trim());
+                                          final newQty = double.tryParse(val.trim());
                                           if (newQty != null && newQty > 0) {
                                             setState(() {
                                               item['quantity'] = newQty;

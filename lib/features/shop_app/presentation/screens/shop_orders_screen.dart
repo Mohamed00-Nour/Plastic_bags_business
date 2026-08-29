@@ -4,6 +4,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/quantity_formatter.dart';
 import '../../../auth/bloc/auth_bloc.dart';
 import '../../../auth/bloc/auth_state.dart';
 import 'place_order_screen.dart';
@@ -104,7 +105,7 @@ class ShopOrdersScreen extends StatelessWidget {
                               subtitle: Text(
                                   '${l10n.size}: ${itemMap['productSize'] ?? ''}'),
                               trailing: Text(
-                                '${itemMap['quantity']} × ${numFmt.format((itemMap['unitPrice'] ?? 0).toDouble())}',
+                                '${formatQuantity(itemMap['quantity'] is num ? itemMap['quantity'] : double.tryParse(itemMap['quantity'].toString()))} × ${numFmt.format((itemMap['unitPrice'] ?? 0).toDouble())}',
                               ),
                             );
                           }),

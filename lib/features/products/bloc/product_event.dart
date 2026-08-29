@@ -32,7 +32,7 @@ class ProductDeleteRequested extends ProductEvent {
 
 class ProductStockIncreased extends ProductEvent {
   final String productId;
-  final int amount;
+  final double amount;
   final double? unitCost;
   final String? note;
   final String? supplierId;
@@ -54,7 +54,7 @@ class ProductStockIncreased extends ProductEvent {
 
 class ProductStockDecreased extends ProductEvent {
   final String productId;
-  final int amount;
+  final double amount;
   final String? note;
   const ProductStockDecreased({
     required this.productId,

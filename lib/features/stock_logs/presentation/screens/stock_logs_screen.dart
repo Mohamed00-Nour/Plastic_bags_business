@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/quantity_formatter.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../../../data/models/stock_log_model.dart';
 
@@ -136,14 +137,14 @@ class _StockLogsScreenState extends State<StockLogsScreen> {
                                 label: _localizedStockType(l10n, log.type),
                                 color: typeColor)),
                             DataCell(Text(
-                              '${log.type == StockMovementType.incoming ? '+' : '-'}${log.quantity}',
+                              '${log.type == StockMovementType.incoming ? '+' : '-'}${formatQuantity(log.quantity)}',
                               style: TextStyle(
                                 color: typeColor,
                                 fontWeight: FontWeight.w500,
                               ),
                             )),
-                            DataCell(Text('${log.stockBefore}')),
-                            DataCell(Text('${log.stockAfter}')),
+                            DataCell(Text(formatQuantity(log.stockBefore))),
+                            DataCell(Text(formatQuantity(log.stockAfter))),
                             DataCell(Text(log.note ?? '-')),
                             DataCell(Text(log.createdBy.isNotEmpty ? log.createdBy : '-')),
                           ]);

@@ -7,6 +7,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../core/theme/app_theme.dart';
+import '../core/utils/quantity_formatter.dart';
 import '../widgets/invoice_action_dialog.dart';
 import 'client_invoice_balance_sync_service.dart';
 import 'whatsapp_invoice_share_service.dart';
@@ -407,10 +408,10 @@ class ClientStatementPdfService {
                       final name = item['productName'] ?? '';
                       final qty = item['quantity'] ?? 0;
                       final price = (item['price'] ?? 0.0).toDouble();
-                      final total = (item['total'] ?? (qty * price)).toDouble();
+                      final total = (item['total'] ?? ((qty is num ? qty : double.tryParse(qty.toString()) ?? 0.0) * price)).toDouble();
                       return [
                         name,
-                        '$qty',
+                        formatQuantity(qty is num ? qty : double.tryParse(qty.toString())),
                         '\$${price.toStringAsFixed(2)}',
                         '\$${total.toStringAsFixed(2)}',
                       ];

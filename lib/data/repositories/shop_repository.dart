@@ -11,8 +11,10 @@ class ShopRepository {
         .where('isActive', isEqualTo: true)
         .orderBy('name')
         .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => ShopModel.fromFirestore(doc)).toList());
+        .map(
+          (snapshot) =>
+              snapshot.docs.map((doc) => ShopModel.fromFirestore(doc)).toList(),
+        );
   }
 
   Future<ShopModel> getShop(String id) async {
@@ -45,16 +47,19 @@ class ShopRepository {
   }
 
   Future<List<ShopModel>> searchShops(String query) async {
-    final snapshot = await _collection
-        .where('isActive', isEqualTo: true)
-        .orderBy('name')
-        .get();
+    final snapshot =
+        await _collection
+            .where('isActive', isEqualTo: true)
+            .orderBy('name')
+            .get();
     final lowerQuery = query.toLowerCase();
     return snapshot.docs
         .map((doc) => ShopModel.fromFirestore(doc))
-        .where((shop) =>
-            shop.name.toLowerCase().contains(lowerQuery) ||
-            shop.phone.contains(query))
+        .where(
+          (shop) =>
+              shop.name.toLowerCase().contains(lowerQuery) ||
+              shop.phone.contains(query),
+        )
         .toList();
   }
 }

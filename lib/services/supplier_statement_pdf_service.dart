@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import '../core/utils/quantity_formatter.dart';
 import '../widgets/invoice_action_dialog.dart';
 import 'supplier_invoice_balance_sync_service.dart';
 
@@ -306,10 +307,10 @@ class SupplierStatementPdfService {
                   final name = item['productName'] ?? '';
                   final qty = item['quantity'] ?? 0;
                   final cost = (item['costPrice'] ?? item['price'] ?? 0.0).toDouble();
-                  final total = (item['total'] ?? (qty * cost)).toDouble();
+                  final total = (item['total'] ?? ((qty is num ? qty : double.tryParse(qty.toString()) ?? 0.0) * cost)).toDouble();
                   return [
                     name,
-                    '$qty',
+                    formatQuantity(qty is num ? qty : double.tryParse(qty.toString())),
                     '\$${cost.toStringAsFixed(2)}',
                     '\$${total.toStringAsFixed(2)}',
                   ];

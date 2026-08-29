@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:printing/printing.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/theme/app_theme.dart';
+import '../core/utils/quantity_formatter.dart';
 import 'sales_invoice_image_service.dart';
 import 'whatsapp_share_channel.dart';
 
@@ -120,7 +121,7 @@ class WhatsappInvoiceShareService {
 
     final itemsSummary = items.map((item) {
       final name = item['productName'] ?? item['name'] ?? 'منتج';
-      final qty = item['quantity'] ?? 1;
+      final qty = formatQuantity(item['quantity'] ?? 1);
       final price = (item['price'] ?? 0.0).toDouble();
       return "• $name (x$qty) - \$${price.toStringAsFixed(2)}";
     }).join('\n');

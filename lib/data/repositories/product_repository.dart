@@ -60,7 +60,7 @@ class ProductRepository {
     await batch.commit();
   }
 
-  Future<void> updateStock(String productId, int newQuantity) async {
+  Future<void> updateStock(String productId, double newQuantity) async {
     await _collection.doc(productId).update({
       'stockQuantity': newQuantity,
       'modifiedBy': CurrentUserService.instance.userName,
@@ -68,7 +68,7 @@ class ProductRepository {
     });
   }
 
-  Future<void> incrementStock(String productId, int amount) async {
+  Future<void> incrementStock(String productId, double amount) async {
     await _collection.doc(productId).update({
       'stockQuantity': FieldValue.increment(amount),
       'modifiedBy': CurrentUserService.instance.userName,
@@ -76,7 +76,7 @@ class ProductRepository {
     });
   }
 
-  Future<void> stockIn(String productId, int deltaQty, double newCostPrice) async {
+  Future<void> stockIn(String productId, double deltaQty, double newCostPrice) async {
     await _collection.doc(productId).update({
       'stockQuantity': FieldValue.increment(deltaQty),
       'costPrice': newCostPrice,
@@ -85,7 +85,7 @@ class ProductRepository {
     });
   }
 
-  Future<void> decrementStock(String productId, int amount) async {
+  Future<void> decrementStock(String productId, double amount) async {
     final isDesktop =
         !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
 
@@ -93,7 +93,7 @@ class ProductRepository {
       final snapshot = await _collection.doc(productId).get();
       final currentStock =
           ((snapshot.data() as Map<String, dynamic>)['stockQuantity'] ?? 0 as num)
-              .toInt();
+              .toDouble();
       final newStock = currentStock - amount;
       if (newStock < 0) throw Exception('Insufficient stock');
       await _collection.doc(productId).update({
@@ -108,7 +108,7 @@ class ProductRepository {
         final currentStock =
             ((snapshot.data() as Map<String, dynamic>)['stockQuantity'] ?? 0
                     as num)
-                .toInt();
+                .toDouble();
         final newStock = currentStock - amount;
         if (newStock < 0) throw Exception('Insufficient stock');
         transaction.update(doc, {

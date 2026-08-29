@@ -117,9 +117,9 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
   }
 
   static double weightedAverageCost({
-    required int currentStock,
+    required double currentStock,
     required double currentCostPrice,
-    required int addedQty,
+    required double addedQty,
     required double unitCost,
   }) {
     final totalQty = currentStock + addedQty;

@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/quantity_formatter.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../../../data/models/product_model_new.dart';
 import '../../bloc/product_bloc_new.dart';
@@ -235,7 +236,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                   ),
                                 ),
                               Text(
-                                '${product.stockQuantity}',
+                                formatQuantity(product.stockQuantity),
                                 style: TextStyle(
                                   color:
                                       product.isLowStock
@@ -354,10 +355,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
       text: product?.costPrice.toString() ?? '',
     );
     final stockCtrl = TextEditingController(
-      text: product?.stockQuantity.toString() ?? '0',
+      text: product != null ? formatQuantity(product.stockQuantity) : '0',
     );
     final thresholdCtrl = TextEditingController(
-      text: product?.lowStockThreshold.toString() ?? '10',
+      text: product != null ? formatQuantity(product.lowStockThreshold) : '10',
     );
     final formKey = GlobalKey<FormState>();
     String? selectedSupplierId = product?.supplierId;
@@ -547,7 +548,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                   decoration: InputDecoration(
                                     labelText: l10n.initialStock,
                                   ),
-                                  keyboardType: TextInputType.number,
+                                  keyboardType: const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
                                   enabled: !isEditing,
                                 ),
                               ),
@@ -558,7 +561,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                   decoration: InputDecoration(
                                     labelText: l10n.lowStockAlert,
                                   ),
-                                  keyboardType: TextInputType.number,
+                                  keyboardType: const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
                                 ),
                               ),
                             ],
@@ -595,11 +600,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
                           stockQuantity:
                               isEditing
                                   ? product.stockQuantity
-                                  : int.tryParse(stockCtrl.text) ?? 0,
+                                  : double.tryParse(stockCtrl.text) ?? 0.0,
                           supplierId: selectedSupplierId,
                           supplierName: selectedSupplierName,
                           lowStockThreshold:
-                              int.tryParse(thresholdCtrl.text) ?? 10,
+                              double.tryParse(thresholdCtrl.text) ?? 10.0,
                           createdAt: product?.createdAt ?? now,
                           updatedAt: now,
                         );
@@ -651,7 +656,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('${l10n.product}: ${product.name}'),
-                      Text('${l10n.currentStock}: ${product.stockQuantity}'),
+                      Text('${l10n.currentStock}: ${formatQuantity(product.stockQuantity)}'),
                       if (isIncrease)
                         Text(
                           '${l10n.currentAvgCost}: \$${product.costPrice.toStringAsFixed(2)}',
@@ -666,7 +671,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         decoration: InputDecoration(
                           labelText: l10n.quantity,
                         ),
-                        keyboardType: TextInputType.number,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                       ),
                       if (isIncrease) ...[
                         const SizedBox(height: 12),
@@ -747,7 +754,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    final amount = int.tryParse(amountCtrl.text);
+                    final amount = double.tryParse(amountCtrl.text);
                     if (amount != null && amount > 0) {
                       if (isIncrease) {
                         final unitCost = double.tryParse(costCtrl.text);

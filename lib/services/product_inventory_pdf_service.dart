@@ -8,6 +8,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../core/theme/app_theme.dart';
+import '../core/utils/quantity_formatter.dart';
 import '../data/models/product_model_new.dart';
 import '../features/reports/presentation/widgets/report_preview_dialog.dart';
 import 'whatsapp_share_channel.dart';
@@ -29,7 +30,7 @@ class ProductInventoryPdfService {
     final boldFont = await PdfGoogleFonts.cairoBold();
 
     final int totalTypes = products.length;
-    final int totalUnits = products.fold(0, (acc, p) => acc + p.stockQuantity);
+    final double totalUnits = products.fold(0.0, (acc, p) => acc + p.stockQuantity);
     final double totalCostValue = products.fold(
       0.0,
       (acc, p) => acc + (p.stockQuantity * p.costPrice),
@@ -247,7 +248,7 @@ class ProductInventoryPdfService {
                       '${index + 1}',
                       p.name,
                       p.size.isEmpty ? '-' : p.size,
-                      '${p.stockQuantity}',
+                      formatQuantity(p.stockQuantity),
                     ];
                   }
                   final totalCost = p.stockQuantity * p.costPrice;
@@ -256,7 +257,7 @@ class ProductInventoryPdfService {
                     '${index + 1}',
                     p.name,
                     p.size.isEmpty ? '-' : p.size,
-                    '${p.stockQuantity}',
+                    formatQuantity(p.stockQuantity),
                     '\$${p.costPrice.toStringAsFixed(2)}',
                     '\$${p.price.toStringAsFixed(2)}',
                     '\$${totalCost.toStringAsFixed(2)}',
@@ -526,6 +527,8 @@ class ProductInventoryPdfService {
 
       if (!pageContext.mounted) return;
 
+      final totalStock = products.fold<double>(0.0, (acc, p) => acc + p.stockQuantity);
+
       showModalBottomSheet(
         context: pageContext,
         isScrollControlled: true,
@@ -572,8 +575,8 @@ class ProductInventoryPdfService {
                             ),
                             Text(
                               isArabic
-                                  ? 'إجمالي الأصناف: ${products.length} • إجمالي الكميات: ${products.fold(0, (acc, p) => acc + p.stockQuantity)}'
-                                  : 'Total Items: ${products.length} • Total Stock: ${products.fold(0, (acc, p) => acc + p.stockQuantity)}',
+                                  ? 'إجمالي الأصناف: ${products.length} • إجمالي الكميات: ${formatQuantity(totalStock)}'
+                                  : 'Total Items: ${products.length} • Total Stock: ${formatQuantity(totalStock)}',
                               style: const TextStyle(
                                 fontSize: 12,
                                 color: Colors.grey,

@@ -533,10 +533,10 @@
   "@insufficientStockDetail": {
     "placeholders": {
       "available": {
-        "type": "int"
+        "type": "num"
       },
       "required": {
-        "type": "int"
+        "type": "num"
       }
     }
   },
@@ -544,7 +544,7 @@
   "@insufficientStockNeed": {
     "placeholders": {
       "shortage": {
-        "type": "int"
+        "type": "num"
       }
     }
   },

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 import 'package:printing/printing.dart';
 import '../core/theme/app_theme.dart';
+import '../core/utils/quantity_formatter.dart';
 import '../services/client_invoice_balance_sync_service.dart';
 import '../services/client_statement_pdf_service.dart';
 import '../services/sales_invoice_actions_service.dart';
@@ -524,7 +525,8 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
                         items.map((item) {
                           final name =
                               item['productName'] ?? item['name'] ?? 'منتج';
-                          final qty = item['quantity'] ?? 1;
+                          final rawQty = item['quantity'] ?? 1;
+                          final qty = rawQty is num ? rawQty.toDouble() : double.tryParse(rawQty.toString()) ?? 1.0;
                           final price = (item['price'] ?? 0.0).toDouble();
                           final total = price * qty;
                           return Padding(
@@ -541,7 +543,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
                                   ),
                                 ),
                                 Text(
-                                  'x$qty',
+                                  'x${formatQuantity(qty)}',
                                   style: const TextStyle(
                                     color: Colors.grey,
                                     fontSize: 13,

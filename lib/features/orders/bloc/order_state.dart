@@ -63,8 +63,8 @@ class OrderError extends OrderState {
 
 class InsufficientStockItem extends Equatable {
   final String productName;
-  final int available;
-  final int required;
+  final double available;
+  final double required;
 
   const InsufficientStockItem({
     required this.productName,
@@ -72,7 +72,7 @@ class InsufficientStockItem extends Equatable {
     required this.required,
   });
 
-  int get shortage => required - available;
+  double get shortage => required - available;
 
   @override
   List<Object?> get props => [productName, available, required];
