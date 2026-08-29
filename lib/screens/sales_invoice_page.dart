@@ -42,8 +42,7 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
   String _notes = '';
   bool _isSubmitting = false;
 
-  final TextEditingController _clientSearchController =
-      TextEditingController();
+  final TextEditingController _clientSearchController = TextEditingController();
   final FocusNode _clientSearchFocusNode = FocusNode();
   final TextEditingController _discountController = TextEditingController(
     text: '0.0',
@@ -233,15 +232,17 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
   }
 
   void _addLineItem(Map<String, dynamic> product) {
-    final stockInDb = (product['stockQuantity'] ?? 0) is num
-        ? (product['stockQuantity'] as num).toDouble()
-        : double.tryParse(product['stockQuantity'].toString()) ?? 0.0;
+    final stockInDb =
+        (product['stockQuantity'] ?? 0) is num
+            ? (product['stockQuantity'] as num).toDouble()
+            : double.tryParse(product['stockQuantity'].toString()) ?? 0.0;
     final existingIndex = _lineItems.indexWhere(
       (i) => i['productId'] == product['id'],
     );
 
     if (existingIndex >= 0) {
-      final currentQty = (_lineItems[existingIndex]['quantity'] as num).toDouble();
+      final currentQty =
+          (_lineItems[existingIndex]['quantity'] as num).toDouble();
       if (stockInDb > 0 && currentQty >= stockInDb) return;
     } else {
       if (stockInDb <= 0) return;
@@ -740,7 +741,7 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                                   options,
                                 ) {
                                   return Align(
-                                    alignment: Alignment.topLeft,
+                                    alignment: AlignmentDirectional.topStart,
                                     child: Material(
                                       elevation: 8,
                                       borderRadius: BorderRadius.circular(12),
@@ -932,17 +933,27 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                               filteredDocs.map((doc) {
                                 final data = doc.data() as Map<String, dynamic>;
                                 data['id'] = doc.id;
-                                final stock = (data['stockQuantity'] ?? 0) is num
-                                    ? (data['stockQuantity'] as num).toDouble()
-                                    : double.tryParse(data['stockQuantity'].toString()) ?? 0.0;
+                                final stock =
+                                    (data['stockQuantity'] ?? 0) is num
+                                        ? (data['stockQuantity'] as num)
+                                            .toDouble()
+                                        : double.tryParse(
+                                              data['stockQuantity'].toString(),
+                                            ) ??
+                                            0.0;
 
                                 final draftItem = _lineItems.firstWhere(
                                   (item) => item['productId'] == doc.id,
                                   orElse: () => {'quantity': 0.0},
                                 );
-                                final draftQty = (draftItem['quantity'] ?? 0.0) is num
-                                    ? (draftItem['quantity'] as num).toDouble()
-                                    : double.tryParse(draftItem['quantity'].toString()) ?? 0.0;
+                                final draftQty =
+                                    (draftItem['quantity'] ?? 0.0) is num
+                                        ? (draftItem['quantity'] as num)
+                                            .toDouble()
+                                        : double.tryParse(
+                                              draftItem['quantity'].toString(),
+                                            ) ??
+                                            0.0;
                                 final availableStock = stock - draftQty;
 
                                 return ActionChip(
@@ -1008,7 +1019,8 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                               onIncrement: () {
                                 setState(() {
                                   item['quantity'] =
-                                      (item['quantity'] as num).toDouble() + 1.0;
+                                      (item['quantity'] as num).toDouble() +
+                                      1.0;
                                   item['total'] =
                                       item['quantity'] * item['price'];
                                 });
@@ -1016,7 +1028,8 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                               onDecrement: () {
                                 setState(() {
                                   item['quantity'] =
-                                      (item['quantity'] as num).toDouble() - 1.0;
+                                      (item['quantity'] as num).toDouble() -
+                                      1.0;
                                   item['total'] =
                                       item['quantity'] * item['price'];
                                 });
@@ -1297,7 +1310,7 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                           },
                           optionsViewBuilder: (context, onSelected, options) {
                             return Align(
-                              alignment: Alignment.topLeft,
+                              alignment: AlignmentDirectional.topStart,
                               child: Material(
                                 elevation: 8,
                                 child: Container(
@@ -2236,10 +2249,9 @@ class _SalesInvoiceItemTileState extends State<_SalesInvoiceItemTile> {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: Theme.of(context)
-            .colorScheme
-            .surfaceContainerHighest
-            .withValues(alpha: 0.3),
+        color: Theme.of(
+          context,
+        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: Theme.of(context).dividerColor.withValues(alpha: 0.4),
@@ -2275,10 +2287,7 @@ class _SalesInvoiceItemTileState extends State<_SalesInvoiceItemTile> {
               // Price Tier Selector
               Text(
                 isArabic ? 'السعر: ' : 'Price: ',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey,
-                ),
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
               ),
               DropdownButton<String>(
                 value: item['selectedTier'] ?? 'price1',
@@ -2310,9 +2319,7 @@ class _SalesInvoiceItemTileState extends State<_SalesInvoiceItemTile> {
                     ),
                   DropdownMenuItem(
                     value: 'custom',
-                    child: Text(
-                      isArabic ? 'سعر خاص ✏️' : 'Custom Price ✏️',
-                    ),
+                    child: Text(isArabic ? 'سعر خاص ✏️' : 'Custom Price ✏️'),
                   ),
                 ],
                 onChanged: (val) {
@@ -2358,10 +2365,7 @@ class _SalesInvoiceItemTileState extends State<_SalesInvoiceItemTile> {
 
               // Quantity Controls
               IconButton(
-                icon: const Icon(
-                  Icons.remove_circle_outline,
-                  size: 18,
-                ),
+                icon: const Icon(Icons.remove_circle_outline, size: 18),
                 onPressed: () {
                   if ((item['quantity'] as num).toDouble() > 1.0) {
                     widget.onDecrement();
@@ -2399,18 +2403,11 @@ class _SalesInvoiceItemTileState extends State<_SalesInvoiceItemTile> {
                 ),
               ),
               IconButton(
-                icon: const Icon(
-                  Icons.add_circle_outline,
-                  size: 18,
-                ),
+                icon: const Icon(Icons.add_circle_outline, size: 18),
                 onPressed: widget.onIncrement,
               ),
               IconButton(
-                icon: const Icon(
-                  Icons.delete,
-                  color: Colors.red,
-                  size: 18,
-                ),
+                icon: const Icon(Icons.delete, color: Colors.red, size: 18),
                 onPressed: widget.onRemove,
               ),
             ],

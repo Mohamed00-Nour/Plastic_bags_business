@@ -266,7 +266,7 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
                             },
                             optionsViewBuilder: (context, onSelected, options) {
                               return Align(
-                                alignment: Alignment.topLeft,
+                                alignment: AlignmentDirectional.topStart,
                                 child: Material(
                                   elevation: 8,
                                   child: Container(
@@ -512,7 +512,7 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
                                 },
                                 optionsViewBuilder: (context, onSelected, options) {
                                   return Align(
-                                    alignment: Alignment.topLeft,
+                                    alignment: AlignmentDirectional.topStart,
                                     child: Material(
                                       elevation: 8,
                                       borderRadius: BorderRadius.circular(12),
