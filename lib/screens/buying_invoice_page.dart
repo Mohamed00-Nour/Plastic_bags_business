@@ -671,67 +671,30 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
                             itemCount: _lineItems.length,
                             itemBuilder: (context, index) {
                               final item = _lineItems[index];
-                              return ListTile(
-                                title: Text(item['productName']),
-                                subtitle: Text('Unit Cost: \$${item['costPrice']} x ${item['quantity']} = Total: \$${item['total']}'),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.remove_circle_outline),
-                                      onPressed: () {
-                                        setState(() {
-                                          if (item['quantity'] > 1) {
-                                            item['quantity'] -= 1;
-                                            item['total'] = item['quantity'] * item['costPrice'];
-                                          } else {
-                                            _lineItems.removeAt(index);
-                                          }
-                                        });
-                                      },
-                                    ),
-                                    SizedBox(
-                                      width: 70,
-                                      height: 38,
-                                      child: TextFormField(
-                                        key: ValueKey('qty_${item['productId']}_${item['quantity']}'),
-                                        initialValue: formatQuantity(item['quantity']),
-                                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                        textAlign: TextAlign.center,
-                                        decoration: InputDecoration(
-                                          contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                                          isDense: true,
-                                        ),
-                                        onChanged: (val) {
-                                          final newQty = double.tryParse(val.trim());
-                                          if (newQty != null && newQty > 0) {
-                                            setState(() {
-                                              item['quantity'] = newQty;
-                                              item['total'] = item['quantity'] * item['costPrice'];
-                                            });
-                                          }
-                                        },
-                                      ),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.add_circle_outline),
-                                      onPressed: () {
-                                        setState(() {
-                                          item['quantity'] += 1;
-                                          item['total'] = item['quantity'] * item['costPrice'];
-                                        });
-                                      },
-                                    ),
-                                    const SizedBox(width: 4),
-                                    IconButton(
-                                      icon: const Icon(Icons.delete, color: Colors.red),
-                                      onPressed: () {
-                                        setState(() => _lineItems.removeAt(index));
-                                      },
-                                    ),
-                                  ],
-                                ),
+                              return _BuyingInvoiceItemTile(
+                                key: ValueKey(item['productId'] ?? index),
+                                item: item,
+                                onRemove: () {
+                                  setState(() => _lineItems.removeAt(index));
+                                },
+                                onIncrement: () {
+                                  setState(() {
+                                    item['quantity'] = (item['quantity'] as num).toDouble() + 1.0;
+                                    item['total'] = item['quantity'] * item['costPrice'];
+                                  });
+                                },
+                                onDecrement: () {
+                                  setState(() {
+                                    item['quantity'] = (item['quantity'] as num).toDouble() - 1.0;
+                                    item['total'] = item['quantity'] * item['costPrice'];
+                                  });
+                                },
+                                onQuantityChanged: (newQty) {
+                                  setState(() {
+                                    item['quantity'] = newQty;
+                                    item['total'] = item['quantity'] * item['costPrice'];
+                                  });
+                                },
                               );
                             },
                           ),
@@ -1073,6 +1036,121 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
           ),
         ),
       ],
+    );
+  }
+}
+
+class _BuyingInvoiceItemTile extends StatefulWidget {
+  final Map<String, dynamic> item;
+  final VoidCallback onRemove;
+  final VoidCallback onIncrement;
+  final VoidCallback onDecrement;
+  final ValueChanged<double> onQuantityChanged;
+
+  const _BuyingInvoiceItemTile({
+    super.key,
+    required this.item,
+    required this.onRemove,
+    required this.onIncrement,
+    required this.onDecrement,
+    required this.onQuantityChanged,
+  });
+
+  @override
+  State<_BuyingInvoiceItemTile> createState() => _BuyingInvoiceItemTileState();
+}
+
+class _BuyingInvoiceItemTileState extends State<_BuyingInvoiceItemTile> {
+  late TextEditingController _qtyController;
+  final FocusNode _qtyFocus = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _qtyController = TextEditingController(
+      text: formatQuantity(widget.item['quantity']),
+    );
+    _qtyFocus.addListener(() {
+      if (!_qtyFocus.hasFocus) {
+        final parsed = double.tryParse(_qtyController.text.trim());
+        if (parsed == null || parsed <= 0) {
+          _qtyController.text = formatQuantity(widget.item['quantity']);
+        }
+      }
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant _BuyingInvoiceItemTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_qtyFocus.hasFocus) {
+      final formatted = formatQuantity(widget.item['quantity']);
+      if (_qtyController.text != formatted) {
+        _qtyController.text = formatted;
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _qtyController.dispose();
+    _qtyFocus.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final item = widget.item;
+    return ListTile(
+      title: Text(item['productName'] ?? ''),
+      subtitle: Text(
+        'Unit Cost: \$${item['costPrice']} x ${formatQuantity(item['quantity'])} = Total: \$${(item['total'] as num).toStringAsFixed(2)}',
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.remove_circle_outline),
+            onPressed: () {
+              if ((item['quantity'] as num).toDouble() > 1.0) {
+                widget.onDecrement();
+              } else {
+                widget.onRemove();
+              }
+            },
+          ),
+          SizedBox(
+            width: 70,
+            height: 38,
+            child: TextField(
+              controller: _qtyController,
+              focusNode: _qtyFocus,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              textAlign: TextAlign.center,
+              decoration: InputDecoration(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                isDense: true,
+              ),
+              onChanged: (val) {
+                final newQty = double.tryParse(val.trim());
+                if (newQty != null && newQty > 0) {
+                  widget.onQuantityChanged(newQty);
+                }
+              },
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline),
+            onPressed: widget.onIncrement,
+          ),
+          const SizedBox(width: 4),
+          IconButton(
+            icon: const Icon(Icons.delete, color: Colors.red),
+            onPressed: widget.onRemove,
+          ),
+        ],
+      ),
     );
   }
 }

@@ -981,249 +981,60 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                           itemCount: _lineItems.length,
                           itemBuilder: (context, index) {
                             final item = _lineItems[index];
-                            return Container(
-                              margin: const EdgeInsets.only(bottom: 8),
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerHighest
-                                    .withValues(alpha: 0.3),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: Theme.of(
-                                    context,
-                                  ).dividerColor.withValues(alpha: 0.4),
-                                ),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          item['productName'],
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                      ),
-                                      Text(
-                                        '\$${(item['total'] as num).toStringAsFixed(2)}',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: AppTheme.primaryColor,
-                                          fontSize: 15,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Row(
-                                    children: [
-                                      // Price Tier Selector
-                                      Text(
-                                        isArabic ? 'السعر: ' : 'Price: ',
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey,
-                                        ),
-                                      ),
-                                      DropdownButton<String>(
-                                        value: item['selectedTier'] ?? 'price1',
-                                        isDense: true,
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color:
-                                              Theme.of(
-                                                context,
-                                              ).textTheme.bodyMedium?.color,
-                                        ),
-                                        items: [
-                                          DropdownMenuItem(
-                                            value: 'price1',
-                                            child: Text(
-                                              '${isArabic ? "سعر 1" : "Price 1"} (\$${((item['price1'] ?? item['price']) as num).toStringAsFixed(2)})',
-                                            ),
-                                          ),
-                                          if (item['price2'] != null)
-                                            DropdownMenuItem(
-                                              value: 'price2',
-                                              child: Text(
-                                                '${isArabic ? "سعر 2" : "Price 2"} (\$${(item['price2'] as num).toStringAsFixed(2)})',
-                                              ),
-                                            ),
-                                          if (item['price3'] != null)
-                                            DropdownMenuItem(
-                                              value: 'price3',
-                                              child: Text(
-                                                '${isArabic ? "سعر 3" : "Price 3"} (\$${(item['price3'] as num).toStringAsFixed(2)})',
-                                              ),
-                                            ),
-                                          DropdownMenuItem(
-                                            value: 'custom',
-                                            child: Text(
-                                              isArabic
-                                                  ? 'سعر خاص ✏️'
-                                                  : 'Custom Price ✏️',
-                                            ),
-                                          ),
-                                        ],
-                                        onChanged: (val) {
-                                          if (val == null) return;
-                                          setState(() {
-                                            item['selectedTier'] = val;
-                                            if (val == 'price1') {
-                                              item['price'] =
-                                                  item['price1'] ??
-                                                  item['price'];
-                                            } else if (val == 'price2') {
-                                              item['price'] = item['price2'];
-                                            } else if (val == 'price3') {
-                                              item['price'] = item['price3'];
-                                            }
-                                            item['total'] =
-                                                (item['quantity'] as num) *
-                                                (item['price'] as num);
-                                          });
-                                        },
-                                      ),
-                                      const SizedBox(width: 8),
-
-                                      // Editable Custom Price Input Field
-                                      if (item['selectedTier'] == 'custom')
-                                        SizedBox(
-                                          width: 80,
-                                          height: 34,
-                                          child: TextFormField(
-                                            key: ValueKey(
-                                              'custom_price_${item['productId']}',
-                                            ),
-                                            initialValue: '${item['price']}',
-                                            keyboardType:
-                                                const TextInputType.numberWithOptions(
-                                                  decimal: true,
-                                                ),
-                                            decoration: InputDecoration(
-                                              prefixText: '\$',
-                                              contentPadding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 4,
-                                                    vertical: 2,
-                                                  ),
-                                              border: OutlineInputBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(6),
-                                              ),
-                                              isDense: true,
-                                            ),
-                                            onChanged: (val) {
-                                              final p = double.tryParse(
-                                                val.trim(),
-                                              );
-                                              if (p != null && p >= 0) {
-                                                setState(() {
-                                                  item['price'] = p;
-                                                  item['total'] =
-                                                      (item['quantity']
-                                                          as num) *
-                                                      (item['price'] as num);
-                                                });
-                                              }
-                                            },
-                                          ),
-                                        ),
-
-                                      const Spacer(),
-
-                                      // Quantity Controls
-                                      IconButton(
-                                        icon: const Icon(
-                                          Icons.remove_circle_outline,
-                                          size: 18,
-                                        ),
-                                        onPressed: () {
-                                          setState(() {
-                                            if (item['quantity'] > 1) {
-                                              item['quantity'] -= 1;
-                                              item['total'] =
-                                                  item['quantity'] *
-                                                  item['price'];
-                                            } else {
-                                              _lineItems.removeAt(index);
-                                            }
-                                          });
-                                        },
-                                      ),
-                                      SizedBox(
-                                        width: 70,
-                                        height: 34,
-                                        child: TextFormField(
-                                          key: ValueKey(
-                                            'qty_${item['productId']}_${item['quantity']}',
-                                          ),
-                                          initialValue: formatQuantity(item['quantity']),
-                                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                          textAlign: TextAlign.center,
-                                          decoration: InputDecoration(
-                                            contentPadding:
-                                                const EdgeInsets.symmetric(
-                                                  horizontal: 2,
-                                                  vertical: 2,
-                                                ),
-                                            border: OutlineInputBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(6),
-                                            ),
-                                            isDense: true,
-                                          ),
-                                          onChanged: (val) {
-                                            final newQty = double.tryParse(
-                                              val.trim(),
-                                            );
-                                            if (newQty != null && newQty > 0) {
-                                              setState(() {
-                                                item['quantity'] = newQty;
-                                                item['total'] =
-                                                    item['quantity'] *
-                                                    item['price'];
-                                              });
-                                            }
-                                          },
-                                        ),
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(
-                                          Icons.add_circle_outline,
-                                          size: 18,
-                                        ),
-                                        onPressed: () {
-                                          setState(() {
-                                            item['quantity'] += 1;
-                                            item['total'] =
-                                                item['quantity'] *
-                                                item['price'];
-                                          });
-                                        },
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(
-                                          Icons.delete,
-                                          color: Colors.red,
-                                          size: 18,
-                                        ),
-                                        onPressed: () {
-                                          setState(
-                                            () => _lineItems.removeAt(index),
-                                          );
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
+                            return _SalesInvoiceItemTile(
+                              key: ValueKey(item['productId'] ?? index),
+                              item: item,
+                              isArabic: isArabic,
+                              onRemove: () {
+                                setState(() => _lineItems.removeAt(index));
+                              },
+                              onIncrement: () {
+                                setState(() {
+                                  item['quantity'] =
+                                      (item['quantity'] as num).toDouble() + 1.0;
+                                  item['total'] =
+                                      item['quantity'] * item['price'];
+                                });
+                              },
+                              onDecrement: () {
+                                setState(() {
+                                  item['quantity'] =
+                                      (item['quantity'] as num).toDouble() - 1.0;
+                                  item['total'] =
+                                      item['quantity'] * item['price'];
+                                });
+                              },
+                              onQuantityChanged: (newQty) {
+                                setState(() {
+                                  item['quantity'] = newQty;
+                                  item['total'] =
+                                      item['quantity'] * item['price'];
+                                });
+                              },
+                              onTierChanged: (val) {
+                                setState(() {
+                                  item['selectedTier'] = val;
+                                  if (val == 'price1') {
+                                    item['price'] =
+                                        item['price1'] ?? item['price'];
+                                  } else if (val == 'price2') {
+                                    item['price'] = item['price2'];
+                                  } else if (val == 'price3') {
+                                    item['price'] = item['price3'];
+                                  }
+                                  item['total'] =
+                                      (item['quantity'] as num) *
+                                      (item['price'] as num);
+                                });
+                              },
+                              onCustomPriceChanged: (newPrice) {
+                                setState(() {
+                                  item['price'] = newPrice;
+                                  item['total'] =
+                                      (item['quantity'] as num) *
+                                      (item['price'] as num);
+                                });
+                              },
                             );
                           },
                         ),
@@ -2307,6 +2118,289 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
           ),
         ),
       ],
+    );
+  }
+}
+
+class _SalesInvoiceItemTile extends StatefulWidget {
+  final Map<String, dynamic> item;
+  final bool isArabic;
+  final VoidCallback onRemove;
+  final VoidCallback onIncrement;
+  final VoidCallback onDecrement;
+  final ValueChanged<double> onQuantityChanged;
+  final ValueChanged<String> onTierChanged;
+  final ValueChanged<double> onCustomPriceChanged;
+
+  const _SalesInvoiceItemTile({
+    super.key,
+    required this.item,
+    required this.isArabic,
+    required this.onRemove,
+    required this.onIncrement,
+    required this.onDecrement,
+    required this.onQuantityChanged,
+    required this.onTierChanged,
+    required this.onCustomPriceChanged,
+  });
+
+  @override
+  State<_SalesInvoiceItemTile> createState() => _SalesInvoiceItemTileState();
+}
+
+class _SalesInvoiceItemTileState extends State<_SalesInvoiceItemTile> {
+  late TextEditingController _qtyController;
+  late TextEditingController _customPriceController;
+  final FocusNode _qtyFocus = FocusNode();
+  final FocusNode _priceFocus = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _qtyController = TextEditingController(
+      text: formatQuantity(widget.item['quantity']),
+    );
+    _customPriceController = TextEditingController(
+      text: '${widget.item['price']}',
+    );
+
+    _qtyFocus.addListener(() {
+      if (!_qtyFocus.hasFocus) {
+        final currentText = _qtyController.text.trim();
+        final parsed = double.tryParse(currentText);
+        if (parsed == null || parsed <= 0) {
+          _qtyController.text = formatQuantity(widget.item['quantity']);
+        }
+      }
+    });
+
+    _priceFocus.addListener(() {
+      if (!_priceFocus.hasFocus) {
+        final currentText = _customPriceController.text.trim();
+        final parsed = double.tryParse(currentText);
+        if (parsed == null || parsed < 0) {
+          _customPriceController.text = '${widget.item['price']}';
+        }
+      }
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant _SalesInvoiceItemTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_qtyFocus.hasFocus) {
+      final formatted = formatQuantity(widget.item['quantity']);
+      if (_qtyController.text != formatted) {
+        _qtyController.text = formatted;
+      }
+    }
+    if (!_priceFocus.hasFocus) {
+      final formatted = '${widget.item['price']}';
+      if (_customPriceController.text != formatted) {
+        _customPriceController.text = formatted;
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _qtyController.dispose();
+    _customPriceController.dispose();
+    _qtyFocus.dispose();
+    _priceFocus.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final item = widget.item;
+    final isArabic = widget.isArabic;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Theme.of(context)
+            .colorScheme
+            .surfaceContainerHighest
+            .withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.4),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  item['productName'] ?? '',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              Text(
+                '\$${(item['total'] as num).toStringAsFixed(2)}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.primaryColor,
+                  fontSize: 15,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              // Price Tier Selector
+              Text(
+                isArabic ? 'السعر: ' : 'Price: ',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
+                ),
+              ),
+              DropdownButton<String>(
+                value: item['selectedTier'] ?? 'price1',
+                isDense: true,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).textTheme.bodyMedium?.color,
+                ),
+                items: [
+                  DropdownMenuItem(
+                    value: 'price1',
+                    child: Text(
+                      '${isArabic ? "سعر 1" : "Price 1"} (\$${((item['price1'] ?? item['price']) as num).toStringAsFixed(2)})',
+                    ),
+                  ),
+                  if (item['price2'] != null)
+                    DropdownMenuItem(
+                      value: 'price2',
+                      child: Text(
+                        '${isArabic ? "سعر 2" : "Price 2"} (\$${(item['price2'] as num).toStringAsFixed(2)})',
+                      ),
+                    ),
+                  if (item['price3'] != null)
+                    DropdownMenuItem(
+                      value: 'price3',
+                      child: Text(
+                        '${isArabic ? "سعر 3" : "Price 3"} (\$${(item['price3'] as num).toStringAsFixed(2)})',
+                      ),
+                    ),
+                  DropdownMenuItem(
+                    value: 'custom',
+                    child: Text(
+                      isArabic ? 'سعر خاص ✏️' : 'Custom Price ✏️',
+                    ),
+                  ),
+                ],
+                onChanged: (val) {
+                  if (val != null) {
+                    widget.onTierChanged(val);
+                  }
+                },
+              ),
+              const SizedBox(width: 8),
+
+              // Editable Custom Price Input Field
+              if (item['selectedTier'] == 'custom')
+                SizedBox(
+                  width: 80,
+                  height: 34,
+                  child: TextField(
+                    controller: _customPriceController,
+                    focusNode: _priceFocus,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: InputDecoration(
+                      prefixText: '\$',
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 2,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      isDense: true,
+                    ),
+                    onChanged: (val) {
+                      final p = double.tryParse(val.trim());
+                      if (p != null && p >= 0) {
+                        widget.onCustomPriceChanged(p);
+                      }
+                    },
+                  ),
+                ),
+
+              const Spacer(),
+
+              // Quantity Controls
+              IconButton(
+                icon: const Icon(
+                  Icons.remove_circle_outline,
+                  size: 18,
+                ),
+                onPressed: () {
+                  if ((item['quantity'] as num).toDouble() > 1.0) {
+                    widget.onDecrement();
+                  } else {
+                    widget.onRemove();
+                  }
+                },
+              ),
+              SizedBox(
+                width: 70,
+                height: 34,
+                child: TextField(
+                  controller: _qtyController,
+                  focusNode: _qtyFocus,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  textAlign: TextAlign.center,
+                  decoration: InputDecoration(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 2,
+                      vertical: 2,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    isDense: true,
+                  ),
+                  onChanged: (val) {
+                    final newQty = double.tryParse(val.trim());
+                    if (newQty != null && newQty > 0) {
+                      widget.onQuantityChanged(newQty);
+                    }
+                  },
+                ),
+              ),
+              IconButton(
+                icon: const Icon(
+                  Icons.add_circle_outline,
+                  size: 18,
+                ),
+                onPressed: widget.onIncrement,
+              ),
+              IconButton(
+                icon: const Icon(
+                  Icons.delete,
+                  color: Colors.red,
+                  size: 18,
+                ),
+                onPressed: widget.onRemove,
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
