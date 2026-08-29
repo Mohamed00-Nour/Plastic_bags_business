@@ -17,12 +17,17 @@ class SupplierStatementPdfService {
     required List<SupplierBalanceRecord> records,
     String locale = 'ar',
   }) async {
-    final pdf = pw.Document();
+    final bodyFont = await PdfGoogleFonts.notoNaskhArabicRegular();
+    final boldFont = await PdfGoogleFonts.notoNaskhArabicBold();
+
+    final pdf = pw.Document(
+      theme: pw.ThemeData.withFont(
+        base: bodyFont,
+        bold: boldFont,
+      ),
+    );
     final isArabic = locale == 'ar';
     final dateFmt = DateFormat('yyyy/MM/dd HH:mm');
-
-    final bodyFont = await PdfGoogleFonts.cairoRegular();
-    final boldFont = await PdfGoogleFonts.cairoBold();
 
     final direction = isArabic ? pw.TextDirection.rtl : pw.TextDirection.ltr;
     final supplierName = supplierData['name'] ?? (isArabic ? 'مورد بدون اسم' : 'Unnamed Supplier');
@@ -210,12 +215,16 @@ class SupplierStatementPdfService {
     required Map<String, dynamic> invoiceData,
     String locale = 'ar',
   }) async {
-    final pdf = pw.Document();
-    final dateFmt = DateFormat('yyyy/MM/dd HH:mm');
+    final bodyFont = await PdfGoogleFonts.notoNaskhArabicRegular();
+    final boldFont = await PdfGoogleFonts.notoNaskhArabicBold();
 
-    final headerFont = await PdfGoogleFonts.cairoSemiBold();
-    final bodyFont = await PdfGoogleFonts.cairoRegular();
-    final boldFont = await PdfGoogleFonts.cairoBold();
+    final pdf = pw.Document(
+      theme: pw.ThemeData.withFont(
+        base: bodyFont,
+        bold: boldFont,
+      ),
+    );
+    final dateFmt = DateFormat('yyyy/MM/dd HH:mm');
 
     final direction = pw.TextDirection.rtl;
 
@@ -352,7 +361,7 @@ class SupplierStatementPdfService {
                   children: [
                     pw.Text(
                       'إيصال استلام وتوريد بضاعة معتمد',
-                      style: pw.TextStyle(font: headerFont, fontSize: 11, color: PdfColors.grey800),
+                      style: pw.TextStyle(font: boldFont, fontSize: 11, color: PdfColors.grey800),
                     ),
                     pw.SizedBox(height: 6),
                     pw.Text(

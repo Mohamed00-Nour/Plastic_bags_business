@@ -7,14 +7,19 @@ import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import '../core/theme/app_theme.dart';
 import '../core/utils/quantity_formatter.dart';
 import '../data/models/product_model_new.dart';
 import '../features/reports/presentation/widgets/report_preview_dialog.dart';
+import '../utils/arabic_reshaper.dart';
 import 'whatsapp_share_channel.dart';
 
 class ProductInventoryPdfService {
   ProductInventoryPdfService._();
+
+  /// Helper to reshape and reverse Arabic text for PDF rendering
+  static String _r(String text) => ArabicReshaper.reshapeAndReverse(text);
 
   /// Generate Product Inventory Audit Report PDF (جرد المنتجات والمخزون)
   static Future<Uint8List> generateInventoryAuditPdf({
@@ -22,15 +27,23 @@ class ProductInventoryPdfService {
     String locale = 'ar',
     bool quantitiesOnly = false,
   }) async {
-    final pdf = pw.Document();
+    // Load Amiri static TTF font for complete Arabic Presentation Forms support.
+    final regularData = await rootBundle.load('assets/fonts/Amiri-Regular.ttf');
+    final boldData = await rootBundle.load('assets/fonts/Amiri-Bold.ttf');
+    final bodyFont = pw.Font.ttf(regularData);
+    final boldFont = pw.Font.ttf(boldData);
+
+    final pdf = pw.Document(
+      theme: pw.ThemeData.withFont(base: bodyFont, bold: boldFont),
+    );
     final isArabic = locale == 'ar';
     final dateFmt = DateFormat('yyyy/MM/dd HH:mm');
 
-    final bodyFont = await PdfGoogleFonts.cairoRegular();
-    final boldFont = await PdfGoogleFonts.cairoBold();
-
     final int totalTypes = products.length;
-    final double totalUnits = products.fold(0.0, (acc, p) => acc + p.stockQuantity);
+    final double totalUnits = products.fold(
+      0.0,
+      (acc, p) => acc + p.stockQuantity,
+    );
     final double totalCostValue = products.fold(
       0.0,
       (acc, p) => acc + (p.stockQuantity * p.costPrice),
@@ -41,10 +54,10 @@ class ProductInventoryPdfService {
     );
 
     pdf.addPage(
-      pw.Page(
+      pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
-        textDirection: isArabic ? pw.TextDirection.rtl : pw.TextDirection.ltr,
-        build: (pw.Context context) {
+        margin: const pw.EdgeInsets.all(24),
+        header: (pw.Context context) {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
@@ -58,14 +71,14 @@ class ProductInventoryPdfService {
                       pw.Text(
                         quantitiesOnly
                             ? (isArabic
-                                ? 'تقرير جرد كميات المنتجات'
+                                ? _r('تقرير جرد كميات المنتجات')
                                 : 'Stock Quantities Audit')
                             : (isArabic
-                                ? 'تقرير جرد المنتجات والمخزون الشامل'
+                                ? _r('تقرير جرد المنتجات والمخزون الشامل')
                                 : 'Full Inventory Audit Report'),
                         style: pw.TextStyle(
                           font: boldFont,
-                          fontSize: 22,
+                          fontSize: 18,
                           color: PdfColor.fromHex('#4338CA'),
                         ),
                       ),
@@ -74,7 +87,7 @@ class ProductInventoryPdfService {
                         'Mr. John - Store Management System',
                         style: pw.TextStyle(
                           font: bodyFont,
-                          fontSize: 10,
+                          fontSize: 9,
                           color: PdfColors.grey700,
                         ),
                       ),
@@ -87,7 +100,7 @@ class ProductInventoryPdfService {
                         dateFmt.format(DateTime.now()),
                         style: pw.TextStyle(
                           font: bodyFont,
-                          fontSize: 10,
+                          fontSize: 9,
                           color: PdfColors.grey700,
                         ),
                       ),
@@ -95,211 +108,34 @@ class ProductInventoryPdfService {
                   ),
                 ],
               ),
-
-              pw.SizedBox(height: 16),
-              pw.Divider(color: PdfColors.grey300),
-              pw.SizedBox(height: 10),
-
-              // Summary Stats Box
-              pw.Container(
-                padding: const pw.EdgeInsets.all(12),
-                decoration: pw.BoxDecoration(
-                  color: PdfColor.fromHex('#F3F4F6'),
-                  borderRadius: pw.BorderRadius.circular(8),
-                ),
-                child: pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
-                  children: [
-                    pw.Column(
-                      children: [
-                        pw.Text(
-                          isArabic ? 'عدد الأصناف' : 'Total Items',
-                          style: pw.TextStyle(
-                            font: bodyFont,
-                            fontSize: 10,
-                            color: PdfColors.grey700,
-                          ),
-                        ),
-                        pw.SizedBox(height: 4),
-                        pw.Text(
-                          '$totalTypes',
-                          style: pw.TextStyle(
-                            font: boldFont,
-                            fontSize: 14,
-                            color: PdfColor.fromHex('#4338CA'),
-                          ),
-                        ),
-                      ],
-                    ),
-                    pw.Column(
-                      children: [
-                        pw.Text(
-                          isArabic ? 'إجمالي الكميات' : 'Total Stock Units',
-                          style: pw.TextStyle(
-                            font: bodyFont,
-                            fontSize: 10,
-                            color: PdfColors.grey700,
-                          ),
-                        ),
-                        pw.SizedBox(height: 4),
-                        pw.Text(
-                          '$totalUnits',
-                          style: pw.TextStyle(
-                            font: boldFont,
-                            fontSize: 14,
-                            color: PdfColor.fromHex('#10B981'),
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (!quantitiesOnly) ...[
-                      pw.Column(
-                        children: [
-                          pw.Text(
-                            isArabic
-                                ? 'قيمة المخزون بالتكلفة'
-                                : 'Inventory Cost Value',
-                            style: pw.TextStyle(
-                              font: bodyFont,
-                              fontSize: 10,
-                              color: PdfColors.grey700,
-                            ),
-                          ),
-                          pw.SizedBox(height: 4),
-                          pw.Text(
-                            '\$${totalCostValue.toStringAsFixed(2)}',
-                            style: pw.TextStyle(
-                              font: boldFont,
-                              fontSize: 14,
-                              color: PdfColor.fromHex('#F59E0B'),
-                            ),
-                          ),
-                        ],
-                      ),
-                      pw.Column(
-                        children: [
-                          pw.Text(
-                            isArabic
-                                ? 'قيمة المخزون بالبيع'
-                                : 'Inventory Retail Value',
-                            style: pw.TextStyle(
-                              font: bodyFont,
-                              fontSize: 10,
-                              color: PdfColors.grey700,
-                            ),
-                          ),
-                          pw.SizedBox(height: 4),
-                          pw.Text(
-                            '\$${totalRetailValue.toStringAsFixed(2)}',
-                            style: pw.TextStyle(
-                              font: boldFont,
-                              fontSize: 14,
-                              color: PdfColor.fromHex('#6366F1'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-
-              pw.SizedBox(height: 16),
-
-              // Inventory Table
-              pw.TableHelper.fromTextArray(
-                context: context,
-                border: pw.TableBorder.all(
-                  color: PdfColors.grey300,
-                  width: 0.5,
-                ),
-                headerStyle: pw.TextStyle(
-                  font: boldFont,
-                  fontSize: 10,
-                  color: PdfColors.white,
-                ),
-                headerDecoration: pw.BoxDecoration(
-                  color: PdfColor.fromHex('#4338CA'),
-                ),
-                cellStyle: pw.TextStyle(font: bodyFont, fontSize: 9),
-                cellAlignment: pw.Alignment.center,
-                headers:
-                    quantitiesOnly
-                        ? [
-                          '#',
-                          isArabic ? 'اسم المنتج' : 'Product Name',
-                          isArabic ? 'المقاس' : 'Size',
-                          isArabic ? 'الكمية المتوفرة' : 'Stock Quantity',
-                        ]
-                        : [
-                          '#',
-                          isArabic ? 'اسم المنتج' : 'Product Name',
-                          isArabic ? 'المقاس' : 'Size',
-                          isArabic ? 'الكمية' : 'Stock',
-                          isArabic ? 'التكلفة' : 'Cost',
-                          isArabic ? 'سعر البيع' : 'Price',
-                          isArabic ? 'إجمالي التكلفة' : 'Total Cost',
-                          isArabic ? 'إجمالي البيع' : 'Total Retail',
-                        ],
-                data: List.generate(products.length, (index) {
-                  final p = products[index];
-                  if (quantitiesOnly) {
-                    return [
-                      '${index + 1}',
-                      p.name,
-                      p.size.isEmpty ? '-' : p.size,
-                      formatQuantity(p.stockQuantity),
-                    ];
-                  }
-                  final totalCost = p.stockQuantity * p.costPrice;
-                  final totalRetail = p.stockQuantity * p.price;
-                  return [
-                    '${index + 1}',
-                    p.name,
-                    p.size.isEmpty ? '-' : p.size,
-                    formatQuantity(p.stockQuantity),
-                    '\$${p.costPrice.toStringAsFixed(2)}',
-                    '\$${p.price.toStringAsFixed(2)}',
-                    '\$${totalCost.toStringAsFixed(2)}',
-                    '\$${totalRetail.toStringAsFixed(2)}',
-                  ];
-                }),
-              ),
-
-              pw.SizedBox(height: 16),
-              pw.Spacer(),
-
-              // Branding & Footer
-              pw.Center(
-                child: pw.Column(
-                  children: [
-                    pw.Text(
-                      'برمجة شركة easy app - 01126697513',
-                      style: pw.TextStyle(
-                        font: boldFont,
-                        fontSize: 10,
-                        color: PdfColor.fromHex('#4338CA'),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              pw.Divider(color: PdfColors.grey300),
+              pw.SizedBox(height: 6),
+              pw.Divider(color: PdfColors.grey300, thickness: 0.5),
+              pw.SizedBox(height: 8),
+            ],
+          );
+        },
+        footer: (pw.Context context) {
+          return pw.Column(
+            children: [
+              pw.Divider(color: PdfColors.grey300, thickness: 0.5),
+              pw.SizedBox(height: 4),
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
                   pw.Text(
                     isArabic
-                        ? 'تم إنشاء التقرير آلياً'
-                        : 'Automated Inventory Audit',
+                        ? _r('برمجة شركة easy app - 01126697513')
+                        : 'Developed by Easy App - 01126697513',
                     style: pw.TextStyle(
                       font: bodyFont,
                       fontSize: 8,
-                      color: PdfColors.grey600,
+                      color: PdfColor.fromHex('#4338CA'),
                     ),
                   ),
                   pw.Text(
-                    'Page 1 of 1',
+                    isArabic
+                        ? '${_r('صفحة')} ${context.pageNumber} ${_r('من')} ${context.pagesCount}'
+                        : 'Page ${context.pageNumber} of ${context.pagesCount}',
                     style: pw.TextStyle(
                       font: bodyFont,
                       fontSize: 8,
@@ -311,10 +147,244 @@ class ProductInventoryPdfService {
             ],
           );
         },
+        build:
+            (pw.Context context) => [
+              // Summary Stats Box
+              pw.Container(
+                padding: const pw.EdgeInsets.all(10),
+                margin: const pw.EdgeInsets.only(bottom: 12),
+                decoration: pw.BoxDecoration(
+                  color: PdfColor.fromHex('#F3F4F6'),
+                  borderRadius: pw.BorderRadius.circular(8),
+                ),
+                child: pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
+                  children: [
+                    pw.Column(
+                      children: [
+                        pw.Text(
+                          isArabic ? _r('عدد الأصناف') : 'Total Items',
+                          style: pw.TextStyle(
+                            font: bodyFont,
+                            fontSize: 9,
+                            color: PdfColors.grey700,
+                          ),
+                        ),
+                        pw.SizedBox(height: 3),
+                        pw.Text(
+                          '$totalTypes',
+                          style: pw.TextStyle(
+                            font: boldFont,
+                            fontSize: 13,
+                            color: PdfColor.fromHex('#4338CA'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    pw.Column(
+                      children: [
+                        pw.Text(
+                          isArabic ? _r('إجمالي الكميات') : 'Total Stock Units',
+                          style: pw.TextStyle(
+                            font: bodyFont,
+                            fontSize: 9,
+                            color: PdfColors.grey700,
+                          ),
+                        ),
+                        pw.SizedBox(height: 3),
+                        pw.Text(
+                          formatQuantity(totalUnits),
+                          style: pw.TextStyle(
+                            font: boldFont,
+                            fontSize: 13,
+                            color: PdfColor.fromHex('#10B981'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (!quantitiesOnly) ...[
+                      pw.Column(
+                        children: [
+                          pw.Text(
+                            isArabic
+                                ? _r('قيمة المخزون بالتكلفة')
+                                : 'Inventory Cost Value',
+                            style: pw.TextStyle(
+                              font: bodyFont,
+                              fontSize: 9,
+                              color: PdfColors.grey700,
+                            ),
+                          ),
+                          pw.SizedBox(height: 3),
+                          pw.Text(
+                            '\$${totalCostValue.toStringAsFixed(2)}',
+                            style: pw.TextStyle(
+                              font: boldFont,
+                              fontSize: 13,
+                              color: PdfColor.fromHex('#F59E0B'),
+                            ),
+                          ),
+                        ],
+                      ),
+                      pw.Column(
+                        children: [
+                          pw.Text(
+                            isArabic
+                                ? _r('قيمة المخزون بالبيع')
+                                : 'Inventory Retail Value',
+                            style: pw.TextStyle(
+                              font: bodyFont,
+                              fontSize: 9,
+                              color: PdfColors.grey700,
+                            ),
+                          ),
+                          pw.SizedBox(height: 3),
+                          pw.Text(
+                            '\$${totalRetailValue.toStringAsFixed(2)}',
+                            style: pw.TextStyle(
+                              font: boldFont,
+                              fontSize: 13,
+                              color: PdfColor.fromHex('#6366F1'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+
+              // Build headers and rows
+              _buildInventoryTable(
+                products: products,
+                isArabic: isArabic,
+                quantitiesOnly: quantitiesOnly,
+                bodyFont: bodyFont,
+                boldFont: boldFont,
+              ),
+            ],
       ),
     );
 
     return pdf.save();
+  }
+
+  /// Build an inventory table using explicit pw.Table
+  static pw.Widget _buildInventoryTable({
+    required List<ProductModel> products,
+    required bool isArabic,
+    required bool quantitiesOnly,
+    required pw.Font bodyFont,
+    required pw.Font boldFont,
+  }) {
+    final border = pw.TableBorder.all(color: PdfColors.grey300, width: 0.5);
+    final headerBg = PdfColor.fromHex('#4338CA');
+
+    // Column widths
+    final colWidths =
+        quantitiesOnly
+            ? <int, pw.TableColumnWidth>{
+              0: const pw.FlexColumnWidth(0.8),
+              1: const pw.FlexColumnWidth(4.5),
+              2: const pw.FlexColumnWidth(2.2),
+              3: const pw.FlexColumnWidth(2.2),
+            }
+            : <int, pw.TableColumnWidth>{
+              0: const pw.FlexColumnWidth(0.7),
+              1: const pw.FlexColumnWidth(3.5),
+              2: const pw.FlexColumnWidth(1.6),
+              3: const pw.FlexColumnWidth(1.4),
+              4: const pw.FlexColumnWidth(1.4),
+              5: const pw.FlexColumnWidth(1.4),
+              6: const pw.FlexColumnWidth(1.8),
+              7: const pw.FlexColumnWidth(1.8),
+            };
+
+    // Helper to build a header cell
+    pw.Widget headerCell(String text) {
+      return pw.Container(
+        color: headerBg,
+        padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 5),
+        child: pw.Text(
+          isArabic ? _r(text) : text,
+          textAlign: pw.TextAlign.center,
+          style: pw.TextStyle(
+            font: boldFont,
+            fontSize: 9,
+            color: PdfColors.white,
+          ),
+        ),
+      );
+    }
+
+    // Helper to build a data cell
+    pw.Widget dataCell(String text, {bool even = false}) {
+      return pw.Container(
+        color: even ? PdfColor.fromHex('#F8FAFC') : PdfColors.white,
+        padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+        child: pw.Text(
+          isArabic ? _r(text) : text,
+          textAlign: pw.TextAlign.center,
+          style: pw.TextStyle(font: bodyFont, fontSize: 8.5),
+        ),
+      );
+    }
+
+    final List<String> headers =
+        quantitiesOnly
+            ? [
+              '#',
+              isArabic ? 'اسم المنتج' : 'Product Name',
+              isArabic ? 'المقاس' : 'Size',
+              isArabic ? 'الكمية المتوفرة' : 'Stock Quantity',
+            ]
+            : [
+              '#',
+              isArabic ? 'اسم المنتج' : 'Product Name',
+              isArabic ? 'المقاس' : 'Size',
+              isArabic ? 'الكمية' : 'Stock',
+              isArabic ? 'التكلفة' : 'Cost',
+              isArabic ? 'سعر البيع' : 'Price',
+              isArabic ? 'إجمالي التكلفة' : 'Total Cost',
+              isArabic ? 'إجمالي البيع' : 'Total Retail',
+            ];
+
+    final headerRow = pw.TableRow(children: headers.map(headerCell).toList());
+
+    final dataRows = List.generate(products.length, (i) {
+      final p = products[i];
+      final even = i.isEven;
+      if (quantitiesOnly) {
+        return pw.TableRow(
+          children: [
+            dataCell('${i + 1}', even: even),
+            dataCell(p.name, even: even),
+            dataCell(p.size.isEmpty ? '-' : p.size, even: even),
+            dataCell(formatQuantity(p.stockQuantity), even: even),
+          ],
+        );
+      }
+      final totalCost = p.stockQuantity * p.costPrice;
+      final totalRetail = p.stockQuantity * p.price;
+      return pw.TableRow(
+        children: [
+          dataCell('${i + 1}', even: even),
+          dataCell(p.name, even: even),
+          dataCell(p.size.isEmpty ? '-' : p.size, even: even),
+          dataCell(formatQuantity(p.stockQuantity), even: even),
+          dataCell('\$${p.costPrice.toStringAsFixed(2)}', even: even),
+          dataCell('\$${p.price.toStringAsFixed(2)}', even: even),
+          dataCell('\$${totalCost.toStringAsFixed(2)}', even: even),
+          dataCell('\$${totalRetail.toStringAsFixed(2)}', even: even),
+        ],
+      );
+    });
+
+    return pw.Table(
+      border: border,
+      columnWidths: colWidths,
+      children: [headerRow, ...dataRows],
+    );
   }
 
   /// Selection Dialog to choose between Full Audit and Quantities Only
@@ -342,7 +412,9 @@ class ProductInventoryPdfService {
                 ),
                 const SizedBox(width: 10),
                 Text(
-                  isArabic ? 'نوع تقرير جرد المنتجات' : 'Select Stock Audit Type',
+                  isArabic
+                      ? 'نوع تقرير جرد المنتجات'
+                      : 'Select Stock Audit Type',
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
@@ -527,7 +599,10 @@ class ProductInventoryPdfService {
 
       if (!pageContext.mounted) return;
 
-      final totalStock = products.fold<double>(0.0, (acc, p) => acc + p.stockQuantity);
+      final totalStock = products.fold<double>(
+        0.0,
+        (acc, p) => acc + p.stockQuantity,
+      );
 
       showModalBottomSheet(
         context: pageContext,
@@ -537,7 +612,8 @@ class ProductInventoryPdfService {
         ),
         builder: (bCtx) {
           return Directionality(
-            textDirection: isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
+            textDirection:
+                isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Column(
