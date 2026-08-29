@@ -33,6 +33,8 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
   String _notes = '';
   bool _isSubmitting = false;
 
+  final TextEditingController _supplierSearchController = TextEditingController();
+  final FocusNode _supplierSearchFocusNode = FocusNode();
   final TextEditingController _discountController = TextEditingController(text: '0.0');
   final TextEditingController _paidController = TextEditingController(text: '0.0');
   final TextEditingController _notesController = TextEditingController();
@@ -56,6 +58,8 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
   @override
   void dispose() {
     _tabController.dispose();
+    _supplierSearchController.dispose();
+    _supplierSearchFocusNode.dispose();
     _discountController.dispose();
     _paidController.dispose();
     _notesController.dispose();
@@ -162,6 +166,10 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
 
       setState(() {
         _isSubmitting = false;
+        _selectedSupplierId = null;
+        _selectedSupplierName = null;
+        _selectedSupplierPhone = null;
+        _supplierSearchController.clear();
         _lineItems.clear();
         _discount = 0.0;
         _paidAmount = 0.0;
@@ -455,6 +463,8 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
                               final suppliers = snapshot.data ?? [];
 
                               return RawAutocomplete<Map<String, dynamic>>(
+                                textEditingController: _supplierSearchController,
+                                focusNode: _supplierSearchFocusNode,
                                 displayStringForOption: (s) {
                                   final bal = ((s['totalBalance'] ?? s['balance'] ?? 0.0) as num).toDouble();
                                   final balStr = bal.toStringAsFixed(2);
@@ -478,16 +488,13 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
                                   });
                                 },
                                 fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
-                                  if (_selectedSupplierName != null && controller.text.isEmpty) {
-                                    controller.text = _selectedSupplierName!;
-                                  }
                                   return TextFormField(
                                     controller: controller,
                                     focusNode: focusNode,
                                     decoration: InputDecoration(
                                       labelText: isArabic ? 'ابحث عن المورد واختاره *' : 'Search & Select Supplier *',
                                       prefixIcon: const Icon(Icons.business_center_rounded),
-                                      suffixIcon: _selectedSupplierId != null
+                                      suffixIcon: _selectedSupplierId != null || controller.text.isNotEmpty
                                           ? IconButton(
                                               icon: const Icon(Icons.clear, color: Colors.grey),
                                               onPressed: () {

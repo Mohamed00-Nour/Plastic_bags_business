@@ -42,6 +42,9 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
   String _notes = '';
   bool _isSubmitting = false;
 
+  final TextEditingController _clientSearchController =
+      TextEditingController();
+  final FocusNode _clientSearchFocusNode = FocusNode();
   final TextEditingController _discountController = TextEditingController(
     text: '0.0',
   );
@@ -60,6 +63,10 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
   String? _returnClientName;
   String? _returnClientPhone;
   String _returnPaymentMethod = 'Cash';
+
+  final TextEditingController _returnClientSearchController =
+      TextEditingController();
+  final FocusNode _returnClientSearchFocusNode = FocusNode();
 
   final List<Map<String, dynamic>> _returnLineItems = [];
   double _returnDiscount = 0.0;
@@ -109,6 +116,7 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
     _discountController.text = _discount.toStringAsFixed(2);
     _paidController.text = _paidAmount.toStringAsFixed(2);
     _notesController.text = _notes;
+    _clientSearchController.text = _selectedClientName ?? '';
 
     final rawDate = inv['createdAt'] ?? inv['date'];
     if (rawDate is Timestamp) {
@@ -137,10 +145,14 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
   @override
   void dispose() {
     _tabController.dispose();
+    _clientSearchController.dispose();
+    _clientSearchFocusNode.dispose();
     _discountController.dispose();
     _paidController.dispose();
     _notesController.dispose();
     _productSearchController.dispose();
+    _returnClientSearchController.dispose();
+    _returnClientSearchFocusNode.dispose();
     _returnDiscountController.dispose();
     _returnRefundController.dispose();
     _returnNotesController.dispose();
@@ -369,6 +381,10 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
 
       setState(() {
         _isSubmitting = false;
+        _selectedClientId = null;
+        _selectedClientName = null;
+        _selectedClientPhone = null;
+        _clientSearchController.clear();
         _lineItems.clear();
         _discount = 0.0;
         _paidAmount = 0.0;
@@ -406,7 +422,7 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
       setState(() => _isSubmitting = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error saving invoice: $e'),
+          content: Text('${isArabic ? "خطأ: " : "Error: "}$e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -427,7 +443,6 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
       );
       return;
     }
-
     if (_returnLineItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -461,7 +476,6 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
       if (!mounted) return;
 
       final returnDataToPrint = {
-        'invoiceNumber': _returnNumber,
         'returnNumber': _returnNumber,
         'clientName': _returnClientName,
         'clientPhone': _returnClientPhone,
@@ -479,6 +493,10 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
 
       setState(() {
         _isReturnSubmitting = false;
+        _returnClientId = null;
+        _returnClientName = null;
+        _returnClientPhone = null;
+        _returnClientSearchController.clear();
         _returnLineItems.clear();
         _returnDiscount = 0.0;
         _returnRefundAmount = 0.0;
@@ -642,6 +660,8 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                               final clients = snapshot.data ?? [];
 
                               return RawAutocomplete<Map<String, dynamic>>(
+                                textEditingController: _clientSearchController,
+                                focusNode: _clientSearchFocusNode,
                                 displayStringForOption: (c) {
                                   final balStr = (c['balance'] ?? 0.0)
                                       .toStringAsFixed(2);
@@ -682,10 +702,6 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                                   focusNode,
                                   onFieldSubmitted,
                                 ) {
-                                  if (_selectedClientName != null &&
-                                      controller.text.isEmpty) {
-                                    controller.text = _selectedClientName!;
-                                  }
                                   return TextFormField(
                                     controller: controller,
                                     focusNode: focusNode,
@@ -698,7 +714,8 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                                         Icons.person_search_rounded,
                                       ),
                                       suffixIcon:
-                                          _selectedClientId != null
+                                          _selectedClientId != null ||
+                                                  controller.text.isNotEmpty
                                               ? IconButton(
                                                 icon: const Icon(
                                                   Icons.clear,
@@ -1221,6 +1238,8 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                       builder: (context, snapshot) {
                         final clients = snapshot.data ?? [];
                         return RawAutocomplete<Map<String, dynamic>>(
+                          textEditingController: _returnClientSearchController,
+                          focusNode: _returnClientSearchFocusNode,
                           displayStringForOption: (c) => c['name'] ?? '',
                           optionsBuilder: (TextEditingValue textEditingValue) {
                             if (textEditingValue.text.isEmpty) return clients;
@@ -1246,10 +1265,6 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                             focusNode,
                             onFieldSubmitted,
                           ) {
-                            if (_returnClientName != null &&
-                                controller.text.isEmpty) {
-                              controller.text = _returnClientName!;
-                            }
                             return TextFormField(
                               controller: controller,
                               focusNode: focusNode,
@@ -1263,7 +1278,8 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                                   color: AppTheme.dangerColor,
                                 ),
                                 suffixIcon:
-                                    _returnClientId != null
+                                    _returnClientId != null ||
+                                            controller.text.isNotEmpty
                                         ? IconButton(
                                           icon: const Icon(Icons.clear),
                                           onPressed: () {
