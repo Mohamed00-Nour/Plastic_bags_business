@@ -15,19 +15,27 @@ import '../../bloc/shop_state.dart';
 
 String _localizedOrderStatus(AppLocalizations l10n, OrderStatus status) {
   switch (status) {
-    case OrderStatus.pending: return l10n.statusPending;
-    case OrderStatus.approved: return l10n.statusApproved;
-    case OrderStatus.rejected: return l10n.statusRejected;
-    case OrderStatus.delivered: return l10n.statusDelivered;
+    case OrderStatus.pending:
+      return l10n.statusPending;
+    case OrderStatus.approved:
+      return l10n.statusApproved;
+    case OrderStatus.rejected:
+      return l10n.statusRejected;
+    case OrderStatus.delivered:
+      return l10n.statusDelivered;
   }
 }
 
 String _localizedTransactionType(AppLocalizations l10n, TransactionType type) {
   switch (type) {
-    case TransactionType.balanceCharge: return l10n.transactionBalanceCharge;
-    case TransactionType.purchase: return l10n.transactionPurchase;
-    case TransactionType.refund: return l10n.transactionRefund;
-    case TransactionType.supplierPayment: return l10n.transactionSupplierPayment;
+    case TransactionType.balanceCharge:
+      return l10n.transactionBalanceCharge;
+    case TransactionType.purchase:
+      return l10n.transactionPurchase;
+    case TransactionType.refund:
+      return l10n.transactionRefund;
+    case TransactionType.supplierPayment:
+      return l10n.transactionSupplierPayment;
   }
 }
 
@@ -72,24 +80,19 @@ class _ShopsScreenState extends State<ShopsScreen> {
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: SearchField(
-                      hint: l10n.searchShops,
-                      onChanged:
-                          (query) => context.read<ShopBloc>().add(
-                            ShopSearchRequested(query: query),
-                          ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  ElevatedButton.icon(
-                    onPressed: () => _showShopForm(context),
-                    icon: const Icon(Icons.add, size: 18),
-                    label: Text(l10n.addShop),
-                  ),
-                ],
+              ResponsiveActionBar(
+                primary: SearchField(
+                  hint: l10n.searchShops,
+                  onChanged:
+                      (query) => context.read<ShopBloc>().add(
+                        ShopSearchRequested(query: query),
+                      ),
+                ),
+                actions: ElevatedButton.icon(
+                  onPressed: () => _showShopForm(context),
+                  icon: const Icon(Icons.add, size: 18),
+                  label: Text(l10n.addShop),
+                ),
               ),
               const SizedBox(height: 20),
               Expanded(child: _buildContent(state)),
@@ -127,7 +130,10 @@ class _ShopsScreenState extends State<ShopsScreen> {
                 DataColumn(label: Text(l10n.name)),
                 DataColumn(label: Text(l10n.phone)),
                 DataColumn(label: Text(l10n.loginEmail)),
-                DataColumn(label: Text(l10n.totalPurchasesLabel), numeric: true),
+                DataColumn(
+                  label: Text(l10n.totalPurchasesLabel),
+                  numeric: true,
+                ),
                 DataColumn(label: Text(l10n.createdByLabel)),
                 DataColumn(label: Text(l10n.modifiedByLabel)),
                 DataColumn(label: Text(l10n.actions)),
@@ -150,8 +156,16 @@ class _ShopsScreenState extends State<ShopsScreen> {
                           ),
                         ),
                         DataCell(Text(currFmt.format(shop.totalPurchases))),
-                        DataCell(Text(shop.createdBy.isNotEmpty ? shop.createdBy : '-')),
-                        DataCell(Text(shop.modifiedBy.isNotEmpty ? shop.modifiedBy : '-')),
+                        DataCell(
+                          Text(
+                            shop.createdBy.isNotEmpty ? shop.createdBy : '-',
+                          ),
+                        ),
+                        DataCell(
+                          Text(
+                            shop.modifiedBy.isNotEmpty ? shop.modifiedBy : '-',
+                          ),
+                        ),
                         DataCell(
                           Row(
                             mainAxisSize: MainAxisSize.min,
@@ -205,14 +219,16 @@ class _ShopsScreenState extends State<ShopsScreen> {
                                 ),
                                 tooltip: l10n.delete,
                                 onPressed: () async {
-                                  final confirmed = await ConfirmationDialog.show(
-                                    context,
-                                    title: l10n.deleteShop,
-                                    message:
-                                        l10n.areYouSureDelete(shop.name),
-                                    confirmLabel: l10n.delete,
-                                    confirmColor: AppTheme.dangerColor,
-                                  );
+                                  final confirmed =
+                                      await ConfirmationDialog.show(
+                                        context,
+                                        title: l10n.deleteShop,
+                                        message: l10n.areYouSureDelete(
+                                          shop.name,
+                                        ),
+                                        confirmLabel: l10n.delete,
+                                        confirmColor: AppTheme.dangerColor,
+                                      );
                                   if (confirmed == true && mounted) {
                                     context.read<ShopBloc>().add(
                                       ShopDeleteRequested(shopId: shop.id),
@@ -302,12 +318,12 @@ class _ShopsScreenState extends State<ShopsScreen> {
                     children: [
                       TextFormField(
                         controller: nameCtrl,
-                        decoration: InputDecoration(
-                          labelText: l10n.shopName,
-                        ),
+                        decoration: InputDecoration(labelText: l10n.shopName),
                         validator:
                             (v) =>
-                                v?.trim().isEmpty == true ? l10n.required_field : null,
+                                v?.trim().isEmpty == true
+                                    ? l10n.required_field
+                                    : null,
                       ),
                       const SizedBox(height: 12),
                       TextFormField(
@@ -316,7 +332,9 @@ class _ShopsScreenState extends State<ShopsScreen> {
                         keyboardType: TextInputType.phone,
                         validator:
                             (v) =>
-                                v?.trim().isEmpty == true ? l10n.required_field : null,
+                                v?.trim().isEmpty == true
+                                    ? l10n.required_field
+                                    : null,
                       ),
                       const SizedBox(height: 12),
                       TextFormField(
@@ -349,7 +367,9 @@ class _ShopsScreenState extends State<ShopsScreen> {
                           ),
                           keyboardType: TextInputType.emailAddress,
                           validator: (v) {
-                            if (v != null && v.trim().isNotEmpty && !v.contains('@')) {
+                            if (v != null &&
+                                v.trim().isNotEmpty &&
+                                !v.contains('@')) {
                               return l10n.invalidEmail;
                             }
                             return null;
@@ -406,7 +426,7 @@ class _ShopsScreenState extends State<ShopsScreen> {
                     } else {
                       final email = emailCtrl.text.trim();
                       final password = passwordCtrl.text;
-                      
+
                       if (email.isNotEmpty && password.isNotEmpty) {
                         context.read<ShopBloc>().add(
                           ShopAddWithAccountRequested(
@@ -416,9 +436,7 @@ class _ShopsScreenState extends State<ShopsScreen> {
                           ),
                         );
                       } else {
-                        context.read<ShopBloc>().add(
-                          ShopAddRequested(shop: s),
-                        );
+                        context.read<ShopBloc>().add(ShopAddRequested(shop: s));
                       }
                     }
                     Navigator.pop(ctx);
@@ -440,10 +458,21 @@ class _ShopsScreenState extends State<ShopsScreen> {
       context: context,
       builder:
           (ctx) => AlertDialog(
-            title: Text(l10n.transactionsFor(shop.name)),
+            insetPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 24,
+            ),
+            title: Text(
+              l10n.transactionsFor(shop.name),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
             content: SizedBox(
               width: 700,
-              height: 500,
+              height:
+                  (MediaQuery.sizeOf(ctx).height * 0.6)
+                      .clamp(260.0, 500.0)
+                      .toDouble(),
               child: StreamBuilder<QuerySnapshot>(
                 stream:
                     FirebaseFirestore.instance
@@ -484,7 +513,10 @@ class _ShopsScreenState extends State<ShopsScreen> {
                                   DataCell(Text(dateFmt.format(t.createdAt))),
                                   DataCell(
                                     StatusBadge(
-                                      label: _localizedTransactionType(l10n, t.type),
+                                      label: _localizedTransactionType(
+                                        l10n,
+                                        t.type,
+                                      ),
                                       color:
                                           isCredit
                                               ? AppTheme.successColor
@@ -533,10 +565,21 @@ class _ShopsScreenState extends State<ShopsScreen> {
       context: context,
       builder:
           (ctx) => AlertDialog(
-            title: Text(l10n.orderHistoryFor(shop.name)),
+            insetPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 24,
+            ),
+            title: Text(
+              l10n.orderHistoryFor(shop.name),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
             content: SizedBox(
               width: 700,
-              height: 500,
+              height:
+                  (MediaQuery.sizeOf(ctx).height * 0.6)
+                      .clamp(260.0, 500.0)
+                      .toDouble(),
               child: StreamBuilder<QuerySnapshot>(
                 stream:
                     FirebaseFirestore.instance
@@ -582,11 +625,16 @@ class _ShopsScreenState extends State<ShopsScreen> {
                               return DataRow(
                                 cells: [
                                   DataCell(Text('#${o.id.substring(0, 8)}')),
-                                  DataCell(Text(l10n.itemsCount(o.items.length))),
+                                  DataCell(
+                                    Text(l10n.itemsCount(o.items.length)),
+                                  ),
                                   DataCell(Text(currFmt.format(o.totalPrice))),
                                   DataCell(
                                     StatusBadge(
-                                      label: _localizedOrderStatus(l10n, o.status),
+                                      label: _localizedOrderStatus(
+                                        l10n,
+                                        o.status,
+                                      ),
                                       color: statusColor,
                                     ),
                                   ),

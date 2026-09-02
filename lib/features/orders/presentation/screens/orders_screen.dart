@@ -170,8 +170,18 @@ class _OrdersScreenState extends State<OrdersScreen> {
                             style: const TextStyle(fontSize: 12),
                           ),
                         ),
-                        DataCell(Text(order.createdBy.isNotEmpty ? order.createdBy : '-')),
-                        DataCell(Text(order.modifiedBy.isNotEmpty ? order.modifiedBy : '-')),
+                        DataCell(
+                          Text(
+                            order.createdBy.isNotEmpty ? order.createdBy : '-',
+                          ),
+                        ),
+                        DataCell(
+                          Text(
+                            order.modifiedBy.isNotEmpty
+                                ? order.modifiedBy
+                                : '-',
+                          ),
+                        ),
                         DataCell(
                           Row(
                             mainAxisSize: MainAxisSize.min,
@@ -188,34 +198,36 @@ class _OrdersScreenState extends State<OrdersScreen> {
                               ),
                               if (order.status == OrderStatus.approved)
                                 (state is OrderLoaded &&
-                                        state.deliveringOrderIds.contains(order.id))
+                                        state.deliveringOrderIds.contains(
+                                          order.id,
+                                        ))
                                     ? const SizedBox(
-                                        width: 40,
-                                        height: 40,
-                                        child: Center(
-                                          child: SizedBox(
-                                            width: 20,
-                                            height: 20,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              color: AppTheme.infoColor,
-                                            ),
+                                      width: 40,
+                                      height: 40,
+                                      child: Center(
+                                        child: SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: AppTheme.infoColor,
                                           ),
                                         ),
-                                      )
-                                    : IconButton(
-                                        icon: const Icon(
-                                          Icons.local_shipping_outlined,
-                                          size: 20,
-                                          color: AppTheme.infoColor,
-                                        ),
-                                        tooltip: l10n.markDelivered,
-                                        onPressed: () {
-                                          context.read<OrderBloc>().add(
-                                            OrderMarkDelivered(orderId: order.id),
-                                          );
-                                        },
                                       ),
+                                    )
+                                    : IconButton(
+                                      icon: const Icon(
+                                        Icons.local_shipping_outlined,
+                                        size: 20,
+                                        color: AppTheme.infoColor,
+                                      ),
+                                      tooltip: l10n.markDelivered,
+                                      onPressed: () {
+                                        context.read<OrderBloc>().add(
+                                          OrderMarkDelivered(orderId: order.id),
+                                        );
+                                      },
+                                    ),
                               if (order.status == OrderStatus.pending) ...[
                                 IconButton(
                                   icon: const Icon(
@@ -225,13 +237,14 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                   ),
                                   tooltip: l10n.approve,
                                   onPressed: () async {
-                                    final confirmed = await ConfirmationDialog.show(
-                                      context,
-                                      title: l10n.approveOrder,
-                                      message: l10n.approveOrderMessage,
-                                      confirmLabel: l10n.approve,
-                                      confirmColor: AppTheme.successColor,
-                                    );
+                                    final confirmed =
+                                        await ConfirmationDialog.show(
+                                          context,
+                                          title: l10n.approveOrder,
+                                          message: l10n.approveOrderMessage,
+                                          confirmLabel: l10n.approve,
+                                          confirmColor: AppTheme.successColor,
+                                        );
                                     if (confirmed == true && context.mounted) {
                                       context.read<OrderBloc>().add(
                                         OrderApproveRequested(
@@ -254,7 +267,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                           _showRejectDialog(context, order.id),
                                 ),
                               ],
-
                             ],
                           ),
                         ),
@@ -285,7 +297,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
         color = AppTheme.infoColor;
         break;
     }
-    return StatusBadge(label: _localizedOrderStatus(l10n, status), color: color);
+    return StatusBadge(
+      label: _localizedOrderStatus(l10n, status),
+      color: color,
+    );
   }
 
   void _showOrderDetails(BuildContext context, OrderModel order) {
@@ -326,7 +341,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                    color: theme.colorScheme.onSurfaceVariant.withValues(
+                      alpha: 0.4,
+                    ),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -529,6 +546,7 @@ class _CreateOrderDialogState extends State<_CreateOrderDialog> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       title: Text(l10n.createNewOrder),
       content: SizedBox(
         width: 800,
@@ -543,9 +561,8 @@ class _CreateOrderDialogState extends State<_CreateOrderDialog> {
                       // Shop selector
                       DropdownButtonFormField<ShopModel>(
                         value: _selectedShop,
-                        decoration: InputDecoration(
-                          labelText: l10n.selectShop,
-                        ),
+                        isExpanded: true,
+                        decoration: InputDecoration(labelText: l10n.selectShop),
                         items:
                             _shops
                                 .map(
@@ -620,6 +637,7 @@ class _CreateOrderDialogState extends State<_CreateOrderDialog> {
                               children: [
                                 DropdownButtonFormField<ProductModel>(
                                   value: item.product,
+                                  isExpanded: true,
                                   decoration: InputDecoration(
                                     labelText: l10n.product,
                                     isDense: true,
@@ -631,6 +649,8 @@ class _CreateOrderDialogState extends State<_CreateOrderDialog> {
                                               value: p,
                                               child: Text(
                                                 '${p.name} (${p.size})',
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
                                               ),
                                             ),
                                           )
@@ -644,52 +664,41 @@ class _CreateOrderDialogState extends State<_CreateOrderDialog> {
                                   },
                                 ),
                                 const SizedBox(height: 12),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: TextFormField(
-                                        controller: item.qtyCtrl,
-                                        decoration: InputDecoration(
-                                          labelText: l10n.qty,
-                                          isDense: true,
-                                        ),
-                                        keyboardType:
-                                            const TextInputType.numberWithOptions(
-                                              decimal: true,
-                                            ),
-                                        onChanged: (v) {
-                                          setState(() {});
-                                        },
+                                LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    final quantityField = TextFormField(
+                                      controller: item.qtyCtrl,
+                                      decoration: InputDecoration(
+                                        labelText: l10n.qty,
+                                        isDense: true,
                                       ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: TextFormField(
-                                        controller: item.priceCtrl,
-                                        decoration: InputDecoration(
-                                          labelText: l10n.price,
-                                          isDense: true,
-                                          prefixText: '\$ ',
-                                        ),
-                                        keyboardType:
-                                            const TextInputType.numberWithOptions(
-                                              decimal: true,
-                                            ),
-                                        onChanged: (v) {
-                                          setState(() {});
-                                        },
+                                      keyboardType:
+                                          const TextInputType.numberWithOptions(
+                                            decimal: true,
+                                          ),
+                                      onChanged: (v) => setState(() {}),
+                                    );
+                                    final priceField = TextFormField(
+                                      controller: item.priceCtrl,
+                                      decoration: InputDecoration(
+                                        labelText: l10n.price,
+                                        isDense: true,
+                                        prefixText: '\$ ',
                                       ),
-                                    ),
-                                    const SizedBox(width: 16),
-                                    Text(
+                                      keyboardType:
+                                          const TextInputType.numberWithOptions(
+                                            decimal: true,
+                                          ),
+                                      onChanged: (v) => setState(() {}),
+                                    );
+                                    final itemTotal = Text(
                                       '\$${(item.quantity * item.unitPrice).toStringAsFixed(2)}',
                                       style: const TextStyle(
                                         fontWeight: FontWeight.bold,
                                         color: AppTheme.primaryColor,
                                       ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    IconButton(
+                                    );
+                                    final deleteButton = IconButton(
                                       icon: const Icon(
                                         Icons.delete_outline,
                                         size: 20,
@@ -703,8 +712,43 @@ class _CreateOrderDialogState extends State<_CreateOrderDialog> {
                                           removedItem.dispose();
                                         });
                                       },
-                                    ),
-                                  ],
+                                    );
+
+                                    if (constraints.maxWidth < 430) {
+                                      return Column(
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Expanded(child: quantityField),
+                                              const SizedBox(width: 8),
+                                              Expanded(child: priceField),
+                                            ],
+                                          ),
+                                          Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.end,
+                                            children: [
+                                              Flexible(child: itemTotal),
+                                              const SizedBox(width: 8),
+                                              deleteButton,
+                                            ],
+                                          ),
+                                        ],
+                                      );
+                                    }
+
+                                    return Row(
+                                      children: [
+                                        Expanded(child: quantityField),
+                                        const SizedBox(width: 8),
+                                        Expanded(child: priceField),
+                                        const SizedBox(width: 16),
+                                        Flexible(child: itemTotal),
+                                        const SizedBox(width: 8),
+                                        deleteButton,
+                                      ],
+                                    );
+                                  },
                                 ),
                               ],
                             ),
@@ -810,144 +854,167 @@ class _OrderDetailsDialogState extends State<_OrderDetailsDialog> {
     final dateFmt = DateFormat('MMM dd, yyyy HH:mm');
 
     return AlertDialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       title: Row(
         children: [
-          Expanded(child: Text('${l10n.orderIdPrefix} #${order.id.substring(0, 8)}')),
+          Expanded(
+            child: Text('${l10n.orderIdPrefix} #${order.id.substring(0, 8)}'),
+          ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.download_outlined),
             tooltip: l10n.exportOrder,
             onSelected: (value) => _handleExport(value, order),
-            itemBuilder: (ctx) => [
-              PopupMenuItem(
-                value: 'pdf',
-                child: Row(
-                  children: [
-                    const Icon(Icons.picture_as_pdf_outlined,
-                        size: 20, color: AppTheme.dangerColor),
-                    const SizedBox(width: 8),
-                    Text(l10n.exportPdf),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'image',
-                child: Row(
-                  children: [
-                    const Icon(Icons.image_outlined,
-                        size: 20, color: AppTheme.infoColor),
-                    const SizedBox(width: 8),
-                    Text(l10n.exportImage),
-                  ],
-                ),
-              ),
-            ],
+            itemBuilder:
+                (ctx) => [
+                  PopupMenuItem(
+                    value: 'pdf',
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.picture_as_pdf_outlined,
+                          size: 20,
+                          color: AppTheme.dangerColor,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(l10n.exportPdf),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'image',
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.image_outlined,
+                          size: 20,
+                          color: AppTheme.infoColor,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(l10n.exportImage),
+                      ],
+                    ),
+                  ),
+                ],
           ),
         ],
       ),
       content: SizedBox(
         width: 550,
-        child: _exporting
-            ? const Center(child: CircularProgressIndicator())
-            : SingleChildScrollView(
-                child: RepaintBoundary(
-                  key: _boundaryKey,
-                  child: Container(
-                    color: Theme.of(context).dialogTheme.backgroundColor ??
-                        Theme.of(context).colorScheme.surface,
-                    padding: const EdgeInsets.all(4),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _infoRow(l10n.shop, order.shopName),
-                        _infoRow(l10n.status,
-                            _localizedOrderStatus(l10n, order.status)),
-                        _infoRow(l10n.total,
-                            '\$${order.totalPrice.toStringAsFixed(2)}'),
-                        _infoRow(
-                          l10n.date,
-                          dateFmt.format(order.createdAt),
-                        ),
-                        if (order.createdBy.isNotEmpty)
-                          _infoRow(l10n.createdByLabel, order.createdBy),
-                        if (order.modifiedBy.isNotEmpty)
-                          _infoRow(l10n.modifiedByLabel, order.modifiedBy),
-                        if (order.approvedBy != null)
-                          _infoRow(l10n.approvedBy, order.approvedBy!),
-                        if (order.rejectionReason != null)
+        child:
+            _exporting
+                ? const Center(child: CircularProgressIndicator())
+                : SingleChildScrollView(
+                  child: RepaintBoundary(
+                    key: _boundaryKey,
+                    child: Container(
+                      color:
+                          Theme.of(context).dialogTheme.backgroundColor ??
+                          Theme.of(context).colorScheme.surface,
+                      padding: const EdgeInsets.all(4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _infoRow(l10n.shop, order.shopName),
                           _infoRow(
-                              l10n.rejectionReason, order.rejectionReason!),
-                        if (order.notes != null)
-                          _infoRow(l10n.notes, order.notes!),
-                        const Divider(),
-                        Text(
-                          '${l10n.items}:',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 8),
-                        // Items table
-                        Table(
-                          columnWidths: const {
-                            0: FlexColumnWidth(3),
-                            1: FixedColumnWidth(50),
-                            2: FlexColumnWidth(1.5),
-                            3: FlexColumnWidth(1.5),
-                          },
-                          children: [
-                            TableRow(
-                              decoration: BoxDecoration(
-                                color: AppTheme.primaryColor.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              children: [
-                                _tableHeader(l10n.product),
-                                _tableHeader(l10n.qty),
-                                _tableHeader(l10n.unitPrice),
-                                _tableHeader(l10n.subtotal),
-                              ],
+                            l10n.status,
+                            _localizedOrderStatus(l10n, order.status),
+                          ),
+                          _infoRow(
+                            l10n.total,
+                            '\$${order.totalPrice.toStringAsFixed(2)}',
+                          ),
+                          _infoRow(l10n.date, dateFmt.format(order.createdAt)),
+                          if (order.createdBy.isNotEmpty)
+                            _infoRow(l10n.createdByLabel, order.createdBy),
+                          if (order.modifiedBy.isNotEmpty)
+                            _infoRow(l10n.modifiedByLabel, order.modifiedBy),
+                          if (order.approvedBy != null)
+                            _infoRow(l10n.approvedBy, order.approvedBy!),
+                          if (order.rejectionReason != null)
+                            _infoRow(
+                              l10n.rejectionReason,
+                              order.rejectionReason!,
                             ),
-                            ...order.items.map(
-                              (item) => TableRow(
-                                children: [
-                                  _tableCell(
-                                      '${item.productName} (${item.productSize})'),
-                                  _tableCell(formatQuantity(item.quantity)),
-                                  _tableCell(
-                                      '\$${item.unitPrice.toStringAsFixed(2)}'),
-                                  _tableCell(
-                                    '\$${item.total.toStringAsFixed(2)}',
-                                    bold: true,
+                          if (order.notes != null)
+                            _infoRow(l10n.notes, order.notes!),
+                          const Divider(),
+                          Text(
+                            '${l10n.items}:',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          // Items table
+                          Table(
+                            columnWidths: const {
+                              0: FlexColumnWidth(3),
+                              1: FixedColumnWidth(50),
+                              2: FlexColumnWidth(1.5),
+                              3: FlexColumnWidth(1.5),
+                            },
+                            children: [
+                              TableRow(
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primaryColor.withValues(
+                                    alpha: 0.1,
                                   ),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                children: [
+                                  _tableHeader(l10n.product),
+                                  _tableHeader(l10n.qty),
+                                  _tableHeader(l10n.unitPrice),
+                                  _tableHeader(l10n.subtotal),
                                 ],
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Align(
-                          alignment: AlignmentDirectional.centerEnd,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: AppTheme.primaryColor.withValues(alpha: 0.08),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              '${l10n.totalColon}\$${order.totalPrice.toStringAsFixed(2)}',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: AppTheme.primaryColor,
+                              ...order.items.map(
+                                (item) => TableRow(
+                                  children: [
+                                    _tableCell(
+                                      '${item.productName} (${item.productSize})',
+                                    ),
+                                    _tableCell(formatQuantity(item.quantity)),
+                                    _tableCell(
+                                      '\$${item.unitPrice.toStringAsFixed(2)}',
+                                    ),
+                                    _tableCell(
+                                      '\$${item.total.toStringAsFixed(2)}',
+                                      bold: true,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Align(
+                            alignment: AlignmentDirectional.centerEnd,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 10,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppTheme.primaryColor.withValues(
+                                  alpha: 0.08,
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                '${l10n.totalColon}\$${order.totalPrice.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.primaryColor,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
       ),
       actions: [
         TextButton(

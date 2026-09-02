@@ -38,11 +38,12 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
   }
 
   Future<void> _loadProducts() async {
-    final snap = await FirebaseFirestore.instance
-        .collection('products')
-        .where('isActive', isEqualTo: true)
-        .orderBy('name')
-        .get();
+    final snap =
+        await FirebaseFirestore.instance
+            .collection('products')
+            .where('isActive', isEqualTo: true)
+            .orderBy('name')
+            .get();
     if (mounted) {
       setState(() {
         _products = snap.docs;
@@ -58,14 +59,15 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
     for (final doc in _products) {
       final qty = _qty(doc.id);
       if (qty > 0) {
-        t += qty * ((doc.data() as Map<String, dynamic>)['price'] ?? 0).toDouble();
+        t +=
+            qty *
+            ((doc.data() as Map<String, dynamic>)['price'] ?? 0).toDouble();
       }
     }
     return t;
   }
 
-  int get _itemCount =>
-      _quantities.values.where((q) => q > 0).length;
+  int get _itemCount => _quantities.values.where((q) => q > 0).length;
 
   bool get _hasItems => _itemCount > 0;
 
@@ -73,40 +75,49 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
     final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            const Icon(Icons.shopping_bag_rounded,
-                color: AppTheme.primaryColor, size: 28),
-            const SizedBox(width: 12),
-            Text(l10n.confirmOrder,
-                style: const TextStyle(fontWeight: FontWeight.bold)),
-          ],
-        ),
-        content: SizedBox(
-          width: 400,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+      builder:
+          (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            title: Row(
               children: [
-                Text(l10n.confirmOrderMessage,
-                    style: const TextStyle(fontSize: 16, height: 1.5)),
-                const SizedBox(height: 16),
-                // Item list
-                Container(
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryColor.withValues(alpha: 0.05),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                        color: AppTheme.primaryColor.withValues(alpha: 0.15)),
-                  ),
-                  child: Column(
-                    children: [
-                      ..._products
-                          .where((d) => _qty(d.id) > 0)
-                          .map((d) {
+                const Icon(
+                  Icons.shopping_bag_rounded,
+                  color: AppTheme.primaryColor,
+                  size: 28,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  l10n.confirmOrder,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            content: SizedBox(
+              width: 400,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.confirmOrderMessage,
+                      style: const TextStyle(fontSize: 16, height: 1.5),
+                    ),
+                    const SizedBox(height: 16),
+                    // Item list
+                    Container(
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryColor.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppTheme.primaryColor.withValues(alpha: 0.15),
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          ..._products.where((d) => _qty(d.id) > 0).map((d) {
                             final data = d.data() as Map<String, dynamic>;
                             final name = data['name'] as String? ?? '';
                             final size = data['size'] as String? ?? '';
@@ -114,24 +125,28 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                             final qty = _qty(d.id);
                             return Padding(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 10),
+                                horizontal: 16,
+                                vertical: 10,
+                              ),
                               child: Row(
                                 children: [
                                   Container(
                                     width: 36,
                                     height: 36,
                                     decoration: BoxDecoration(
-                                      color: AppTheme.primaryColor
-                                          .withValues(alpha: 0.12),
+                                      color: AppTheme.primaryColor.withValues(
+                                        alpha: 0.12,
+                                      ),
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                     child: Center(
                                       child: Text(
                                         '$qty',
                                         style: const TextStyle(
-                                            color: AppTheme.primaryColor,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 16),
+                                          color: AppTheme.primaryColor,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -141,84 +156,105 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Text(name,
-                                            style: const TextStyle(
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 15)),
+                                        Text(
+                                          name,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 15,
+                                          ),
+                                        ),
                                         if (size.isNotEmpty)
-                                          Text(size,
-                                              style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: Colors.grey[600])),
+                                          Text(
+                                            size,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey[600],
+                                            ),
+                                          ),
                                       ],
                                     ),
                                   ),
                                   Text(
                                     _numFmt.format(qty * price),
                                     style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 15,
-                                        color: AppTheme.primaryColor),
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                      color: AppTheme.primaryColor,
+                                    ),
                                   ),
                                 ],
                               ),
                             );
-                          })
-                          .toList(),
-                      const Divider(height: 1),
-                      // Total row
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(l10n.total,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold, fontSize: 16)),
-                            Text(
-                              _numFmt.format(_total),
-                              style: const TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppTheme.primaryColor),
+                          }).toList(),
+                          const Divider(height: 1),
+                          // Total row
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
                             ),
-                          ],
-                        ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  l10n.total,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                Text(
+                                  _numFmt.format(_total),
+                                  style: const TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppTheme.primaryColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actionsAlignment: MainAxisAlignment.spaceEvenly,
+            actions: [
+              OutlinedButton.icon(
+                onPressed: () => Navigator.pop(ctx, false),
+                icon: const Icon(Icons.arrow_back_rounded),
+                label: Text(l10n.goBack),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 14,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-              ],
-            ),
+              ),
+              ElevatedButton.icon(
+                onPressed: () => Navigator.pop(ctx, true),
+                icon: const Icon(Icons.check_rounded),
+                label: Text(l10n.yesPlaceOrder),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.successColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 14,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ),
-        actionsAlignment: MainAxisAlignment.spaceEvenly,
-        actions: [
-          OutlinedButton.icon(
-            onPressed: () => Navigator.pop(ctx, false),
-            icon: const Icon(Icons.arrow_back_rounded),
-            label: Text(l10n.goBack),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ),
-          ),
-          ElevatedButton.icon(
-            onPressed: () => Navigator.pop(ctx, true),
-            icon: const Icon(Icons.check_rounded),
-            label: Text(l10n.yesPlaceOrder),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.successColor,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ),
-          ),
-        ],
-      ),
     );
 
     if (confirmed != true) return;
@@ -226,9 +262,8 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
     try {
       final orderId = const Uuid().v4();
       final now = DateTime.now();
-      final items = _products
-          .where((d) => _qty(d.id) > 0)
-          .map((d) {
+      final items =
+          _products.where((d) => _qty(d.id) > 0).map((d) {
             final data = d.data() as Map<String, dynamic>;
             final qty = _qty(d.id);
             final price = data['price'].toDouble();
@@ -240,8 +275,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
               'unitPrice': price,
               'total': qty * price,
             };
-          })
-          .toList();
+          }).toList();
 
       await FirebaseFirestore.instance.collection('orders').doc(orderId).set({
         'shopId': widget.shopId,
@@ -261,23 +295,28 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
               children: [
                 const Icon(Icons.check_circle_rounded, color: Colors.white),
                 const SizedBox(width: 12),
-                Text(AppLocalizations.of(context)!.orderPlacedSuccess,
-                    style: const TextStyle(fontSize: 15)),
+                Text(
+                  AppLocalizations.of(context)!.orderPlacedSuccess,
+                  style: const TextStyle(fontSize: 15),
+                ),
               ],
             ),
             backgroundColor: AppTheme.successColor,
             duration: const Duration(seconds: 4),
             behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'),
-              backgroundColor: AppTheme.dangerColor),
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: AppTheme.dangerColor,
+          ),
         );
       }
     } finally {
@@ -292,26 +331,30 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
-        title: Text(l10n.placeNewOrder,
-            style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(
+          l10n.placeNewOrder,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _products.isEmpty
+      body:
+          _loading
+              ? const Center(child: CircularProgressIndicator())
+              : _products.isEmpty
               ? _emptyProducts(l10n)
               : _productGrid(l10n),
-      bottomNavigationBar: _hasItems
-          ? _OrderSummaryBar(
-              itemCount: _itemCount,
-              total: _total,
-              numFmt: _numFmt,
-              submitting: _submitting,
-              onConfirm: _confirmAndSubmit,
-            )
-          : null,
+      bottomNavigationBar:
+          _hasItems
+              ? _OrderSummaryBar(
+                itemCount: _itemCount,
+                total: _total,
+                numFmt: _numFmt,
+                submitting: _submitting,
+                onConfirm: _confirmAndSubmit,
+              )
+              : null,
     );
   }
 
@@ -320,19 +363,22 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.inventory_2_outlined,
-              size: 80,
-              color: Theme.of(context)
-                  .colorScheme
-                  .onSurface
-                  .withValues(alpha: 0.25)),
+          Icon(
+            Icons.inventory_2_outlined,
+            size: 80,
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.25),
+          ),
           const SizedBox(height: 16),
-          Text(l10n.noProductsAvailable,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.5))),
+          Text(
+            l10n.noProductsAvailable,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
+          ),
         ],
       ),
     );
@@ -348,16 +394,20 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           child: Row(
             children: [
-              const Icon(Icons.touch_app_rounded,
-                  color: AppTheme.primaryColor, size: 22),
+              const Icon(
+                Icons.touch_app_rounded,
+                color: AppTheme.primaryColor,
+                size: 22,
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   l10n.tapProductToAdd,
                   style: const TextStyle(
-                      color: AppTheme.primaryColor,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500),
+                    color: AppTheme.primaryColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ],
@@ -389,51 +439,67 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                   inOrder: inOrder,
                   outOfStock: outOfStock,
                   numFmt: _numFmt,
-                  onAdd: outOfStock
-                      ? null
-                      : () => setState(() =>
-                          _quantities[doc.id] = (_quantities[doc.id] ?? 0.0) + 1.0),
-                  onIncrement: qty < stock
-                      ? () => setState(() => _quantities[doc.id] = (qty + 1.0 > stock ? stock : qty + 1.0))
-                      : null,
-                  onDecrement: qty > 0
-                      ? () => setState(() {
+                  onAdd:
+                      outOfStock
+                          ? null
+                          : () => setState(
+                            () =>
+                                _quantities[doc.id] =
+                                    (_quantities[doc.id] ?? 0.0) + 1.0,
+                          ),
+                  onIncrement:
+                      qty < stock
+                          ? () => setState(
+                            () =>
+                                _quantities[doc.id] =
+                                    (qty + 1.0 > stock ? stock : qty + 1.0),
+                          )
+                          : null,
+                  onDecrement:
+                      qty > 0
+                          ? () => setState(() {
                             if (qty <= 1.0) {
                               _quantities.remove(doc.id);
                             } else {
                               _quantities[doc.id] = qty - 1.0;
                             }
                           })
-                      : null,
+                          : null,
                   onEditQuantity: () async {
-                    final ctrl = TextEditingController(text: formatQuantity(qty));
+                    final ctrl = TextEditingController(
+                      text: formatQuantity(qty),
+                    );
                     final result = await showDialog<double>(
                       context: context,
-                      builder: (dialogCtx) => AlertDialog(
-                        title: Text(name),
-                        content: TextField(
-                          controller: ctrl,
-                          autofocus: true,
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          decoration: InputDecoration(
-                            labelText: l10n.quantity,
-                            suffixText: size,
+                      builder:
+                          (dialogCtx) => AlertDialog(
+                            title: Text(name),
+                            content: TextField(
+                              controller: ctrl,
+                              autofocus: true,
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                              decoration: InputDecoration(
+                                labelText: l10n.quantity,
+                                suffixText: size,
+                              ),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(dialogCtx),
+                                child: Text(l10n.cancel),
+                              ),
+                              ElevatedButton(
+                                onPressed: () {
+                                  final val = double.tryParse(ctrl.text.trim());
+                                  Navigator.pop(dialogCtx, val);
+                                },
+                                child: Text(l10n.confirm),
+                              ),
+                            ],
                           ),
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(dialogCtx),
-                            child: Text(l10n.cancel),
-                          ),
-                          ElevatedButton(
-                            onPressed: () {
-                              final val = double.tryParse(ctrl.text.trim());
-                              Navigator.pop(dialogCtx, val);
-                            },
-                            child: Text(l10n.confirm),
-                          ),
-                        ],
-                      ),
                     );
                     if (result != null) {
                       setState(() {
@@ -494,29 +560,32 @@ class _ProductCard extends StatelessWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       decoration: BoxDecoration(
-        color: outOfStock
-            ? theme.colorScheme.surface
-            : inOrder
+        color:
+            outOfStock
+                ? theme.colorScheme.surface
+                : inOrder
                 ? AppTheme.primaryColor.withValues(alpha: 0.06)
                 : theme.cardColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: outOfStock
-              ? theme.dividerColor
-              : inOrder
+          color:
+              outOfStock
+                  ? theme.dividerColor
+                  : inOrder
                   ? AppTheme.primaryColor
                   : theme.dividerColor.withValues(alpha: 0.5),
           width: inOrder ? 2 : 1,
         ),
-        boxShadow: outOfStock
-            ? null
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                )
-              ],
+        boxShadow:
+            outOfStock
+                ? null
+                : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -527,9 +596,10 @@ class _ProductCard extends StatelessWidget {
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: outOfStock
-                    ? Colors.grey.withValues(alpha: 0.1)
-                    : AppTheme.primaryColor.withValues(alpha: 0.12),
+                color:
+                    outOfStock
+                        ? Colors.grey.withValues(alpha: 0.1)
+                        : AppTheme.primaryColor.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Icon(
@@ -555,8 +625,10 @@ class _ProductCard extends StatelessWidget {
                     Text(
                       size,
                       style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface
-                              .withValues(alpha: 0.55)),
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.55,
+                        ),
+                      ),
                     ),
                   const SizedBox(height: 4),
                   Text(
@@ -572,9 +644,10 @@ class _ProductCard extends StatelessWidget {
                       child: Text(
                         l10n.outOfStock,
                         style: const TextStyle(
-                            color: AppTheme.dangerColor,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600),
+                          color: AppTheme.dangerColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                 ],
@@ -585,27 +658,27 @@ class _ProductCard extends StatelessWidget {
             if (!outOfStock)
               inOrder
                   ? _QuantityControl(
-                      quantity: quantity,
-                      onDecrement: onDecrement,
-                      onIncrement: onIncrement,
-                      onTapBadge: onEditQuantity,
-                    )
+                    quantity: quantity,
+                    onDecrement: onDecrement,
+                    onIncrement: onIncrement,
+                    onTapBadge: onEditQuantity,
+                  )
                   : SizedBox(
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed: onAdd,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primaryColor,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14)),
-                          padding:
-                              const EdgeInsets.symmetric(horizontal: 18),
-                          elevation: 2,
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: onAdd,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryColor,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
                         ),
-                        child: const Icon(Icons.add_rounded, size: 28),
+                        padding: const EdgeInsets.symmetric(horizontal: 18),
+                        elevation: 2,
                       ),
+                      child: const Icon(Icons.add_rounded, size: 28),
                     ),
+                  ),
           ],
         ),
       ),
@@ -638,10 +711,7 @@ class _QuantityControl extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _StepBtn(
-            icon: Icons.remove_rounded,
-            onTap: onDecrement,
-          ),
+          _StepBtn(icon: Icons.remove_rounded, onTap: onDecrement),
           InkWell(
             onTap: onTapBadge,
             borderRadius: BorderRadius.circular(8),
@@ -657,10 +727,7 @@ class _QuantityControl extends StatelessWidget {
               ),
             ),
           ),
-          _StepBtn(
-            icon: Icons.add_rounded,
-            onTap: onIncrement,
-          ),
+          _StepBtn(icon: Icons.add_rounded, onTap: onIncrement),
         ],
       ),
     );
@@ -683,11 +750,14 @@ class _StepBtn extends StatelessWidget {
         child: SizedBox(
           width: 46,
           height: 52,
-          child: Icon(icon,
-              color: onTap != null
-                  ? Colors.white
-                  : Colors.white.withValues(alpha: 0.3),
-              size: 24),
+          child: Icon(
+            icon,
+            color:
+                onTap != null
+                    ? Colors.white
+                    : Colors.white.withValues(alpha: 0.3),
+            size: 24,
+          ),
         ),
       ),
     );
@@ -714,6 +784,95 @@ class _OrderSummaryBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final cartBadge = Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppTheme.primaryColor.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          const Icon(
+            Icons.shopping_bag_rounded,
+            color: AppTheme.primaryColor,
+            size: 28,
+          ),
+          Positioned(
+            top: -8,
+            right: -8,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: const BoxDecoration(
+                color: AppTheme.primaryColor,
+                shape: BoxShape.circle,
+              ),
+              child: Text(
+                '$itemCount',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    final totalView = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          l10n.orderTotal,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.55),
+          ),
+        ),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: AlignmentDirectional.centerStart,
+          child: Text(
+            numFmt.format(total),
+            maxLines: 1,
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.primaryColor,
+            ),
+          ),
+        ),
+      ],
+    );
+    final submitButton = ElevatedButton.icon(
+      onPressed: submitting ? null : onConfirm,
+      icon:
+          submitting
+              ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+              : const Icon(Icons.check_rounded, size: 24),
+      label: Text(
+        l10n.placeOrder,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+      ),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppTheme.successColor,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        elevation: 4,
+      ),
+    );
     return SafeArea(
       child: Container(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
@@ -721,99 +880,43 @@ class _OrderSummaryBar extends StatelessWidget {
           color: Theme.of(context).cardColor,
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withValues(alpha: 0.12),
-                blurRadius: 12,
-                offset: const Offset(0, -3))
+              color: Colors.black.withValues(alpha: 0.12),
+              blurRadius: 12,
+              offset: const Offset(0, -3),
+            ),
           ],
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
-        child: Row(
-          children: [
-            // Cart badge
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  const Icon(Icons.shopping_bag_rounded,
-                      color: AppTheme.primaryColor, size: 28),
-                  Positioned(
-                    top: -8,
-                    right: -8,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: AppTheme.primaryColor,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Text(
-                        '$itemCount',
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 16),
-            // Total
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth < 430) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    l10n.orderTotal,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withValues(alpha: 0.55)),
+                  Row(
+                    children: [
+                      cartBadge,
+                      const SizedBox(width: 16),
+                      Expanded(child: totalView),
+                    ],
                   ),
-                  Text(
-                    numFmt.format(total),
-                    style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.primaryColor),
-                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(height: 52, child: submitButton),
                 ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            // CTA button
-            SizedBox(
-              height: 56,
-              child: ElevatedButton.icon(
-                onPressed: submitting ? null : onConfirm,
-                icon: submitting
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white))
-                    : const Icon(Icons.check_rounded, size: 24),
-                label: Text(l10n.placeOrder,
-                    style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.successColor,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16)),
-                  elevation: 4,
-                ),
-              ),
-            ),
-          ],
+              );
+            }
+
+            return Row(
+              children: [
+                cartBadge,
+                const SizedBox(width: 16),
+                Expanded(child: totalView),
+                const SizedBox(width: 12),
+                SizedBox(height: 56, child: submitButton),
+              ],
+            );
+          },
         ),
       ),
     );

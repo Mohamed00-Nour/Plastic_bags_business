@@ -33,18 +33,22 @@ class _MixesScreenState extends State<MixesScreen> {
     return BlocConsumer<ManufacturingMixBloc, ManufacturingMixState>(
       listener: (context, state) {
         if (state is ManufacturingMixOperationSuccess) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(state.message),
-            backgroundColor: AppTheme.successColor,
-          ));
-          context
-              .read<ManufacturingMixBloc>()
-              .add(ManufacturingMixLoadRequested());
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: AppTheme.successColor,
+            ),
+          );
+          context.read<ManufacturingMixBloc>().add(
+            ManufacturingMixLoadRequested(),
+          );
         } else if (state is ManufacturingMixError) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(state.message),
-            backgroundColor: AppTheme.dangerColor,
-          ));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: AppTheme.dangerColor,
+            ),
+          );
         }
       },
       builder: (context, state) {
@@ -53,27 +57,23 @@ class _MixesScreenState extends State<MixesScreen> {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _searchCtrl,
-                      decoration: InputDecoration(
-                        hintText: l10n.mfgSearchMix,
-                        prefixIcon: const Icon(Icons.search),
+              ResponsiveActionBar(
+                primary: TextField(
+                  controller: _searchCtrl,
+                  decoration: InputDecoration(
+                    hintText: l10n.mfgSearchMix,
+                    prefixIcon: const Icon(Icons.search),
+                  ),
+                  onChanged:
+                      (v) => context.read<ManufacturingMixBloc>().add(
+                        ManufacturingMixSearchRequested(query: v),
                       ),
-                      onChanged: (v) => context
-                          .read<ManufacturingMixBloc>()
-                          .add(ManufacturingMixSearchRequested(query: v)),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  ElevatedButton.icon(
-                    onPressed: () => _showForm(context, null),
-                    icon: const Icon(Icons.add),
-                    label: Text(l10n.mfgAddMix),
-                  ),
-                ],
+                ),
+                actions: ElevatedButton.icon(
+                  onPressed: () => _showForm(context, null),
+                  icon: const Icon(Icons.add),
+                  label: Text(l10n.mfgAddMix),
+                ),
               ),
               const SizedBox(height: 12),
               Expanded(child: _buildList(context, state)),
@@ -90,7 +90,9 @@ class _MixesScreenState extends State<MixesScreen> {
       return const Center(child: CircularProgressIndicator());
     }
     final items =
-        state is ManufacturingMixLoaded ? state.filtered : <ManufacturingMixModel>[];
+        state is ManufacturingMixLoaded
+            ? state.filtered
+            : <ManufacturingMixModel>[];
     if (items.isEmpty) {
       return Center(child: Text(l10n.mfgNoMixes));
     }
@@ -102,23 +104,26 @@ class _MixesScreenState extends State<MixesScreen> {
           margin: const EdgeInsets.only(bottom: 8),
           child: ExpansionTile(
             leading: CircleAvatar(
-              backgroundColor:
-                  AppTheme.infoColor.withValues(alpha: 0.1),
-              child: const Icon(Icons.blender_outlined,
-                  color: AppTheme.infoColor),
+              backgroundColor: AppTheme.infoColor.withValues(alpha: 0.1),
+              child: const Icon(
+                Icons.blender_outlined,
+                color: AppTheme.infoColor,
+              ),
             ),
-            title: Text(m.name,
-                style: const TextStyle(fontWeight: FontWeight.w600)),
+            title: Text(
+              m.name,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
             subtitle: Text(
-                '${l10n.mfgProductLabel}: ${m.productName} | ${l10n.mfgTotalLabel}: ${m.totalQuantityKg.toStringAsFixed(1)} ${l10n.mfgKg}'),
+              '${l10n.mfgProductLabel}: ${m.productName} | ${l10n.mfgTotalLabel}: ${m.totalQuantityKg.toStringAsFixed(1)} ${l10n.mfgKg}',
+            ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 StatusBadge(
                   label: m.isActive ? l10n.mfgActive : l10n.mfgStopped,
-                  color: m.isActive
-                      ? AppTheme.successColor
-                      : AppTheme.dangerColor,
+                  color:
+                      m.isActive ? AppTheme.successColor : AppTheme.dangerColor,
                 ),
                 const SizedBox(width: 8),
                 IconButton(
@@ -126,24 +131,28 @@ class _MixesScreenState extends State<MixesScreen> {
                   onPressed: () => _showForm(context, m),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.delete_outline,
-                      color: AppTheme.dangerColor),
+                  icon: const Icon(
+                    Icons.delete_outline,
+                    color: AppTheme.dangerColor,
+                  ),
                   onPressed: () => _confirmDelete(context, m),
                 ),
               ],
             ),
-            children: m.components.map((c) {
-              final pct = m.totalQuantityKg > 0
-                  ? (c.quantityKg / m.totalQuantityKg * 100)
-                      .toStringAsFixed(1)
-                  : '0';
-              return ListTile(
-                contentPadding: const EdgeInsets.fromLTRB(32, 0, 16, 0),
-                leading: const Icon(Icons.science_outlined, size: 18),
-                title: Text(c.materialName),
-                trailing: Text('${c.quantityKg} ${l10n.mfgKg} ($pct%)'),
-              );
-            }).toList(),
+            children:
+                m.components.map((c) {
+                  final pct =
+                      m.totalQuantityKg > 0
+                          ? (c.quantityKg / m.totalQuantityKg * 100)
+                              .toStringAsFixed(1)
+                          : '0';
+                  return ListTile(
+                    contentPadding: const EdgeInsets.fromLTRB(32, 0, 16, 0),
+                    leading: const Icon(Icons.science_outlined, size: 18),
+                    title: Text(c.materialName),
+                    trailing: Text('${c.quantityKg} ${l10n.mfgKg} ($pct%)'),
+                  );
+                }).toList(),
           ),
         );
       },
@@ -152,152 +161,164 @@ class _MixesScreenState extends State<MixesScreen> {
 
   void _showForm(BuildContext context, ManufacturingMixModel? editing) {
     final l10n = AppLocalizations.of(context)!;
-    final nameCtrl =
-        TextEditingController(text: editing?.name ?? '');
-    final productCtrl =
-        TextEditingController(text: editing?.productName ?? '');
+    final nameCtrl = TextEditingController(text: editing?.name ?? '');
+    final productCtrl = TextEditingController(text: editing?.productName ?? '');
     bool isActive = editing?.isActive ?? true;
-    final components =
-        List<MixComponent>.from(editing?.components ?? []);
+    final components = List<MixComponent>.from(editing?.components ?? []);
 
     showDialog(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDlgState) {
-          final matState =
-              context.read<RawMaterialBloc>().state;
-          final materials = matState is RawMaterialLoaded
-              ? matState.all
-                  .where((m) => m.isActive)
-                  .toList()
-              : <RawMaterialModel>[];
+      builder:
+          (ctx) => StatefulBuilder(
+            builder: (ctx, setDlgState) {
+              final matState = context.read<RawMaterialBloc>().state;
+              final materials =
+                  matState is RawMaterialLoaded
+                      ? matState.all.where((m) => m.isActive).toList()
+                      : <RawMaterialModel>[];
 
-          return AlertDialog(
-            title: Text(
-                editing == null ? l10n.mfgAddMix : l10n.mfgEditMix),
-            content: SizedBox(
-              width: 500,
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    TextField(
-                        controller: nameCtrl,
-                        decoration: InputDecoration(
-                            labelText: l10n.mfgMixName)),
-                    const SizedBox(height: 12),
-                    TextField(
-                        controller: productCtrl,
-                        decoration: InputDecoration(
-                            labelText: l10n.mfgProductNameLabel)),
-                    const SizedBox(height: 12),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(l10n.mfgActive),
-                      value: isActive,
-                      onChanged: (v) =>
-                          setDlgState(() => isActive = v),
-                    ),
-                    const Divider(),
-                    Text(l10n.mfgComponents,
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    ...components.asMap().entries.map((entry) {
-                      final idx = entry.key;
-                      final c = entry.value;
-                      return _ComponentRow(
-                        component: c,
-                        materials: materials,
-                        onChanged: (nc) => setDlgState(
-                            () => components[idx] = nc),
-                        onRemove: () => setDlgState(
-                            () => components.removeAt(idx)),
-                      );
-                    }),
-                    const SizedBox(height: 8),
-                    TextButton.icon(
-                      onPressed: () {
-                        if (materials.isEmpty) return;
-                        final mat = materials.first;
-                        setDlgState(() => components.add(
-                              MixComponent(
-                                materialId: mat.id,
-                                materialName: mat.name,
-                                quantityKg: 0,
-                              ),
-                            ));
-                      },
-                      icon: const Icon(Icons.add),
-                      label: Text(l10n.mfgAddComponent),
-                    ),
-                  ],
+              return AlertDialog(
+                insetPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 24,
                 ),
-              ),
-            ),
-            actions: [
-              TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: Text(l10n.cancel)),
-              ElevatedButton(
-                onPressed: () {
-                  if (nameCtrl.text.trim().isEmpty ||
-                      components.isEmpty) return;
-                  final now = DateTime.now();
-                  final mix = ManufacturingMixModel(
-                    id: editing?.id ?? const Uuid().v4(),
-                    name: nameCtrl.text.trim(),
-                    productName: productCtrl.text.trim(),
-                    components: components,
-                    isActive: isActive,
-                    createdAt: editing?.createdAt ?? now,
-                    updatedAt: now,
-                  );
-                  if (editing == null) {
-                    context
-                        .read<ManufacturingMixBloc>()
-                        .add(ManufacturingMixAddRequested(mix: mix));
-                  } else {
-                    context
-                        .read<ManufacturingMixBloc>()
-                        .add(ManufacturingMixUpdateRequested(mix: mix));
-                  }
-                  Navigator.pop(ctx);
-                },
-                child:
-                    Text(editing == null ? l10n.mfgAddMix : l10n.mfgSave),
-              ),
-            ],
-          );
-        },
-      ),
+                title: Text(editing == null ? l10n.mfgAddMix : l10n.mfgEditMix),
+                content: SizedBox(
+                  width: 500,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        TextField(
+                          controller: nameCtrl,
+                          decoration: InputDecoration(
+                            labelText: l10n.mfgMixName,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: productCtrl,
+                          decoration: InputDecoration(
+                            labelText: l10n.mfgProductNameLabel,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(l10n.mfgActive),
+                          value: isActive,
+                          onChanged: (v) => setDlgState(() => isActive = v),
+                        ),
+                        const Divider(),
+                        Text(
+                          l10n.mfgComponents,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 8),
+                        ...components.asMap().entries.map((entry) {
+                          final idx = entry.key;
+                          final c = entry.value;
+                          return _ComponentRow(
+                            component: c,
+                            materials: materials,
+                            onChanged:
+                                (nc) => setDlgState(() => components[idx] = nc),
+                            onRemove:
+                                () =>
+                                    setDlgState(() => components.removeAt(idx)),
+                          );
+                        }),
+                        const SizedBox(height: 8),
+                        TextButton.icon(
+                          onPressed: () {
+                            if (materials.isEmpty) return;
+                            final mat = materials.first;
+                            setDlgState(
+                              () => components.add(
+                                MixComponent(
+                                  materialId: mat.id,
+                                  materialName: mat.name,
+                                  quantityKg: 0,
+                                ),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.add),
+                          label: Text(l10n.mfgAddComponent),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: Text(l10n.cancel),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      if (nameCtrl.text.trim().isEmpty || components.isEmpty)
+                        return;
+                      final now = DateTime.now();
+                      final mix = ManufacturingMixModel(
+                        id: editing?.id ?? const Uuid().v4(),
+                        name: nameCtrl.text.trim(),
+                        productName: productCtrl.text.trim(),
+                        components: components,
+                        isActive: isActive,
+                        createdAt: editing?.createdAt ?? now,
+                        updatedAt: now,
+                      );
+                      if (editing == null) {
+                        context.read<ManufacturingMixBloc>().add(
+                          ManufacturingMixAddRequested(mix: mix),
+                        );
+                      } else {
+                        context.read<ManufacturingMixBloc>().add(
+                          ManufacturingMixUpdateRequested(mix: mix),
+                        );
+                      }
+                      Navigator.pop(ctx);
+                    },
+                    child: Text(
+                      editing == null ? l10n.mfgAddMix : l10n.mfgSave,
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
     );
   }
 
-  void _confirmDelete(
-      BuildContext context, ManufacturingMixModel m) {
+  void _confirmDelete(BuildContext context, ManufacturingMixModel m) {
     final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.mfgConfirmDelete),
-        content: Text(l10n.mfgDeleteConfirm(m.name)),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(l10n.cancel)),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.dangerColor),
-            onPressed: () {
-              context.read<ManufacturingMixBloc>().add(
-                  ManufacturingMixDeleteRequested(id: m.id));
-              Navigator.pop(ctx);
-            },
-            child: Text(l10n.mfgDelete),
+      builder:
+          (ctx) => AlertDialog(
+            title: Text(l10n.mfgConfirmDelete),
+            content: Text(l10n.mfgDeleteConfirm(m.name)),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(l10n.cancel),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.dangerColor,
+                ),
+                onPressed: () {
+                  context.read<ManufacturingMixBloc>().add(
+                    ManufacturingMixDeleteRequested(id: m.id),
+                  );
+                  Navigator.pop(ctx);
+                },
+                child: Text(l10n.mfgDelete),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 }
@@ -327,14 +348,16 @@ class _ComponentRowState extends State<_ComponentRow> {
   void initState() {
     super.initState();
     _qtyCtrl = TextEditingController(
-        text: widget.component.quantityKg > 0
-            ? widget.component.quantityKg.toString()
-            : '');
-    _selectedId = widget.component.materialId.isNotEmpty &&
-            widget.materials
-                .any((m) => m.id == widget.component.materialId)
-        ? widget.component.materialId
-        : (widget.materials.isNotEmpty ? widget.materials.first.id : '');
+      text:
+          widget.component.quantityKg > 0
+              ? widget.component.quantityKg.toString()
+              : '',
+    );
+    _selectedId =
+        widget.component.materialId.isNotEmpty &&
+                widget.materials.any((m) => m.id == widget.component.materialId)
+            ? widget.component.materialId
+            : (widget.materials.isNotEmpty ? widget.materials.first.id : '');
   }
 
   @override
@@ -357,21 +380,24 @@ class _ComponentRowState extends State<_ComponentRow> {
             flex: 3,
             child: DropdownButtonFormField<String>(
               value: _selectedId,
-              decoration:
-                  InputDecoration(labelText: l10n.mfgMaterialLabel),
-              items: widget.materials
-                  .map((m) => DropdownMenuItem(
-                      value: m.id, child: Text(m.name)))
-                  .toList(),
+              decoration: InputDecoration(labelText: l10n.mfgMaterialLabel),
+              items:
+                  widget.materials
+                      .map(
+                        (m) =>
+                            DropdownMenuItem(value: m.id, child: Text(m.name)),
+                      )
+                      .toList(),
               onChanged: (v) {
                 if (v == null) return;
                 setState(() => _selectedId = v);
-                final mat =
-                    widget.materials.firstWhere((m) => m.id == v);
-                widget.onChanged(widget.component.copyWith(
-                  materialId: v,
-                  materialName: mat.name,
-                ));
+                final mat = widget.materials.firstWhere((m) => m.id == v);
+                widget.onChanged(
+                  widget.component.copyWith(
+                    materialId: v,
+                    materialName: mat.name,
+                  ),
+                );
               },
             ),
           ),
@@ -380,20 +406,21 @@ class _ComponentRowState extends State<_ComponentRow> {
             flex: 2,
             child: TextField(
               controller: _qtyCtrl,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              decoration:
-                  InputDecoration(labelText: l10n.mfgQtyKg),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: InputDecoration(labelText: l10n.mfgQtyKg),
               onChanged: (v) {
                 final qty = double.tryParse(v) ?? 0;
-                widget.onChanged(
-                    widget.component.copyWith(quantityKg: qty));
+                widget.onChanged(widget.component.copyWith(quantityKg: qty));
               },
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.remove_circle_outline,
-                color: AppTheme.dangerColor),
+            icon: const Icon(
+              Icons.remove_circle_outline,
+              color: AppTheme.dangerColor,
+            ),
             onPressed: widget.onRemove,
           ),
         ],

@@ -25,8 +25,11 @@ class WhatsappInvoiceShareService {
   }
 
   /// Query Firestore to lookup Client or Supplier phone number if not present in invoice map.
-  static Future<String> fetchClientPhone(Map<String, dynamic> invoiceData) async {
-    String phone = invoiceData['clientPhone']?.toString() ??
+  static Future<String> fetchClientPhone(
+    Map<String, dynamic> invoiceData,
+  ) async {
+    String phone =
+        invoiceData['clientPhone']?.toString() ??
         invoiceData['supplierPhone']?.toString() ??
         invoiceData['phone']?.toString() ??
         '';
@@ -49,11 +52,12 @@ class WhatsappInvoiceShareService {
 
     if (clientName != null && clientName.isNotEmpty) {
       try {
-        final query = await firestore
-            .collection('clients')
-            .where('name', isEqualTo: clientName)
-            .limit(1)
-            .get();
+        final query =
+            await firestore
+                .collection('clients')
+                .where('name', isEqualTo: clientName)
+                .limit(1)
+                .get();
         if (query.docs.isNotEmpty) {
           final p = query.docs.first.data()['phone']?.toString() ?? '';
           if (p.isNotEmpty) return cleanPhoneDigits(p);
@@ -66,7 +70,8 @@ class WhatsappInvoiceShareService {
 
     if (supplierId != null && supplierId.isNotEmpty) {
       try {
-        final doc = await firestore.collection('suppliers').doc(supplierId).get();
+        final doc =
+            await firestore.collection('suppliers').doc(supplierId).get();
         if (doc.exists && doc.data()?['phone'] != null) {
           return cleanPhoneDigits(doc.data()!['phone'].toString());
         }
@@ -75,11 +80,12 @@ class WhatsappInvoiceShareService {
 
     if (supplierName != null && supplierName.isNotEmpty) {
       try {
-        final query = await firestore
-            .collection('suppliers')
-            .where('name', isEqualTo: supplierName)
-            .limit(1)
-            .get();
+        final query =
+            await firestore
+                .collection('suppliers')
+                .where('name', isEqualTo: supplierName)
+                .limit(1)
+                .get();
         if (query.docs.isNotEmpty) {
           final p = query.docs.first.data()['phone']?.toString() ?? '';
           if (p.isNotEmpty) return cleanPhoneDigits(p);
@@ -91,9 +97,13 @@ class WhatsappInvoiceShareService {
   }
 
   /// Format Arabic invoice details into a clean text block
-  static String buildInvoiceMessage(Map<String, dynamic> invoiceData, {bool isSalesInvoice = true}) {
+  static String buildInvoiceMessage(
+    Map<String, dynamic> invoiceData, {
+    bool isSalesInvoice = true,
+  }) {
     final invoiceNumber = invoiceData['invoiceNumber']?.toString() ?? 'INV-000';
-    final partyName = invoiceData['clientName']?.toString() ??
+    final partyName =
+        invoiceData['clientName']?.toString() ??
         invoiceData['supplierName']?.toString() ??
         'عميل نقدي';
 
@@ -108,35 +118,57 @@ class WhatsappInvoiceShareService {
     }
 
     final dateStr = DateFormat('yyyy-MM-dd').format(parsedDate);
-    final items = (invoiceData['items'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    final items =
+        (invoiceData['items'] as List?)?.cast<Map<String, dynamic>>() ?? [];
 
     final subtotal = (invoiceData['subtotal'] ?? 0.0).toDouble();
     final discount = (invoiceData['discount'] ?? 0.0).toDouble();
-    final totalAmount = (invoiceData['totalAmount'] ?? (subtotal - discount)).toDouble();
+    final totalAmount =
+        (invoiceData['totalAmount'] ?? (subtotal - discount)).toDouble();
     final paidAmount = (invoiceData['paidAmount'] ?? 0.0).toDouble();
-    final remainingAmount = (invoiceData['remainingAmount'] ?? (totalAmount - paidAmount)).toDouble();
+    final remainingAmount =
+        (invoiceData['remainingAmount'] ?? (totalAmount - paidAmount))
+            .toDouble();
 
-    final prevBalance = (invoiceData['previousBalance'] ?? invoiceData['prevBalance'] ?? 0.0).toDouble();
-    final totalDueBalance = (invoiceData['clientBalance'] ?? invoiceData['currentBalance'] ?? (prevBalance + remainingAmount)).toDouble();
+    final prevBalance =
+        (invoiceData['previousBalance'] ??
+                invoiceData['clientPreviousBalance'] ??
+                invoiceData['prevBalance'] ??
+                0.0)
+            .toDouble();
+    final totalDueBalance =
+        (invoiceData['balanceAfter'] ??
+                invoiceData['clientBalance'] ??
+                invoiceData['currentBalance'] ??
+                (prevBalance + remainingAmount))
+            .toDouble();
 
-    final itemsSummary = items.map((item) {
-      final name = item['productName'] ?? item['name'] ?? 'منتج';
-      final qty = formatQuantity(item['quantity'] ?? 1);
-      final price = (item['price'] ?? 0.0).toDouble();
-      return "• $name (x$qty) - \$${price.toStringAsFixed(2)}";
-    }).join('\n');
+    final itemsSummary = items
+        .map((item) {
+          final name = item['productName'] ?? item['name'] ?? 'منتج';
+          final qty = formatQuantity(item['quantity'] ?? 1);
+          final price = (item['price'] ?? 0.0).toDouble();
+          return "• $name (x$qty) - \$${price.toStringAsFixed(2)}";
+        })
+        .join('\n');
 
-    final invoiceHeader = isSalesInvoice
-        ? "🧾 *فاتورة رقم #$invoiceNumber*"
-        : "🧾 *فاتورة مشتريات رقم #$invoiceNumber*";
+    final invoiceHeader =
+        isSalesInvoice
+            ? "🧾 *فاتورة رقم #$invoiceNumber*"
+            : "🧾 *فاتورة مشتريات رقم #$invoiceNumber*";
 
-    final partyHeader = isSalesInvoice
-        ? "👤 *العميل:* $partyName"
-        : "👤 *المورد:* $partyName";
+    final partyHeader =
+        isSalesInvoice ? "👤 *العميل:* $partyName" : "👤 *المورد:* $partyName";
 
-    final balanceFooter = isSalesInvoice
-        ? "💰 *المتبقي عليكم:* \$${totalDueBalance.toStringAsFixed(2)}"
-        : "💰 *الرصيد الحالي للمورد:* \$${totalDueBalance.toStringAsFixed(2)}";
+    final previousBalanceLine =
+        isSalesInvoice
+            ? "⏮️ *رصيد العميل السابق:* \$${prevBalance.toStringAsFixed(2)}"
+            : "⏮️ *رصيد المورد السابق:* \$${prevBalance.toStringAsFixed(2)}";
+
+    final balanceFooter =
+        isSalesInvoice
+            ? "💰 *رصيد العميل بعد الفاتورة:* \$${totalDueBalance.toStringAsFixed(2)}"
+            : "💰 *الرصيد الحالي للمورد:* \$${totalDueBalance.toStringAsFixed(2)}";
 
     return "$invoiceHeader\n"
         "$partyHeader\n"
@@ -145,7 +177,7 @@ class WhatsappInvoiceShareService {
         "📦 *تفاصيل الأصناف:*\n"
         "${itemsSummary.isEmpty ? '• لا يوجد أصناف' : itemsSummary}\n"
         "----------------------------------\n"
-        "${prevBalance > 0 ? '⏮️ *الرصيد السابق:* \$${prevBalance.toStringAsFixed(2)}\n' : ''}"
+        "$previousBalanceLine\n"
         "💵 *إجمالي الفاتورة:* \$${totalAmount.toStringAsFixed(2)}\n"
         "${discount > 0 ? '🏷️ *الخصم:* \$${discount.toStringAsFixed(2)}\n' : ''}"
         "💳 *المدفوع:* \$${paidAmount.toStringAsFixed(2)}\n"
@@ -171,7 +203,9 @@ class WhatsappInvoiceShareService {
     if (phone.isNotEmpty) {
       urisToTry.add(Uri.parse("https://wa.me/$phone?text=$encoded"));
       urisToTry.add(Uri.parse("whatsapp://send?phone=$phone&text=$encoded"));
-      urisToTry.add(Uri.parse("https://api.whatsapp.com/send?phone=$phone&text=$encoded"));
+      urisToTry.add(
+        Uri.parse("https://api.whatsapp.com/send?phone=$phone&text=$encoded"),
+      );
     } else {
       urisToTry.add(Uri.parse("https://wa.me/?text=$encoded"));
       urisToTry.add(Uri.parse("whatsapp://send?text=$encoded"));
@@ -181,14 +215,20 @@ class WhatsappInvoiceShareService {
     for (final uri in urisToTry) {
       try {
         if (await canLaunchUrl(uri)) {
-          final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+          final launched = await launchUrl(
+            uri,
+            mode: LaunchMode.externalApplication,
+          );
           if (launched) return true;
         }
       } catch (_) {}
     }
 
     try {
-      return await launchUrl(urisToTry.first, mode: LaunchMode.externalApplication);
+      return await launchUrl(
+        urisToTry.first,
+        mode: LaunchMode.externalApplication,
+      );
     } catch (e) {
       debugPrint('Error launching WhatsApp URL: $e');
       return false;
@@ -201,7 +241,10 @@ class WhatsappInvoiceShareService {
     bool isSalesInvoice = true,
   }) async {
     final phone = await fetchClientPhone(invoiceData);
-    final message = buildInvoiceMessage(invoiceData, isSalesInvoice: isSalesInvoice);
+    final message = buildInvoiceMessage(
+      invoiceData,
+      isSalesInvoice: isSalesInvoice,
+    );
     await openWhatsappChat(phoneDigits: phone, message: message);
   }
 
@@ -216,25 +259,29 @@ class WhatsappInvoiceShareService {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (dialogCtx) => const Center(
-        child: Card(
-          color: Color(0xFF1E293B),
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(color: Color(0xFF25D366)),
-                SizedBox(width: 16),
-                Text(
-                  'جاري تجهيز صورة الفاتورة...',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      builder:
+          (dialogCtx) => const Center(
+            child: Card(
+              color: Color(0xFF1E293B),
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(color: Color(0xFF25D366)),
+                    SizedBox(width: 16),
+                    Text(
+                      'جاري تجهيز صورة الفاتورة...',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
     );
 
     try {
@@ -305,16 +352,25 @@ class WhatsappInvoiceShareService {
                 const SizedBox(height: 12),
                 if (rawPhone.isNotEmpty)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFF25D366).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFF25D366).withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: const Color(0xFF25D366).withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.phone_android_rounded, color: Color(0xFF25D366), size: 18),
+                        const Icon(
+                          Icons.phone_android_rounded,
+                          color: Color(0xFF25D366),
+                          size: 18,
+                        ),
                         const SizedBox(width: 6),
                         Text(
                           'رقم الواتساب: $rawPhone',
@@ -329,7 +385,10 @@ class WhatsappInvoiceShareService {
                   )
                 else
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.amber.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
@@ -338,7 +397,11 @@ class WhatsappInvoiceShareService {
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.info_outline_rounded, color: Colors.amber, size: 18),
+                        Icon(
+                          Icons.info_outline_rounded,
+                          color: Colors.amber,
+                          size: 18,
+                        ),
                         SizedBox(width: 6),
                         Flexible(
                           child: Text(
@@ -406,22 +469,33 @@ class WhatsappInvoiceShareService {
                   ListTile(
                     leading: const CircleAvatar(
                       backgroundColor: AppTheme.primaryColor,
-                      child: Icon(Icons.picture_as_pdf_rounded, color: Colors.white),
+                      child: Icon(
+                        Icons.picture_as_pdf_rounded,
+                        color: Colors.white,
+                      ),
                     ),
                     title: const Text('ملف الفاتورة PDF (PDF Document)'),
-                    subtitle: const Text('مشاركة ملف المستند PDF عبر واتساب أو التطبيقات'),
+                    subtitle: const Text(
+                      'مشاركة ملف المستند PDF عبر واتساب أو التطبيقات',
+                    ),
                     onTap: () async {
                       Navigator.of(bContext).pop();
-                      final invoiceNumber = invoiceData['invoiceNumber']?.toString() ?? 'INV-000';
+                      final invoiceNumber =
+                          invoiceData['invoiceNumber']?.toString() ?? 'INV-000';
                       try {
                         final tempDir = await getTemporaryDirectory();
-                        final pdfFile = File('${tempDir.path}/Invoice_$invoiceNumber.pdf');
+                        final pdfFile = File(
+                          '${tempDir.path}/Invoice_$invoiceNumber.pdf',
+                        );
                         await pdfFile.writeAsBytes(pdfBytes);
 
                         final shared = await WhatsappShareChannel.shareImages(
                           phoneDigits: rawPhone,
                           imagePaths: [pdfFile.path],
-                          caption: buildInvoiceMessage(invoiceData, isSalesInvoice: isSalesInvoice),
+                          caption: buildInvoiceMessage(
+                            invoiceData,
+                            isSalesInvoice: isSalesInvoice,
+                          ),
                         );
                         if (shared) return;
                       } catch (_) {}
@@ -429,7 +503,10 @@ class WhatsappInvoiceShareService {
                       await Printing.sharePdf(
                         bytes: pdfBytes,
                         filename: 'Invoice_$invoiceNumber.pdf',
-                        subject: buildInvoiceMessage(invoiceData, isSalesInvoice: isSalesInvoice),
+                        subject: buildInvoiceMessage(
+                          invoiceData,
+                          isSalesInvoice: isSalesInvoice,
+                        ),
                       );
                     },
                   ),

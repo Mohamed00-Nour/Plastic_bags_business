@@ -880,10 +880,6 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
                         isArabic ? 'تصفية فواتير الشراء بالفترة' : 'Buying Invoice Date Filter',
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      Text(
-                        isArabic ? 'ترشيد استهلاك قراءة الفايربيس (Firebase Quota Saver)' : 'Optimizes Firebase database reads quota',
-                        style: const TextStyle(fontSize: 11, color: Colors.grey),
-                      ),
                     ],
                   ),
                 ),

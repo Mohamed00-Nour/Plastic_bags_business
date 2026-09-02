@@ -151,6 +151,120 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
       balanceTitle = 'لا يوجد مديونية';
     }
 
+    final identity = Row(
+      children: [
+        CircleAvatar(
+          radius: 28,
+          backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.15),
+          child: Text(
+            clientName.isNotEmpty
+                ? clientName.substring(0, 1).toUpperCase()
+                : 'C',
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.primaryColor,
+            ),
+          ),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                clientName,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              if (clientPhone.isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.phone_rounded,
+                      size: 14,
+                      color: Colors.grey,
+                    ),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        clientPhone,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              if (clientAddress.isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.location_on_rounded,
+                      size: 14,
+                      color: Colors.grey,
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        clientAddress,
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 12,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+
+    final balanceBadge = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: balanceColor.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: balanceColor.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Text(
+            balanceTitle,
+            textAlign: TextAlign.end,
+            style: TextStyle(
+              fontSize: 10,
+              color: balanceColor,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            '\$${balance.abs().toStringAsFixed(2)}',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: balanceColor,
+            ),
+          ),
+        ],
+      ),
+    );
+
     return Card(
       margin: const EdgeInsets.all(16),
       elevation: 3,
@@ -159,170 +273,88 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 28,
-                  backgroundColor: AppTheme.primaryColor.withValues(
-                    alpha: 0.15,
-                  ),
-                  child: Text(
-                    clientName.isNotEmpty
-                        ? clientName.substring(0, 1).toUpperCase()
-                        : 'C',
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.primaryColor,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            LayoutBuilder(
+              builder: (context, constraints) {
+                if (constraints.maxWidth < 560) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text(
-                        clientName,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      if (clientPhone.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.phone_rounded,
-                              size: 14,
-                              color: Colors.grey,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              clientPhone,
-                              style: const TextStyle(
-                                color: Colors.grey,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                      if (clientAddress.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.location_on_rounded,
-                              size: 14,
-                              color: Colors.grey,
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                clientAddress,
-                                style: const TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: 12,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                      identity,
+                      const SizedBox(height: 12),
+                      balanceBadge,
                     ],
-                  ),
-                ),
-                // Balance Badge
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    color: balanceColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: balanceColor.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        balanceTitle,
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: balanceColor,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '\$${balance.abs().toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: balanceColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                  );
+                }
+                return Row(
+                  children: [
+                    Expanded(child: identity),
+                    const SizedBox(width: 16),
+                    balanceBadge,
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 16),
             const Divider(),
             const SizedBox(height: 8),
 
             // Action Buttons Bar
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryColor,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final adjustButton = ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    icon: const Icon(
-                      Icons.account_balance_wallet_rounded,
-                      size: 18,
-                    ),
-                    label: const Text(
-                      'تعديل الرصيد',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    onPressed:
-                        () => _showBalanceAdjustmentModal(context, client),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppTheme.primaryColor,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      side: const BorderSide(color: AppTheme.primaryColor),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    icon: const Icon(Icons.picture_as_pdf_rounded, size: 18),
-                    label: const Text(
-                      'كشف الحساب',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    onPressed:
-                        () => _showStatementFilterDialog(context, client),
+                  icon: const Icon(
+                    Icons.account_balance_wallet_rounded,
+                    size: 18,
                   ),
-                ),
-              ],
+                  label: const Text(
+                    'تعديل الرصيد',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  onPressed: () => _showBalanceAdjustmentModal(context, client),
+                );
+                final statementButton = OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppTheme.primaryColor,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    side: const BorderSide(color: AppTheme.primaryColor),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  icon: const Icon(Icons.picture_as_pdf_rounded, size: 18),
+                  label: const Text(
+                    'كشف الحساب',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  onPressed: () => _showStatementFilterDialog(context, client),
+                );
+
+                if (constraints.maxWidth < 430) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      adjustButton,
+                      const SizedBox(height: 8),
+                      statementButton,
+                    ],
+                  );
+                }
+                return Row(
+                  children: [
+                    Expanded(child: adjustButton),
+                    const SizedBox(width: 12),
+                    Expanded(child: statementButton),
+                  ],
+                );
+              },
             ),
           ],
         ),
@@ -453,13 +485,15 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
             size: 20,
           ),
         ),
-        title: Row(
+        title: Wrap(
+          spacing: 8,
+          runSpacing: 4,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             Text(
               '#$invoiceNumber',
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
             ),
-            const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
@@ -526,7 +560,10 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
                           final name =
                               item['productName'] ?? item['name'] ?? 'منتج';
                           final rawQty = item['quantity'] ?? 1;
-                          final qty = rawQty is num ? rawQty.toDouble() : double.tryParse(rawQty.toString()) ?? 1.0;
+                          final qty =
+                              rawQty is num
+                                  ? rawQty.toDouble()
+                                  : double.tryParse(rawQty.toString()) ?? 1.0;
                           final price = (item['price'] ?? 0.0).toDouble();
                           final total = price * qty;
                           return Padding(
@@ -653,8 +690,10 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
                 const Divider(),
 
                 // Action Buttons for this Invoice
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                Wrap(
+                  alignment: WrapAlignment.end,
+                  spacing: 8,
+                  runSpacing: 4,
                   children: [
                     TextButton.icon(
                       style: TextButton.styleFrom(
@@ -674,7 +713,6 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
                         );
                       },
                     ),
-                    const SizedBox(width: 8),
                     TextButton.icon(
                       style: TextButton.styleFrom(foregroundColor: Colors.red),
                       icon: const Icon(Icons.delete_forever_rounded, size: 18),
@@ -759,23 +797,34 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
           itemCount: records.length,
           itemBuilder: (context, index) {
             final rec = records[index];
-            final isPayment =
-                rec.type == 'payment' || rec.type == 'sales_return';
-            final isInvoice =
-                rec.type == 'sales_invoice' || rec.type == 'opening';
+            final isReduction =
+                rec.type == 'payment' ||
+                rec.type == 'sales_return' ||
+                rec.type == 'cancellation' ||
+                rec.type == 'discount' ||
+                rec.type == 'decrease';
+            final isIncrease =
+                rec.type == 'sales_invoice' ||
+                rec.type == 'manual_debt' ||
+                rec.type == 'debt';
 
             Color amountColor = Colors.grey;
             IconData icon = Icons.swap_horiz_rounded;
-            if (isPayment) {
+            if (isReduction) {
               amountColor = AppTheme.successColor;
               icon = Icons.add_circle_outline_rounded;
-            } else if (isInvoice) {
+            } else if (isIncrease) {
               amountColor = AppTheme.dangerColor;
               icon = Icons.remove_circle_outline_rounded;
             }
 
             final String typeDesc;
-            if (rec.type == 'manual_debt' ||
+            if (rec.description.startsWith('تعديل قيمة فاتورة #')) {
+              typeDesc =
+                  rec.invoiceNumber.isNotEmpty
+                      ? 'تعديل فاتورة مبيعات #${rec.invoiceNumber}'
+                      : 'تعديل فاتورة مبيعات';
+            } else if (rec.type == 'manual_debt' ||
                 rec.type == 'debt' ||
                 (rec.type == 'sales_invoice' && rec.invoiceNumber.isEmpty)) {
               typeDesc = 'إضافة مديونية';
@@ -788,9 +837,17 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
                       ? 'تحصيل من فاتورة #${rec.invoiceNumber}'
                       : 'تحصيل دفعة مالية';
             } else if (rec.type == 'sales_return') {
-              typeDesc = 'فاتورة مرتجع';
+              typeDesc =
+                  rec.invoiceNumber.isNotEmpty
+                      ? 'فاتورة مرتجع #${rec.invoiceNumber}'
+                      : 'فاتورة مرتجع';
             } else if (rec.type == 'cancellation') {
-              typeDesc = 'إلغاء فاتورة';
+              typeDesc =
+                  rec.invoiceNumber.isNotEmpty
+                      ? 'إلغاء فاتورة #${rec.invoiceNumber}'
+                      : 'إلغاء فاتورة';
+            } else if (rec.type == 'opening') {
+              typeDesc = 'رصيد افتتاحي';
             } else {
               typeDesc = 'حركة رصيد';
             }
@@ -800,7 +857,10 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
             return Card(
               margin: const EdgeInsets.only(bottom: 8),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -826,7 +886,10 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
                               const SizedBox(height: 2),
                               Text(
                                 _dateFormat.format(rec.timestamp),
-                                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
                               ),
                             ],
                           ),
@@ -845,13 +908,19 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
                             ),
                             Text(
                               'الرصيد بعدها: \$${rec.balanceAfter.toStringAsFixed(2)}',
-                              style: const TextStyle(fontSize: 11, color: Colors.grey),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey,
+                              ),
                             ),
                           ],
                         ),
                         const SizedBox(width: 4),
                         PopupMenuButton<String>(
-                          icon: const Icon(Icons.more_vert_rounded, color: Colors.grey),
+                          icon: const Icon(
+                            Icons.more_vert_rounded,
+                            color: Colors.grey,
+                          ),
                           onSelected: (val) {
                             if (val == 'edit') {
                               _showEditBalanceRecordDialog(context, rec);
@@ -859,28 +928,42 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
                               _confirmDeleteBalanceRecord(context, rec);
                             }
                           },
-                          itemBuilder: (context) => [
-                            PopupMenuItem<String>(
-                              value: 'edit',
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.edit_rounded, color: AppTheme.primaryColor, size: 20),
-                                  const SizedBox(width: 8),
-                                  Text(isArabic ? 'تعديل الحركة' : 'Edit'),
-                                ],
-                              ),
-                            ),
-                            PopupMenuItem<String>(
-                              value: 'delete',
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 20),
-                                  const SizedBox(width: 8),
-                                  Text(isArabic ? 'حذف الحركة' : 'Delete', style: const TextStyle(color: Colors.redAccent)),
-                                ],
-                              ),
-                            ),
-                          ],
+                          itemBuilder:
+                              (context) => [
+                                PopupMenuItem<String>(
+                                  value: 'edit',
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.edit_rounded,
+                                        color: AppTheme.primaryColor,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(isArabic ? 'تعديل الحركة' : 'Edit'),
+                                    ],
+                                  ),
+                                ),
+                                PopupMenuItem<String>(
+                                  value: 'delete',
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.delete_outline_rounded,
+                                        color: Colors.redAccent,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        isArabic ? 'حذف الحركة' : 'Delete',
+                                        style: const TextStyle(
+                                          color: Colors.redAccent,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                         ),
                       ],
                     ),
@@ -888,7 +971,10 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
                       const SizedBox(height: 8),
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(8),
@@ -930,113 +1016,128 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
     );
   }
 
-  void _confirmDeleteBalanceRecord(BuildContext context, ClientBalanceRecord record) {
+  void _confirmDeleteBalanceRecord(
+    BuildContext context,
+    ClientBalanceRecord record,
+  ) {
     final isArabic = Localizations.localeOf(context).languageCode == 'ar';
     final pageContext = context;
 
     showDialog(
       context: context,
-      builder: (dialogCtx) => AlertDialog(
-        title: Row(
-          children: [
-            const Icon(Icons.warning_amber_rounded, color: Colors.red),
-            const SizedBox(width: 8),
-            Text(isArabic ? 'تأكيد حذف الحركة' : 'Confirm Delete Record'),
-          ],
-        ),
-        content: Text(
-          isArabic
-              ? 'هل أنت تأكد من حذف حركة الرصيد بقيمة \$${record.amount.toStringAsFixed(2)}؟ سيتم إعادة احتساب وتحديث رصيد العميل آلياً.'
-              : 'Are you sure you want to delete this balance record of \$${record.amount.toStringAsFixed(2)}? Client balance will be recalculated.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
-            child: Text(isArabic ? 'إلغاء' : 'Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () async {
-              Navigator.pop(dialogCtx);
+      builder:
+          (dialogCtx) => AlertDialog(
+            title: Row(
+              children: [
+                const Icon(Icons.warning_amber_rounded, color: Colors.red),
+                const SizedBox(width: 8),
+                Text(isArabic ? 'تأكيد حذف الحركة' : 'Confirm Delete Record'),
+              ],
+            ),
+            content: Text(
+              isArabic
+                  ? 'هل أنت تأكد من حذف حركة الرصيد بقيمة \$${record.amount.toStringAsFixed(2)}؟ سيتم إعادة احتساب وتحديث رصيد العميل آلياً.'
+                  : 'Are you sure you want to delete this balance record of \$${record.amount.toStringAsFixed(2)}? Client balance will be recalculated.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogCtx),
+                child: Text(isArabic ? 'إلغاء' : 'Cancel'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                onPressed: () async {
+                  Navigator.pop(dialogCtx);
 
-              // Show loading overlay
-              BuildContext? loadingContext;
-              showDialog(
-                context: pageContext,
-                barrierDismissible: false,
-                builder: (lCtx) {
-                  loadingContext = lCtx;
-                  return AlertDialog(
-                    content: Row(
-                      children: [
-                        const CircularProgressIndicator(),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Text(
-                            isArabic ? 'جاري حذف حركة الرصيد...' : 'Deleting balance record...',
-                          ),
+                  // Show loading overlay
+                  BuildContext? loadingContext;
+                  showDialog(
+                    context: pageContext,
+                    barrierDismissible: false,
+                    builder: (lCtx) {
+                      loadingContext = lCtx;
+                      return AlertDialog(
+                        content: Row(
+                          children: [
+                            const CircularProgressIndicator(),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Text(
+                                isArabic
+                                    ? 'جاري حذف حركة الرصيد...'
+                                    : 'Deleting balance record...',
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      );
+                    },
                   );
+
+                  try {
+                    await _syncService.deleteBalanceRecord(
+                      clientId: _effectiveClientId,
+                      record: record,
+                    );
+
+                    if (loadingContext != null && loadingContext!.mounted) {
+                      Navigator.pop(loadingContext!);
+                    }
+
+                    if (pageContext.mounted) {
+                      ScaffoldMessenger.of(pageContext).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            isArabic
+                                ? 'تم حذف حركة الرصيد وتحديث حساب العميل بنجاح'
+                                : 'Balance record deleted & client balance updated!',
+                          ),
+                          backgroundColor: AppTheme.successColor,
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (loadingContext != null && loadingContext!.mounted) {
+                      Navigator.pop(loadingContext!);
+                    }
+                    if (pageContext.mounted) {
+                      ScaffoldMessenger.of(pageContext).showSnackBar(
+                        SnackBar(
+                          content: Text('Error deleting record: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
                 },
-              );
-
-              try {
-                await _syncService.deleteBalanceRecord(
-                  clientId: _effectiveClientId,
-                  record: record,
-                );
-
-                if (loadingContext != null && loadingContext!.mounted) {
-                  Navigator.pop(loadingContext!);
-                }
-
-                if (pageContext.mounted) {
-                  ScaffoldMessenger.of(pageContext).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        isArabic
-                            ? 'تم حذف حركة الرصيد وتحديث حساب العميل بنجاح'
-                            : 'Balance record deleted & client balance updated!',
-                      ),
-                      backgroundColor: AppTheme.successColor,
-                    ),
-                  );
-                }
-              } catch (e) {
-                if (loadingContext != null && loadingContext!.mounted) {
-                  Navigator.pop(loadingContext!);
-                }
-                if (pageContext.mounted) {
-                  ScaffoldMessenger.of(pageContext).showSnackBar(
-                    SnackBar(
-                      content: Text('Error deleting record: $e'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              }
-            },
-            child: Text(isArabic ? 'حذف' : 'Delete', style: const TextStyle(color: Colors.white)),
+                child: Text(
+                  isArabic ? 'حذف' : 'Delete',
+                  style: const TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
-  void _showEditBalanceRecordDialog(BuildContext context, ClientBalanceRecord record) {
+  void _showEditBalanceRecordDialog(
+    BuildContext context,
+    ClientBalanceRecord record,
+  ) {
     final isArabic = Localizations.localeOf(context).languageCode == 'ar';
     final pageContext = context;
 
-    final amountController = TextEditingController(text: record.amount.toStringAsFixed(2));
-    final existingNote = record.notes.isNotEmpty
-        ? record.notes
-        : (record.description != 'تحصيل دفعة نقداً' &&
-                record.description != 'إضافة مديونية' &&
-                !record.description.startsWith('تحصيل من فاتورة #')
-            ? record.description
-            : '');
+    final amountController = TextEditingController(
+      text: record.amount.toStringAsFixed(2),
+    );
+    final existingNote =
+        record.notes.isNotEmpty
+            ? record.notes
+            : (record.description != 'تحصيل دفعة نقداً' &&
+                    record.description != 'إضافة مديونية' &&
+                    !record.description.startsWith('تحصيل من فاتورة #')
+                ? record.description
+                : '');
     final notesController = TextEditingController(text: existingNote);
     String selectedType = record.type;
     DateTime selectedDate = record.timestamp;
@@ -1049,7 +1150,10 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
             return AlertDialog(
               title: Row(
                 children: [
-                  const Icon(Icons.edit_note_rounded, color: AppTheme.primaryColor),
+                  const Icon(
+                    Icons.edit_note_rounded,
+                    color: AppTheme.primaryColor,
+                  ),
                   const SizedBox(width: 8),
                   Text(isArabic ? 'تعديل حركة الرصيد' : 'Edit Balance Record'),
                 ],
@@ -1060,7 +1164,9 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
                   children: [
                     TextField(
                       controller: amountController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       decoration: InputDecoration(
                         labelText: isArabic ? 'المبلغ (\$)' : 'Amount (\$)',
                         prefixIcon: const Icon(Icons.attach_money),
@@ -1080,19 +1186,28 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
                         ),
                         DropdownMenuItem(
                           value: 'payment',
-                          child: Text(isArabic ? 'تحصيل دفعة مالية' : 'Payment Collection'),
+                          child: Text(
+                            isArabic
+                                ? 'تحصيل دفعة مالية'
+                                : 'Payment Collection',
+                          ),
                         ),
                         DropdownMenuItem(
                           value: 'sales_return',
-                          child: Text(isArabic ? 'فاتورة مرتجع' : 'Sales Return'),
+                          child: Text(
+                            isArabic ? 'فاتورة مرتجع' : 'Sales Return',
+                          ),
                         ),
                         DropdownMenuItem(
                           value: 'sales_invoice',
-                          child: Text(isArabic ? 'فاتورة مبيعات' : 'Sales Invoice'),
+                          child: Text(
+                            isArabic ? 'فاتورة مبيعات' : 'Sales Invoice',
+                          ),
                         ),
                       ],
                       onChanged: (val) {
-                        if (val != null) setDialogState(() => selectedType = val);
+                        if (val != null)
+                          setDialogState(() => selectedType = val);
                       },
                     ),
                     const SizedBox(height: 12),
@@ -1106,13 +1221,18 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
                         ),
                         const Spacer(),
                         IconButton(
-                          icon: const Icon(Icons.calendar_month, color: AppTheme.primaryColor),
+                          icon: const Icon(
+                            Icons.calendar_month,
+                            color: AppTheme.primaryColor,
+                          ),
                           onPressed: () async {
                             final picked = await showDatePicker(
                               context: context,
                               initialDate: selectedDate,
                               firstDate: DateTime(2020),
-                              lastDate: DateTime.now().add(const Duration(days: 365)),
+                              lastDate: DateTime.now().add(
+                                const Duration(days: 365),
+                              ),
                             );
                             if (picked != null) {
                               setDialogState(() => selectedDate = picked);
@@ -1139,7 +1259,8 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
                 ),
                 ElevatedButton(
                   onPressed: () async {
-                    final newAmount = double.tryParse(amountController.text.trim()) ?? 0.0;
+                    final newAmount =
+                        double.tryParse(amountController.text.trim()) ?? 0.0;
                     if (newAmount <= 0) return;
 
                     Navigator.pop(dialogCtx);
@@ -1158,7 +1279,9 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
                               const SizedBox(width: 16),
                               Expanded(
                                 child: Text(
-                                  isArabic ? 'جاري تعديل حركة الرصيد...' : 'Updating balance record...',
+                                  isArabic
+                                      ? 'جاري تعديل حركة الرصيد...'
+                                      : 'Updating balance record...',
                                 ),
                               ),
                             ],
@@ -1174,7 +1297,10 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
                         newAmount: newAmount,
                         newType: selectedType,
                         newDate: selectedDate,
-                        newNotes: notesController.text.trim().isNotEmpty ? notesController.text.trim() : null,
+                        newNotes:
+                            notesController.text.trim().isNotEmpty
+                                ? notesController.text.trim()
+                                : null,
                       );
 
                       if (loadingContext != null && loadingContext!.mounted) {
@@ -1393,6 +1519,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
         'balanceBefore': currentBalance,
         'balanceAfter': newBalance,
         'timestamp': Timestamp.fromDate(date),
+        'entryOrder': 0,
         'createdAt': FieldValue.serverTimestamp(),
       });
     });
@@ -1425,6 +1552,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
         'balanceBefore': currentBalance,
         'balanceAfter': newBalance,
         'timestamp': Timestamp.fromDate(date),
+        'entryOrder': 0,
         'createdAt': FieldValue.serverTimestamp(),
       });
     });

@@ -16,13 +16,13 @@ class AnnouncementsScreen extends StatelessWidget {
         title: Text(l10n.announcements),
         backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
-
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('announcements')
-            .orderBy('createdAt', descending: true)
-            .snapshots(),
+        stream:
+            FirebaseFirestore.instance
+                .collection('announcements')
+                .orderBy('createdAt', descending: true)
+                .snapshots(),
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -33,19 +33,22 @@ class AnnouncementsScreen extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.campaign_outlined,
-                      size: 64,
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: 0.3)),
+                  Icon(
+                    Icons.campaign_outlined,
+                    size: 64,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.3),
+                  ),
                   const SizedBox(height: 16),
-                  Text(l10n.noAnnouncements,
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurface
-                              .withValues(alpha: 0.5))),
+                  Text(
+                    l10n.noAnnouncements,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.5),
+                    ),
+                  ),
                 ],
               ),
             );
@@ -58,17 +61,21 @@ class AnnouncementsScreen extends StatelessWidget {
               final doc = docs[i];
               final data = doc.data() as Map<String, dynamic>;
               final isActive = data['active'] == true;
-              final titleEn = data['titleEn'] as String? ?? data['title'] as String? ?? '';
+              final titleEn =
+                  data['titleEn'] as String? ?? data['title'] as String? ?? '';
               final titleAr = data['titleAr'] as String? ?? titleEn;
-              final messageEn = data['messageEn'] as String? ?? data['message'] as String? ?? '';
+              final messageEn =
+                  data['messageEn'] as String? ??
+                  data['message'] as String? ??
+                  '';
               final messageAr = data['messageAr'] as String? ?? messageEn;
-              final createdAt =
-                  (data['createdAt'] as Timestamp?)?.toDate();
+              final createdAt = (data['createdAt'] as Timestamp?)?.toDate();
               final dateFmt = intl.DateFormat('dd MMM yyyy, HH:mm');
 
               return Card(
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -82,27 +89,61 @@ class AnnouncementsScreen extends StatelessWidget {
                               children: [
                                 Row(
                                   children: [
-                                    const Icon(Icons.language, size: 14, color: Colors.grey),
+                                    const Icon(
+                                      Icons.language,
+                                      size: 14,
+                                      color: Colors.grey,
+                                    ),
                                     const SizedBox(width: 4),
-                                    const Text('EN', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w600)),
+                                    const Text(
+                                      'EN',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.grey,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
                                     const SizedBox(width: 6),
                                     Expanded(
-                                      child: Text(titleEn,
-                                          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                                      child: Text(
+                                        titleEn,
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.titleMedium?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
                                     ),
                                   ],
                                 ),
                                 const SizedBox(height: 4),
                                 Row(
                                   children: [
-                                    const Icon(Icons.language, size: 14, color: Colors.grey),
+                                    const Icon(
+                                      Icons.language,
+                                      size: 14,
+                                      color: Colors.grey,
+                                    ),
                                     const SizedBox(width: 4),
-                                    const Text('AR', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w600)),
+                                    const Text(
+                                      'AR',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.grey,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
                                     const SizedBox(width: 6),
                                     Expanded(
-                                      child: Text(titleAr,
-                                          textDirection: TextDirection.rtl,
-                                          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                                      child: Text(
+                                        titleAr,
+                                        textDirection: TextDirection.rtl,
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.titleMedium?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -117,8 +158,20 @@ class AnnouncementsScreen extends StatelessWidget {
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('EN ', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w600)),
-                          Expanded(child: Text(messageEn, style: Theme.of(context).textTheme.bodyMedium)),
+                          const Text(
+                            'EN ',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              messageEn,
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 4),
@@ -126,57 +179,73 @@ class AnnouncementsScreen extends StatelessWidget {
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('AR ', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w600)),
+                          const Text(
+                            'AR ',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                           Expanded(
-                            child: Text(messageAr,
-                                textDirection: TextDirection.rtl,
-                                style: Theme.of(context).textTheme.bodyMedium)),
+                            child: Text(
+                              messageAr,
+                              textDirection: TextDirection.rtl,
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                          ),
                         ],
                       ),
                       if (createdAt != null) ...[
                         const SizedBox(height: 8),
                         Text(
                           '${l10n.announcementCreatedAt}: ${dateFmt.format(createdAt)}',
-                          style: Theme.of(context)
-                              .textTheme
-                              .labelSmall
-                              ?.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
-                                      .withValues(alpha: 0.5)),
+                          style: Theme.of(
+                            context,
+                          ).textTheme.labelSmall?.copyWith(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.5),
+                          ),
                         ),
                       ],
                       const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
+                      Wrap(
+                        alignment: WrapAlignment.end,
+                        spacing: 8,
+                        runSpacing: 8,
                         children: [
                           // Toggle active/inactive
                           OutlinedButton.icon(
-                            onPressed: () => _toggleActive(doc.id, isActive, data),
+                            onPressed:
+                                () => _toggleActive(doc.id, isActive, data),
                             icon: Icon(
                               isActive
                                   ? Icons.pause_circle_outline
                                   : Icons.play_circle_outline,
                               size: 18,
                             ),
-                            label: Text(isActive
-                                ? l10n.announcementDeactivate
-                                : l10n.announcementActivate),
+                            label: Text(
+                              isActive
+                                  ? l10n.announcementDeactivate
+                                  : l10n.announcementActivate,
+                            ),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: isActive
-                                  ? AppTheme.warningColor
-                                  : AppTheme.successColor,
-                              side: BorderSide(
-                                  color: isActive
+                              foregroundColor:
+                                  isActive
                                       ? AppTheme.warningColor
-                                      : AppTheme.successColor),
+                                      : AppTheme.successColor,
+                              side: BorderSide(
+                                color:
+                                    isActive
+                                        ? AppTheme.warningColor
+                                        : AppTheme.successColor,
+                              ),
                             ),
                           ),
-                          const SizedBox(width: 8),
                           OutlinedButton.icon(
-                            onPressed: () =>
-                                _confirmDelete(context, doc.id, l10n),
+                            onPressed:
+                                () => _confirmDelete(context, doc.id, l10n),
                             icon: const Icon(Icons.delete_outline, size: 18),
                             label: Text(l10n.announcementDelete),
                             style: OutlinedButton.styleFrom(
@@ -222,7 +291,10 @@ class AnnouncementsScreen extends StatelessWidget {
   }
 
   Future<void> _toggleActive(
-      String docId, bool current, Map<String, dynamic> data) async {
+    String docId,
+    bool current,
+    Map<String, dynamic> data,
+  ) async {
     await FirebaseFirestore.instance
         .collection('announcements')
         .doc(docId)
@@ -230,9 +302,11 @@ class AnnouncementsScreen extends StatelessWidget {
 
     // Send FCM push when re-activating an announcement
     if (current == false) {
-      final titleEn = data['titleEn'] as String? ?? data['title'] as String? ?? '';
+      final titleEn =
+          data['titleEn'] as String? ?? data['title'] as String? ?? '';
       final titleAr = data['titleAr'] as String? ?? titleEn;
-      final messageEn = data['messageEn'] as String? ?? data['message'] as String? ?? '';
+      final messageEn =
+          data['messageEn'] as String? ?? data['message'] as String? ?? '';
       final messageAr = data['messageAr'] as String? ?? messageEn;
       await FcmService.sendToTopic(
         topic: 'announcements',
@@ -245,21 +319,29 @@ class AnnouncementsScreen extends StatelessWidget {
   }
 
   Future<void> _confirmDelete(
-      BuildContext context, String docId, AppLocalizations l10n) async {
+    BuildContext context,
+    String docId,
+    AppLocalizations l10n,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.announcementDeleteConfirm),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(l10n.cancel)),
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text(l10n.announcementDelete,
-                  style: TextStyle(color: AppTheme.dangerColor))),
-        ],
-      ),
+      builder:
+          (ctx) => AlertDialog(
+            title: Text(l10n.announcementDeleteConfirm),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text(l10n.cancel),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: Text(
+                  l10n.announcementDelete,
+                  style: TextStyle(color: AppTheme.dangerColor),
+                ),
+              ),
+            ],
+          ),
     );
     if (confirmed == true) {
       await FirebaseFirestore.instance
@@ -297,9 +379,10 @@ class _StatusBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: isActive
-            ? AppTheme.successColor.withValues(alpha: 0.15)
-            : Colors.grey.withValues(alpha: 0.15),
+        color:
+            isActive
+                ? AppTheme.successColor.withValues(alpha: 0.15)
+                : Colors.grey.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: isActive ? AppTheme.successColor : Colors.grey,
@@ -340,8 +423,7 @@ class _CreateAnnouncementDialog extends StatefulWidget {
       _CreateAnnouncementDialogState();
 }
 
-class _CreateAnnouncementDialogState
-    extends State<_CreateAnnouncementDialog> {
+class _CreateAnnouncementDialogState extends State<_CreateAnnouncementDialog> {
   final _formKey = GlobalKey<FormState>();
   final _titleEnCtrl = TextEditingController();
   final _titleArCtrl = TextEditingController();
@@ -403,9 +485,9 @@ class _CreateAnnouncementDialogState
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -415,11 +497,12 @@ class _CreateAnnouncementDialogState
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       title: Row(
         children: [
           const Icon(Icons.campaign_rounded, color: AppTheme.primaryColor),
           const SizedBox(width: 8),
-          Text(l10n.newAnnouncement),
+          Expanded(child: Text(l10n.newAnnouncement)),
         ],
       ),
       content: SizedBox(
@@ -441,8 +524,11 @@ class _CreateAnnouncementDialogState
                     border: const OutlineInputBorder(),
                     prefixIcon: const Icon(Icons.title),
                   ),
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? l10n.announcementTitle : null,
+                  validator:
+                      (v) =>
+                          (v == null || v.trim().isEmpty)
+                              ? l10n.announcementTitle
+                              : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
@@ -454,8 +540,11 @@ class _CreateAnnouncementDialogState
                     border: const OutlineInputBorder(),
                     alignLabelWithHint: true,
                   ),
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? l10n.announcementMessage : null,
+                  validator:
+                      (v) =>
+                          (v == null || v.trim().isEmpty)
+                              ? l10n.announcementMessage
+                              : null,
                 ),
                 const SizedBox(height: 20),
                 _LangSectionHeader(flag: '🇸🇦', label: l10n.langArabic),
@@ -469,8 +558,11 @@ class _CreateAnnouncementDialogState
                     border: const OutlineInputBorder(),
                     prefixIcon: const Icon(Icons.title),
                   ),
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? l10n.announcementTitle : null,
+                  validator:
+                      (v) =>
+                          (v == null || v.trim().isEmpty)
+                              ? l10n.announcementTitle
+                              : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
@@ -483,8 +575,11 @@ class _CreateAnnouncementDialogState
                     border: const OutlineInputBorder(),
                     alignLabelWithHint: true,
                   ),
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? l10n.announcementMessage : null,
+                  validator:
+                      (v) =>
+                          (v == null || v.trim().isEmpty)
+                              ? l10n.announcementMessage
+                              : null,
                 ),
                 const SizedBox(height: 12),
                 SwitchListTile(
@@ -497,12 +592,12 @@ class _CreateAnnouncementDialogState
                         : l10n.sendPushNotificationHintOff,
                     style: TextStyle(
                       fontSize: 12,
-                      color: _sendPush
-                          ? AppTheme.successColor
-                          : Theme.of(context)
-                              .colorScheme
-                              .onSurface
-                              .withValues(alpha: 0.5),
+                      color:
+                          _sendPush
+                              ? AppTheme.successColor
+                              : Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.5),
                     ),
                   ),
                   secondary: Icon(
@@ -525,11 +620,14 @@ class _CreateAnnouncementDialogState
         ),
         ElevatedButton.icon(
           onPressed: _loading ? null : _submit,
-          icon: _loading
-              ? const SizedBox(
-                  width: 16, height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2))
-              : const Icon(Icons.send_rounded),
+          icon:
+              _loading
+                  ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                  : const Icon(Icons.send_rounded),
           label: Text(l10n.announcementSend),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppTheme.primaryColor,
@@ -592,9 +690,9 @@ class _QuickPushDialogState extends State<_QuickPushDialog> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -604,11 +702,12 @@ class _QuickPushDialogState extends State<_QuickPushDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       title: Row(
         children: [
           const Icon(Icons.send_to_mobile_rounded, color: Colors.deepOrange),
           const SizedBox(width: 8),
-          Text(l10n.quickPush),
+          Expanded(child: Text(l10n.quickPush)),
         ],
       ),
       content: SizedBox(
@@ -626,15 +725,26 @@ class _QuickPushDialogState extends State<_QuickPushDialog> {
                   decoration: BoxDecoration(
                     color: Colors.deepOrange.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.deepOrange.withValues(alpha: 0.3)),
+                    border: Border.all(
+                      color: Colors.deepOrange.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.info_outline, size: 16, color: Colors.deepOrange),
+                      const Icon(
+                        Icons.info_outline,
+                        size: 16,
+                        color: Colors.deepOrange,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: Text(l10n.quickPushSubtitle,
-                            style: const TextStyle(fontSize: 12, color: Colors.deepOrange)),
+                        child: Text(
+                          l10n.quickPushSubtitle,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.deepOrange,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -649,8 +759,11 @@ class _QuickPushDialogState extends State<_QuickPushDialog> {
                     border: const OutlineInputBorder(),
                     prefixIcon: const Icon(Icons.title),
                   ),
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? l10n.announcementTitle : null,
+                  validator:
+                      (v) =>
+                          (v == null || v.trim().isEmpty)
+                              ? l10n.announcementTitle
+                              : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
@@ -662,8 +775,11 @@ class _QuickPushDialogState extends State<_QuickPushDialog> {
                     border: const OutlineInputBorder(),
                     alignLabelWithHint: true,
                   ),
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? l10n.announcementMessage : null,
+                  validator:
+                      (v) =>
+                          (v == null || v.trim().isEmpty)
+                              ? l10n.announcementMessage
+                              : null,
                 ),
                 const SizedBox(height: 20),
                 _LangSectionHeader(flag: '🇸🇦', label: l10n.langArabic),
@@ -677,8 +793,11 @@ class _QuickPushDialogState extends State<_QuickPushDialog> {
                     border: const OutlineInputBorder(),
                     prefixIcon: const Icon(Icons.title),
                   ),
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? l10n.announcementTitle : null,
+                  validator:
+                      (v) =>
+                          (v == null || v.trim().isEmpty)
+                              ? l10n.announcementTitle
+                              : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
@@ -691,8 +810,11 @@ class _QuickPushDialogState extends State<_QuickPushDialog> {
                     border: const OutlineInputBorder(),
                     alignLabelWithHint: true,
                   ),
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? l10n.announcementMessage : null,
+                  validator:
+                      (v) =>
+                          (v == null || v.trim().isEmpty)
+                              ? l10n.announcementMessage
+                              : null,
                 ),
               ],
             ),
@@ -706,11 +828,17 @@ class _QuickPushDialogState extends State<_QuickPushDialog> {
         ),
         ElevatedButton.icon(
           onPressed: _loading ? null : _send,
-          icon: _loading
-              ? const SizedBox(
-                  width: 16, height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-              : const Icon(Icons.send_to_mobile_rounded),
+          icon:
+              _loading
+                  ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                  : const Icon(Icons.send_to_mobile_rounded),
           label: Text(l10n.quickPush),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.deepOrange,
@@ -735,11 +863,12 @@ class _LangSectionHeader extends StatelessWidget {
       children: [
         Text(flag, style: const TextStyle(fontSize: 18)),
         const SizedBox(width: 8),
-        Text(label,
-            style: Theme.of(context)
-                .textTheme
-                .labelLarge
-                ?.copyWith(fontWeight: FontWeight.bold)),
+        Text(
+          label,
+          style: Theme.of(
+            context,
+          ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold),
+        ),
         const SizedBox(width: 8),
         Expanded(child: Divider(color: Theme.of(context).dividerColor)),
       ],

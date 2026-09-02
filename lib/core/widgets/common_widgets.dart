@@ -6,31 +6,19 @@ class StatusBadge extends StatelessWidget {
   final String label;
   final Color color;
 
-  const StatusBadge({
-    super.key,
-    required this.label,
-    required this.color,
-  });
+  const StatusBadge({super.key, required this.label, required this.color});
 
-  factory StatusBadge.pending() => const StatusBadge(
-        label: 'Pending',
-        color: AppTheme.warningColor,
-      );
+  factory StatusBadge.pending() =>
+      const StatusBadge(label: 'Pending', color: AppTheme.warningColor);
 
-  factory StatusBadge.approved() => const StatusBadge(
-        label: 'Approved',
-        color: AppTheme.successColor,
-      );
+  factory StatusBadge.approved() =>
+      const StatusBadge(label: 'Approved', color: AppTheme.successColor);
 
-  factory StatusBadge.rejected() => const StatusBadge(
-        label: 'Rejected',
-        color: AppTheme.dangerColor,
-      );
+  factory StatusBadge.rejected() =>
+      const StatusBadge(label: 'Rejected', color: AppTheme.dangerColor);
 
-  factory StatusBadge.delivered() => const StatusBadge(
-        label: 'Delivered',
-        color: AppTheme.infoColor,
-      );
+  factory StatusBadge.delivered() =>
+      const StatusBadge(label: 'Delivered', color: AppTheme.infoColor);
 
   @override
   Widget build(BuildContext context) {
@@ -43,9 +31,10 @@ class StatusBadge extends StatelessWidget {
       child: Text(
         label,
         style: TextStyle(
-          color: color.computeLuminance() > 0.5
-              ? color.withRed((color.r * 0.7).toInt())
-              : color,
+          color:
+              color.computeLuminance() > 0.5
+                  ? color.withRed((color.r * 0.7).toInt())
+                  : color,
           fontSize: 12,
           fontWeight: FontWeight.w600,
         ),
@@ -98,10 +87,7 @@ class EmptyStateWidget extends StatelessWidget {
                 ),
               ),
             ],
-            if (action != null) ...[
-              const SizedBox(height: 24),
-              action!,
-            ],
+            if (action != null) ...[const SizedBox(height: 24), action!],
           ],
         ),
       ),
@@ -134,13 +120,14 @@ class ConfirmationDialog extends StatelessWidget {
   }) {
     return showDialog<bool>(
       context: context,
-      builder: (context) => ConfirmationDialog(
-        title: title,
-        message: message,
-        confirmLabel: confirmLabel,
-        confirmColor: confirmColor,
-        onConfirm: () => Navigator.of(context).pop(true),
-      ),
+      builder:
+          (context) => ConfirmationDialog(
+            title: title,
+            message: message,
+            confirmLabel: confirmLabel,
+            confirmColor: confirmColor,
+            onConfirm: () => Navigator.of(context).pop(true),
+          ),
     );
   }
 
@@ -188,8 +175,10 @@ class SearchField extends StatelessWidget {
         decoration: InputDecoration(
           hintText: hint,
           prefixIcon: const Icon(Icons.search, size: 20),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 10,
+          ),
           isDense: true,
         ),
       ),
@@ -212,6 +201,50 @@ class HorizontalScrollableTable extends StatefulWidget {
       _HorizontalScrollableTableState();
 }
 
+/// Keeps screen headers usable when a desktop window is narrowed or the same
+/// screen is opened on a phone. The primary control receives the full row on
+/// wide layouts and stacks above the actions on compact layouts.
+class ResponsiveActionBar extends StatelessWidget {
+  final Widget primary;
+  final Widget actions;
+  final double breakpoint;
+  final double spacing;
+
+  const ResponsiveActionBar({
+    super.key,
+    required this.primary,
+    required this.actions,
+    this.breakpoint = 650,
+    this.spacing = 12,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < breakpoint) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              primary,
+              SizedBox(height: spacing),
+              Align(alignment: AlignmentDirectional.centerEnd, child: actions),
+            ],
+          );
+        }
+
+        return Row(
+          children: [
+            Expanded(child: primary),
+            SizedBox(width: spacing),
+            actions,
+          ],
+        );
+      },
+    );
+  }
+}
+
 class _HorizontalScrollableTableState extends State<HorizontalScrollableTable> {
   late final ScrollController _scrollController;
 
@@ -231,7 +264,8 @@ class _HorizontalScrollableTableState extends State<HorizontalScrollableTable> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final double effectiveMinWidth = widget.minWidth ?? constraints.maxWidth;
+        final double effectiveMinWidth =
+            widget.minWidth ?? constraints.maxWidth;
         return Scrollbar(
           controller: _scrollController,
           thumbVisibility: true,
@@ -239,9 +273,7 @@ class _HorizontalScrollableTableState extends State<HorizontalScrollableTable> {
             controller: _scrollController,
             scrollDirection: Axis.horizontal,
             child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minWidth: effectiveMinWidth,
-              ),
+              constraints: BoxConstraints(minWidth: effectiveMinWidth),
               child: widget.child,
             ),
           ),

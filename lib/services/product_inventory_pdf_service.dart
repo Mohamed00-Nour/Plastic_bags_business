@@ -323,7 +323,10 @@ class ProductInventoryPdfService {
         color: even ? PdfColor.fromHex('#F8FAFC') : PdfColors.white,
         padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 4),
         child: pw.Text(
-          isArabic ? _r(text) : text,
+          // Product data can contain Arabic even when the report UI is
+          // English. The reshaper detects Arabic content itself and leaves
+          // Latin text and numbers unchanged.
+          _r(text),
           textAlign: pw.TextAlign.center,
           style: pw.TextStyle(font: bodyFont, fontSize: 8.5),
         ),

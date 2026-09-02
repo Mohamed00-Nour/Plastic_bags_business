@@ -34,18 +34,20 @@ class _RawMaterialsScreenState extends State<RawMaterialsScreen> {
     return BlocConsumer<RawMaterialBloc, RawMaterialState>(
       listener: (context, state) {
         if (state is RawMaterialOperationSuccess) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(state.message),
-            backgroundColor: AppTheme.successColor,
-          ));
-          context
-              .read<RawMaterialBloc>()
-              .add(RawMaterialLoadRequested());
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: AppTheme.successColor,
+            ),
+          );
+          context.read<RawMaterialBloc>().add(RawMaterialLoadRequested());
         } else if (state is RawMaterialError) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(state.message),
-            backgroundColor: AppTheme.dangerColor,
-          ));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: AppTheme.dangerColor,
+            ),
+          );
         }
       },
       builder: (context, state) {
@@ -54,27 +56,23 @@ class _RawMaterialsScreenState extends State<RawMaterialsScreen> {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _searchCtrl,
-                      decoration: InputDecoration(
-                        hintText: l10n.mfgSearchMaterial,
-                        prefixIcon: const Icon(Icons.search),
+              ResponsiveActionBar(
+                primary: TextField(
+                  controller: _searchCtrl,
+                  decoration: InputDecoration(
+                    hintText: l10n.mfgSearchMaterial,
+                    prefixIcon: const Icon(Icons.search),
+                  ),
+                  onChanged:
+                      (v) => context.read<RawMaterialBloc>().add(
+                        RawMaterialSearchRequested(query: v),
                       ),
-                      onChanged: (v) => context
-                          .read<RawMaterialBloc>()
-                          .add(RawMaterialSearchRequested(query: v)),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  ElevatedButton.icon(
-                    onPressed: () => _showForm(context, null),
-                    icon: const Icon(Icons.add),
-                    label: Text(l10n.mfgAddMaterial),
-                  ),
-                ],
+                ),
+                actions: ElevatedButton.icon(
+                  onPressed: () => _showForm(context, null),
+                  icon: const Icon(Icons.add),
+                  label: Text(l10n.mfgAddMaterial),
+                ),
               ),
               const SizedBox(height: 12),
               Expanded(child: _buildList(context, state)),
@@ -102,13 +100,16 @@ class _RawMaterialsScreenState extends State<RawMaterialsScreen> {
           margin: const EdgeInsets.only(bottom: 8),
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor:
-                  AppTheme.primaryColor.withValues(alpha: 0.1),
-              child: const Icon(Icons.science_outlined,
-                  color: AppTheme.primaryColor),
+              backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
+              child: const Icon(
+                Icons.science_outlined,
+                color: AppTheme.primaryColor,
+              ),
             ),
-            title: Text(m.name,
-                style: const TextStyle(fontWeight: FontWeight.w600)),
+            title: Text(
+              m.name,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -121,15 +122,16 @@ class _RawMaterialsScreenState extends State<RawMaterialsScreen> {
                       '${l10n.mfgStockQty}: ${m.quantityKg.toStringAsFixed(1)} ${m.unit}',
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
-                        color: m.isLowStock
-                            ? AppTheme.dangerColor
-                            : null,
+                        color: m.isLowStock ? AppTheme.dangerColor : null,
                       ),
                     ),
                     if (m.isLowStock) ...[
                       const SizedBox(width: 4),
-                      const Icon(Icons.warning_amber,
-                          size: 14, color: AppTheme.dangerColor),
+                      const Icon(
+                        Icons.warning_amber,
+                        size: 14,
+                        color: AppTheme.dangerColor,
+                      ),
                     ],
                   ],
                 ),
@@ -146,7 +148,9 @@ class _RawMaterialsScreenState extends State<RawMaterialsScreen> {
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: AppTheme.successColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
@@ -154,30 +158,33 @@ class _RawMaterialsScreenState extends State<RawMaterialsScreen> {
                   child: Text(
                     '\$${m.pricePerKg.toStringAsFixed(2)} / ${m.unit}',
                     style: const TextStyle(
-                        color: AppTheme.successColor,
-                        fontWeight: FontWeight.bold),
+                      color: AppTheme.successColor,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 IconButton(
-                  icon: const Icon(Icons.add_circle_outline,
-                      color: AppTheme.successColor),
+                  icon: const Icon(
+                    Icons.add_circle_outline,
+                    color: AppTheme.successColor,
+                  ),
                   tooltip: l10n.increase,
                   onPressed: () => _showQuantityDialog(context, m, true),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.remove_circle_outline,
-                      color: AppTheme.warningColor),
+                  icon: const Icon(
+                    Icons.remove_circle_outline,
+                    color: AppTheme.warningColor,
+                  ),
                   tooltip: l10n.decrease,
-                  onPressed: () =>
-                      _showQuantityDialog(context, m, false),
+                  onPressed: () => _showQuantityDialog(context, m, false),
                 ),
                 const SizedBox(width: 4),
                 StatusBadge(
                   label: m.isActive ? l10n.mfgActive : l10n.mfgInactive,
-                  color: m.isActive
-                      ? AppTheme.successColor
-                      : AppTheme.dangerColor,
+                  color:
+                      m.isActive ? AppTheme.successColor : AppTheme.dangerColor,
                 ),
                 const SizedBox(width: 8),
                 IconButton(
@@ -185,8 +192,10 @@ class _RawMaterialsScreenState extends State<RawMaterialsScreen> {
                   onPressed: () => _showForm(context, m),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.delete_outline,
-                      color: AppTheme.dangerColor),
+                  icon: const Icon(
+                    Icons.delete_outline,
+                    color: AppTheme.dangerColor,
+                  ),
                   onPressed: () => _confirmDelete(context, m),
                 ),
               ],
@@ -198,80 +207,92 @@ class _RawMaterialsScreenState extends State<RawMaterialsScreen> {
   }
 
   void _showQuantityDialog(
-      BuildContext context, RawMaterialModel m, bool isAdd) {
+    BuildContext context,
+    RawMaterialModel m,
+    bool isAdd,
+  ) {
     final l10n = AppLocalizations.of(context)!;
     final qtyCtrl = TextEditingController();
-    final priceCtrl =
-        TextEditingController(text: m.pricePerKg.toStringAsFixed(2));
+    final priceCtrl = TextEditingController(
+      text: m.pricePerKg.toStringAsFixed(2),
+    );
     final noteCtrl = TextEditingController();
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(isAdd ? l10n.mfgAddQuantity : l10n.mfgReduceQuantity),
-        content: SizedBox(
-          width: 350,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '${m.name} - ${l10n.mfgStockQty}: ${m.quantityKg.toStringAsFixed(1)} ${m.unit}',
-                style: const TextStyle(fontWeight: FontWeight.w600),
+      builder:
+          (ctx) => AlertDialog(
+            title: Text(isAdd ? l10n.mfgAddQuantity : l10n.mfgReduceQuantity),
+            content: SizedBox(
+              width: 350,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${m.name} - ${l10n.mfgStockQty}: ${m.quantityKg.toStringAsFixed(1)} ${m.unit}',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  if (isAdd) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      '${l10n.mfgCurrentAvgPrice}: \$${m.pricePerKg.toStringAsFixed(2)} / ${m.unit}',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: qtyCtrl,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: InputDecoration(
+                      labelText: '${l10n.quantity} (${m.unit})',
+                    ),
+                    autofocus: true,
+                  ),
+                  if (isAdd) ...[
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: priceCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: l10n.mfgPurchasePricePerKg,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: noteCtrl,
+                    decoration: InputDecoration(labelText: l10n.noteOptional),
+                  ),
+                ],
               ),
-              if (isAdd) ...[
-                const SizedBox(height: 8),
-                Text(
-                  '${l10n.mfgCurrentAvgPrice}: \$${m.pricePerKg.toStringAsFixed(2)} / ${m.unit}',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                ),
-              ],
-              const SizedBox(height: 12),
-              TextField(
-                controller: qtyCtrl,
-                keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true),
-                decoration:
-                    InputDecoration(labelText: '${l10n.quantity} (${m.unit})'),
-                autofocus: true,
-              ),
-              if (isAdd) ...[
-                const SizedBox(height: 12),
-                TextField(
-                  controller: priceCtrl,
-                  keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true),
-                  decoration: InputDecoration(
-                      labelText: l10n.mfgPurchasePricePerKg),
-                ),
-              ],
-              const SizedBox(height: 12),
-              TextField(
-                controller: noteCtrl,
-                decoration: InputDecoration(labelText: l10n.noteOptional),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(l10n.cancel)),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor:
-                  isAdd ? AppTheme.successColor : AppTheme.warningColor,
             ),
-            onPressed: () {
-              final qty = double.tryParse(qtyCtrl.text) ?? 0;
-              if (qty <= 0) return;
-              if (!isAdd && qty > m.quantityKg) return;
-              final note =
-                  noteCtrl.text.trim().isEmpty ? null : noteCtrl.text.trim();
-              if (isAdd) {
-                final price = double.tryParse(priceCtrl.text) ?? 0;
-                if (price <= 0) return;
-                context.read<RawMaterialBloc>().add(
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(l10n.cancel),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor:
+                      isAdd ? AppTheme.successColor : AppTheme.warningColor,
+                ),
+                onPressed: () {
+                  final qty = double.tryParse(qtyCtrl.text) ?? 0;
+                  if (qty <= 0) return;
+                  if (!isAdd && qty > m.quantityKg) return;
+                  final note =
+                      noteCtrl.text.trim().isEmpty
+                          ? null
+                          : noteCtrl.text.trim();
+                  if (isAdd) {
+                    final price = double.tryParse(priceCtrl.text) ?? 0;
+                    if (price <= 0) return;
+                    context.read<RawMaterialBloc>().add(
                       RawMaterialQuantityAddRequested(
                         materialId: m.id,
                         materialName: m.name,
@@ -282,8 +303,8 @@ class _RawMaterialsScreenState extends State<RawMaterialsScreen> {
                         note: note,
                       ),
                     );
-              } else {
-                context.read<RawMaterialBloc>().add(
+                  } else {
+                    context.read<RawMaterialBloc>().add(
                       RawMaterialQuantityReduceRequested(
                         materialId: m.id,
                         materialName: m.name,
@@ -292,13 +313,13 @@ class _RawMaterialsScreenState extends State<RawMaterialsScreen> {
                         note: note,
                       ),
                     );
-              }
-              Navigator.pop(ctx);
-            },
-            child: Text(isAdd ? l10n.increase : l10n.decrease),
+                  }
+                  Navigator.pop(ctx);
+                },
+                child: Text(isAdd ? l10n.increase : l10n.decrease),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -307,12 +328,15 @@ class _RawMaterialsScreenState extends State<RawMaterialsScreen> {
     final nameCtrl = TextEditingController(text: editing?.name ?? '');
     final typeCtrl = TextEditingController(text: editing?.type ?? '');
     final priceCtrl = TextEditingController(
-        text: editing != null ? editing.pricePerKg.toString() : '');
+      text: editing != null ? editing.pricePerKg.toString() : '',
+    );
     final unitCtrl = TextEditingController(text: editing?.unit ?? 'kg');
     final qtyCtrl = TextEditingController(
-        text: editing != null ? editing.quantityKg.toString() : '0');
+      text: editing != null ? editing.quantityKg.toString() : '0',
+    );
     final thresholdCtrl = TextEditingController(
-        text: editing != null ? editing.lowStockThreshold.toString() : '0');
+      text: editing != null ? editing.lowStockThreshold.toString() : '0',
+    );
     final stockInQtyCtrl = TextEditingController();
     final stockInPriceCtrl = TextEditingController();
     final stockInNoteCtrl = TextEditingController();
@@ -324,265 +348,307 @@ class _RawMaterialsScreenState extends State<RawMaterialsScreen> {
 
     showDialog(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDlgState) {
-          final supplierState = context.read<MaterialSupplierBloc>().state;
-          final suppliers = supplierState is MaterialSupplierLoaded
-              ? supplierState.all.where((s) => s.isActive).toList()
-              : <MaterialSupplierModel>[];
-          final materialState = context.read<RawMaterialBloc>().state;
-          final materials = materialState is RawMaterialLoaded
-              ? materialState.all.where((m) => m.isActive).toList()
-              : <RawMaterialModel>[];
+      builder:
+          (ctx) => StatefulBuilder(
+            builder: (ctx, setDlgState) {
+              final supplierState = context.read<MaterialSupplierBloc>().state;
+              final suppliers =
+                  supplierState is MaterialSupplierLoaded
+                      ? supplierState.all.where((s) => s.isActive).toList()
+                      : <MaterialSupplierModel>[];
+              final materialState = context.read<RawMaterialBloc>().state;
+              final materials =
+                  materialState is RawMaterialLoaded
+                      ? materialState.all.where((m) => m.isActive).toList()
+                      : <RawMaterialModel>[];
 
-          final effectiveSelected = selectedExisting ??
-              (materials.isNotEmpty ? materials.first : null);
+              final effectiveSelected =
+                  selectedExisting ??
+                  (materials.isNotEmpty ? materials.first : null);
 
-          return AlertDialog(
-            title: Text(
-                editing == null ? l10n.mfgAddMaterial : l10n.mfgEditMaterial),
-            content: SizedBox(
-              width: 450,
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (editing == null) ...[
-                      SegmentedButton<bool>(
-                        segments: [
-                          ButtonSegment(
-                            value: false,
-                            label: Text(l10n.mfgNewMaterial),
-                            icon: const Icon(Icons.add, size: 16),
-                          ),
-                          ButtonSegment(
-                            value: true,
-                            label: Text(l10n.mfgExistingMaterial),
-                            icon: const Icon(Icons.inventory_2_outlined,
-                                size: 16),
-                          ),
-                        ],
-                        selected: {isExistingMode},
-                        onSelectionChanged: (v) {
-                          setDlgState(() {
-                            isExistingMode = v.first;
-                            selectedExisting = materials.isNotEmpty
-                                ? materials.first
-                                : null;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                    if (editing != null || !isExistingMode) ...[
-                      TextField(
-                        controller: nameCtrl,
-                        decoration: InputDecoration(
-                            labelText: l10n.mfgMaterialName),
-                        readOnly: editing != null,
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: typeCtrl,
-                        decoration:
-                            InputDecoration(labelText: l10n.mfgTypeLabel),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: priceCtrl,
-                              keyboardType:
-                                  const TextInputType.numberWithOptions(
-                                      decimal: true),
-                              decoration: InputDecoration(
-                                  labelText: editing == null
-                                      ? l10n.mfgPricePerKgLabel
-                                      : l10n.mfgPricePerKgLabel),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: TextField(
-                              controller: unitCtrl,
-                              decoration: InputDecoration(
-                                  labelText: l10n.mfgUnitLabel),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: qtyCtrl,
-                              keyboardType:
-                                  const TextInputType.numberWithOptions(
-                                      decimal: true),
-                              decoration: InputDecoration(
-                                  labelText: l10n.mfgStockQty),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: TextField(
-                              controller: thresholdCtrl,
-                              keyboardType:
-                                  const TextInputType.numberWithOptions(
-                                      decimal: true),
-                              decoration: InputDecoration(
-                                  labelText: l10n.mfgLowStockAlert),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      DropdownButtonFormField<String?>(
-                        value: selectedSupplierId,
-                        decoration: InputDecoration(
-                            labelText: l10n.mfgMaterialSupplierLabel),
-                        items: [
-                          DropdownMenuItem<String?>(
-                            value: null,
-                            child: Text(l10n.noSupplier),
-                          ),
-                          ...suppliers.map((s) => DropdownMenuItem<String?>(
-                                value: s.id,
-                                child: Text(s.name),
-                              )),
-                        ],
-                        onChanged: (v) {
-                          setDlgState(() {
-                            selectedSupplierId = v;
-                            selectedSupplierName = v != null
-                                ? suppliers
-                                    .firstWhere((s) => s.id == v)
-                                    .name
-                                : null;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(l10n.mfgActive),
-                        value: isActive,
-                        onChanged: (v) => setDlgState(() => isActive = v),
-                      ),
-                    ] else ...[
-                      if (materials.isEmpty)
-                        Text(l10n.mfgNoMaterials)
-                      else ...[
-                        DropdownButtonFormField<RawMaterialModel>(
-                          value: effectiveSelected,
-                          decoration: InputDecoration(
-                              labelText: l10n.mfgSelectExistingMaterial),
-                          items: materials
-                              .map((m) => DropdownMenuItem(
-                                    value: m,
-                                    child: Text(m.name),
-                                  ))
-                              .toList(),
-                          onChanged: (v) =>
-                              setDlgState(() => selectedExisting = v),
-                        ),
-                        const SizedBox(height: 12),
-                        if (effectiveSelected != null)
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: AppTheme.infoColor.withValues(alpha: 0.08),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '${l10n.mfgStockQty}: ${effectiveSelected.quantityKg.toStringAsFixed(1)} ${effectiveSelected.unit}',
+              return AlertDialog(
+                title: Text(
+                  editing == null ? l10n.mfgAddMaterial : l10n.mfgEditMaterial,
+                ),
+                content: SizedBox(
+                  width: 450,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (editing == null) ...[
+                          SegmentedButton<bool>(
+                            segments: [
+                              ButtonSegment(
+                                value: false,
+                                label: Text(l10n.mfgNewMaterial),
+                                icon: const Icon(Icons.add, size: 16),
+                              ),
+                              ButtonSegment(
+                                value: true,
+                                label: Text(l10n.mfgExistingMaterial),
+                                icon: const Icon(
+                                  Icons.inventory_2_outlined,
+                                  size: 16,
                                 ),
-                                Text(
-                                  '${l10n.mfgCurrentAvgPrice}: \$${effectiveSelected.pricePerKg.toStringAsFixed(2)} / ${effectiveSelected.unit}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: AppTheme.infoColor,
+                              ),
+                            ],
+                            selected: {isExistingMode},
+                            onSelectionChanged: (v) {
+                              setDlgState(() {
+                                isExistingMode = v.first;
+                                selectedExisting =
+                                    materials.isNotEmpty
+                                        ? materials.first
+                                        : null;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                        if (editing != null || !isExistingMode) ...[
+                          TextField(
+                            controller: nameCtrl,
+                            decoration: InputDecoration(
+                              labelText: l10n.mfgMaterialName,
+                            ),
+                            readOnly: editing != null,
+                          ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: typeCtrl,
+                            decoration: InputDecoration(
+                              labelText: l10n.mfgTypeLabel,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: priceCtrl,
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                        decimal: true,
+                                      ),
+                                  decoration: InputDecoration(
+                                    labelText:
+                                        editing == null
+                                            ? l10n.mfgPricePerKgLabel
+                                            : l10n.mfgPricePerKgLabel,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: TextField(
+                                  controller: unitCtrl,
+                                  decoration: InputDecoration(
+                                    labelText: l10n.mfgUnitLabel,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: qtyCtrl,
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                        decimal: true,
+                                      ),
+                                  decoration: InputDecoration(
+                                    labelText: l10n.mfgStockQty,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: TextField(
+                                  controller: thresholdCtrl,
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                        decimal: true,
+                                      ),
+                                  decoration: InputDecoration(
+                                    labelText: l10n.mfgLowStockAlert,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          DropdownButtonFormField<String?>(
+                            value: selectedSupplierId,
+                            decoration: InputDecoration(
+                              labelText: l10n.mfgMaterialSupplierLabel,
+                            ),
+                            items: [
+                              DropdownMenuItem<String?>(
+                                value: null,
+                                child: Text(l10n.noSupplier),
+                              ),
+                              ...suppliers.map(
+                                (s) => DropdownMenuItem<String?>(
+                                  value: s.id,
+                                  child: Text(s.name),
+                                ),
+                              ),
+                            ],
+                            onChanged: (v) {
+                              setDlgState(() {
+                                selectedSupplierId = v;
+                                selectedSupplierName =
+                                    v != null
+                                        ? suppliers
+                                            .firstWhere((s) => s.id == v)
+                                            .name
+                                        : null;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 8),
+                          SwitchListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(l10n.mfgActive),
+                            value: isActive,
+                            onChanged: (v) => setDlgState(() => isActive = v),
+                          ),
+                        ] else ...[
+                          if (materials.isEmpty)
+                            Text(l10n.mfgNoMaterials)
+                          else ...[
+                            DropdownButtonFormField<RawMaterialModel>(
+                              value: effectiveSelected,
+                              decoration: InputDecoration(
+                                labelText: l10n.mfgSelectExistingMaterial,
+                              ),
+                              items:
+                                  materials
+                                      .map(
+                                        (m) => DropdownMenuItem(
+                                          value: m,
+                                          child: Text(m.name),
+                                        ),
+                                      )
+                                      .toList(),
+                              onChanged:
+                                  (v) =>
+                                      setDlgState(() => selectedExisting = v),
+                            ),
+                            const SizedBox(height: 12),
+                            if (effectiveSelected != null)
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.infoColor.withValues(
+                                    alpha: 0.08,
+                                  ),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '${l10n.mfgStockQty}: ${effectiveSelected.quantityKg.toStringAsFixed(1)} ${effectiveSelected.unit}',
+                                    ),
+                                    Text(
+                                      '${l10n.mfgCurrentAvgPrice}: \$${effectiveSelected.pricePerKg.toStringAsFixed(2)} / ${effectiveSelected.unit}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: AppTheme.infoColor,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            const SizedBox(height: 12),
+                            TextField(
+                              controller: stockInQtyCtrl,
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                              decoration: InputDecoration(
+                                labelText: l10n.mfgStockQty,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            TextField(
+                              controller: stockInPriceCtrl,
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                              decoration: InputDecoration(
+                                labelText: l10n.mfgPurchasePricePerKg,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            TextField(
+                              controller: stockInNoteCtrl,
+                              decoration: InputDecoration(
+                                labelText: l10n.noteOptional,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            DropdownButtonFormField<String?>(
+                              value: selectedSupplierId,
+                              decoration: InputDecoration(
+                                labelText: l10n.mfgMaterialSupplierLabel,
+                              ),
+                              items: [
+                                DropdownMenuItem<String?>(
+                                  value: null,
+                                  child: Text(l10n.noSupplier),
+                                ),
+                                ...suppliers.map(
+                                  (s) => DropdownMenuItem<String?>(
+                                    value: s.id,
+                                    child: Text(s.name),
                                   ),
                                 ),
                               ],
+                              onChanged: (v) {
+                                setDlgState(() {
+                                  selectedSupplierId = v;
+                                  selectedSupplierName =
+                                      v != null
+                                          ? suppliers
+                                              .firstWhere((s) => s.id == v)
+                                              .name
+                                          : null;
+                                });
+                              },
                             ),
-                          ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: stockInQtyCtrl,
-                          keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true),
-                          decoration:
-                              InputDecoration(labelText: l10n.mfgStockQty),
-                        ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: stockInPriceCtrl,
-                          keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true),
-                          decoration: InputDecoration(
-                              labelText: l10n.mfgPurchasePricePerKg),
-                        ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: stockInNoteCtrl,
-                          decoration:
-                              InputDecoration(labelText: l10n.noteOptional),
-                        ),
-                        const SizedBox(height: 12),
-                        DropdownButtonFormField<String?>(
-                          value: selectedSupplierId,
-                          decoration: InputDecoration(
-                              labelText: l10n.mfgMaterialSupplierLabel),
-                          items: [
-                            DropdownMenuItem<String?>(
-                              value: null,
-                              child: Text(l10n.noSupplier),
-                            ),
-                            ...suppliers.map((s) => DropdownMenuItem<String?>(
-                                  value: s.id,
-                                  child: Text(s.name),
-                                )),
                           ],
-                          onChanged: (v) {
-                            setDlgState(() {
-                              selectedSupplierId = v;
-                              selectedSupplierName = v != null
-                                  ? suppliers
-                                      .firstWhere((s) => s.id == v)
-                                      .name
-                                  : null;
-                            });
-                          },
-                        ),
+                        ],
                       ],
-                    ],
-                  ],
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            actions: [
-              TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: Text(l10n.cancel)),
-              ElevatedButton(
-                onPressed: () {
-                  if (editing == null && isExistingMode) {
-                    if (effectiveSelected == null) return;
-                    final qty = double.tryParse(stockInQtyCtrl.text) ?? 0;
-                    final price =
-                        double.tryParse(stockInPriceCtrl.text) ?? 0;
-                    if (qty <= 0 || price <= 0) return;
-                    final note = stockInNoteCtrl.text.trim().isEmpty
-                        ? null
-                        : stockInNoteCtrl.text.trim();
-                    context.read<RawMaterialBloc>().add(
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: Text(l10n.cancel),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      if (editing == null && isExistingMode) {
+                        if (effectiveSelected == null) return;
+                        final qty = double.tryParse(stockInQtyCtrl.text) ?? 0;
+                        final price =
+                            double.tryParse(stockInPriceCtrl.text) ?? 0;
+                        if (qty <= 0 || price <= 0) return;
+                        final note =
+                            stockInNoteCtrl.text.trim().isEmpty
+                                ? null
+                                : stockInNoteCtrl.text.trim();
+                        context.read<RawMaterialBloc>().add(
                           RawMaterialQuantityAddRequested(
                             materialId: effectiveSelected.id,
                             materialName: effectiveSelected.name,
@@ -595,52 +661,61 @@ class _RawMaterialsScreenState extends State<RawMaterialsScreen> {
                             supplierName: selectedSupplierName,
                           ),
                         );
-                    Navigator.pop(ctx);
-                    return;
-                  }
+                        Navigator.pop(ctx);
+                        return;
+                      }
 
-                  final price = double.tryParse(priceCtrl.text) ?? 0;
-                  if (nameCtrl.text.trim().isEmpty || price <= 0) return;
-                  final now = DateTime.now();
-                  final material = RawMaterialModel(
-                    id: editing?.id ?? const Uuid().v4(),
-                    name: nameCtrl.text.trim(),
-                    type: typeCtrl.text.trim(),
-                    pricePerKg: price,
-                    unit: unitCtrl.text.trim().isEmpty
-                        ? 'kg'
-                        : unitCtrl.text.trim(),
-                    quantityKg: double.tryParse(qtyCtrl.text) ?? 0,
-                    lowStockThreshold:
-                        double.tryParse(thresholdCtrl.text) ?? 0,
-                    supplierId: selectedSupplierId,
-                    supplierName: selectedSupplierName,
-                    isActive: isActive,
-                    createdBy: editing?.createdBy ??
-                        CurrentUserService.instance.userName,
-                    modifiedBy: editing != null
-                        ? CurrentUserService.instance.userName
-                        : '',
-                    createdAt: editing?.createdAt ?? now,
-                    updatedAt: now,
-                  );
-                  if (editing == null) {
-                    context.read<RawMaterialBloc>().add(
-                        RawMaterialAddRequested(material: material));
-                  } else {
-                    context.read<RawMaterialBloc>().add(
-                        RawMaterialUpdateRequested(material: material));
-                  }
-                  Navigator.pop(ctx);
-                },
-                child: Text(editing == null
-                    ? (isExistingMode ? l10n.increase : l10n.mfgAddMaterial)
-                    : l10n.mfgSave),
-              ),
-            ],
-          );
-        },
-      ),
+                      final price = double.tryParse(priceCtrl.text) ?? 0;
+                      if (nameCtrl.text.trim().isEmpty || price <= 0) return;
+                      final now = DateTime.now();
+                      final material = RawMaterialModel(
+                        id: editing?.id ?? const Uuid().v4(),
+                        name: nameCtrl.text.trim(),
+                        type: typeCtrl.text.trim(),
+                        pricePerKg: price,
+                        unit:
+                            unitCtrl.text.trim().isEmpty
+                                ? 'kg'
+                                : unitCtrl.text.trim(),
+                        quantityKg: double.tryParse(qtyCtrl.text) ?? 0,
+                        lowStockThreshold:
+                            double.tryParse(thresholdCtrl.text) ?? 0,
+                        supplierId: selectedSupplierId,
+                        supplierName: selectedSupplierName,
+                        isActive: isActive,
+                        createdBy:
+                            editing?.createdBy ??
+                            CurrentUserService.instance.userName,
+                        modifiedBy:
+                            editing != null
+                                ? CurrentUserService.instance.userName
+                                : '',
+                        createdAt: editing?.createdAt ?? now,
+                        updatedAt: now,
+                      );
+                      if (editing == null) {
+                        context.read<RawMaterialBloc>().add(
+                          RawMaterialAddRequested(material: material),
+                        );
+                      } else {
+                        context.read<RawMaterialBloc>().add(
+                          RawMaterialUpdateRequested(material: material),
+                        );
+                      }
+                      Navigator.pop(ctx);
+                    },
+                    child: Text(
+                      editing == null
+                          ? (isExistingMode
+                              ? l10n.increase
+                              : l10n.mfgAddMaterial)
+                          : l10n.mfgSave,
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
     );
   }
 
@@ -648,26 +723,29 @@ class _RawMaterialsScreenState extends State<RawMaterialsScreen> {
     final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.mfgConfirmDelete),
-        content: Text(l10n.mfgDeleteConfirm(m.name)),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(l10n.cancel)),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.dangerColor),
-            onPressed: () {
-              context
-                  .read<RawMaterialBloc>()
-                  .add(RawMaterialDeleteRequested(id: m.id));
-              Navigator.pop(ctx);
-            },
-            child: Text(l10n.mfgDelete),
+      builder:
+          (ctx) => AlertDialog(
+            title: Text(l10n.mfgConfirmDelete),
+            content: Text(l10n.mfgDeleteConfirm(m.name)),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(l10n.cancel),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.dangerColor,
+                ),
+                onPressed: () {
+                  context.read<RawMaterialBloc>().add(
+                    RawMaterialDeleteRequested(id: m.id),
+                  );
+                  Navigator.pop(ctx);
+                },
+                child: Text(l10n.mfgDelete),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 }

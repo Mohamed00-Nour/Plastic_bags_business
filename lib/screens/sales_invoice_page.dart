@@ -10,7 +10,9 @@ import '../services/client_statement_pdf_service.dart';
 import '../services/sales_invoice_actions_service.dart';
 import '../services/sales_invoice_update_service.dart';
 import '../core/theme/app_theme.dart';
+import '../core/utils/invoice_search.dart';
 import '../core/utils/quantity_formatter.dart';
+import '../core/widgets/common_widgets.dart';
 
 class SalesInvoicePage extends StatefulWidget {
   final Map<String, dynamic>? initialInvoiceData;
@@ -34,13 +36,19 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
   String? _selectedClientId;
   String? _selectedClientName;
   String? _selectedClientPhone;
+  String? _originalClientId;
+  double _selectedClientCurrentBalance = 0.0;
+  double? _originalInvoicePreviousBalance;
+  double _originalInvoiceRemainingAmount = 0.0;
   String _paymentMethod = 'Cash';
 
   final List<Map<String, dynamic>> _lineItems = [];
+  final List<Map<String, dynamic>> _additionalFees = [];
   double _discount = 0.0;
   double _paidAmount = 0.0;
   String _notes = '';
   bool _isSubmitting = false;
+  String _submitStatus = '';
 
   final TextEditingController _clientSearchController = TextEditingController();
   final FocusNode _clientSearchFocusNode = FocusNode();
@@ -54,6 +62,37 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
   final TextEditingController _productSearchController =
       TextEditingController();
   String _productSearchQuery = '';
+
+  void _addAdditionalFeeField({String name = '', double amount = 0.0}) {
+    setState(() {
+      _additionalFees.add({
+        'name': name,
+        'amount': amount,
+        'nameController': TextEditingController(text: name),
+        'amountController': TextEditingController(
+          text: amount > 0 ? amount.toString() : '',
+        ),
+      });
+    });
+  }
+
+  void _removeAdditionalFeeField(int index) {
+    if (index >= 0 && index < _additionalFees.length) {
+      setState(() {
+        final item = _additionalFees.removeAt(index);
+        (item['nameController'] as TextEditingController?)?.dispose();
+        (item['amountController'] as TextEditingController?)?.dispose();
+      });
+    }
+  }
+
+  void _clearAdditionalFees() {
+    for (final item in _additionalFees) {
+      (item['nameController'] as TextEditingController?)?.dispose();
+      (item['amountController'] as TextEditingController?)?.dispose();
+    }
+    _additionalFees.clear();
+  }
 
   // Return Invoice State
   late String _returnNumber;
@@ -86,6 +125,9 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
 
   int _selectedHistoryYear = DateTime.now().year;
   int _selectedHistoryMonth = DateTime.now().month;
+  final TextEditingController _invoiceHistorySearchController =
+      TextEditingController();
+  String _invoiceHistorySearchQuery = '';
 
   bool get _isEditMode => widget.initialInvoiceData != null;
 
@@ -107,6 +149,22 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
     _selectedClientName = inv['clientName']?.toString();
     _selectedClientPhone =
         inv['clientPhone']?.toString() ?? inv['phone']?.toString();
+    _originalClientId = _selectedClientId;
+    _originalInvoiceRemainingAmount = _asDouble(
+      inv['remainingAmount'] ??
+          (_asDouble(inv['totalAmount']) - _asDouble(inv['paidAmount'])),
+    );
+    final storedPreviousBalance =
+        inv['previousBalance'] ?? inv['clientPreviousBalance'];
+    if (storedPreviousBalance != null) {
+      _originalInvoicePreviousBalance = _asDouble(storedPreviousBalance);
+      _selectedClientCurrentBalance =
+          _originalInvoicePreviousBalance! + _originalInvoiceRemainingAmount;
+    } else {
+      _selectedClientCurrentBalance = _asDouble(
+        inv['balanceAfter'] ?? inv['clientBalance'],
+      );
+    }
     _paymentMethod = inv['paymentMethod']?.toString() ?? 'Cash';
     _discount = (inv['discount'] ?? 0.0).toDouble();
     _paidAmount = (inv['paidAmount'] ?? 0.0).toDouble();
@@ -129,6 +187,29 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
     for (final item in items) {
       _lineItems.add(Map<String, dynamic>.from(item));
     }
+
+    final clientId = _selectedClientId;
+    if (clientId != null && clientId.isNotEmpty) {
+      _refreshSelectedClientBalance(clientId);
+    }
+  }
+
+  static double _asDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    return double.tryParse(value?.toString() ?? '') ?? 0.0;
+  }
+
+  Future<void> _refreshSelectedClientBalance(String clientId) async {
+    try {
+      final snapshot =
+          await _firestore.collection('clients').doc(clientId).get();
+      if (!mounted || _selectedClientId != clientId || !snapshot.exists) return;
+      setState(() {
+        _selectedClientCurrentBalance = _asDouble(snapshot.data()?['balance']);
+      });
+    } catch (_) {
+      // The value supplied by the clients stream remains a useful fallback.
+    }
   }
 
   void _generateInvoiceNumber() {
@@ -143,6 +224,7 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
 
   @override
   void dispose() {
+    _clearAdditionalFees();
     _tabController.dispose();
     _clientSearchController.dispose();
     _clientSearchFocusNode.dispose();
@@ -156,6 +238,7 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
     _returnRefundController.dispose();
     _returnNotesController.dispose();
     _returnProductSearchController.dispose();
+    _invoiceHistorySearchController.dispose();
     super.dispose();
   }
 
@@ -221,8 +304,15 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
     });
   }
 
+  double get _totalAdditionalFees {
+    return _additionalFees.fold(0.0, (acc, item) {
+      final amt = (item['amount'] ?? 0.0) as num;
+      return acc + amt.toDouble();
+    });
+  }
+
   double get _totalAmount {
-    final t = _subtotal - _discount;
+    final t = (_subtotal + _totalAdditionalFees) - _discount;
     return t < 0 ? 0.0 : t;
   }
 
@@ -230,6 +320,18 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
     final rem = _totalAmount - _paidAmount;
     return rem < 0 ? 0.0 : rem;
   }
+
+  double get _clientPreviousBalance {
+    if (_selectedClientId == null) return 0.0;
+    if (_isEditMode && _selectedClientId == _originalClientId) {
+      return _originalInvoicePreviousBalance ??
+          (_selectedClientCurrentBalance - _originalInvoiceRemainingAmount);
+    }
+    return _selectedClientCurrentBalance;
+  }
+
+  double get _clientBalanceAfterInvoice =>
+      _clientPreviousBalance + _remainingAmount;
 
   void _addLineItem(Map<String, dynamic> product) {
     final stockInDb =
@@ -275,6 +377,8 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
   }
 
   void _submitInvoice(bool isArabic) async {
+    if (_isSubmitting) return;
+
     if (_selectedClientId == null || _selectedClientId!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -303,7 +407,14 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
       return;
     }
 
-    setState(() => _isSubmitting = true);
+    setState(() {
+      _isSubmitting = true;
+      _submitStatus = isArabic ? 'جاري حفظ الفاتورة...' : 'Saving invoice...';
+    });
+    // Let Flutter paint the progress UI before serializing a large invoice or
+    // starting the Firestore operation.
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted) return;
 
     if (_isEditMode) {
       final newInvoiceData = {
@@ -322,6 +433,10 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
         'totalAmount': _totalAmount,
         'paidAmount': _paidAmount,
         'remainingAmount': _remainingAmount,
+        'previousBalance': _clientPreviousBalance,
+        'clientPreviousBalance': _clientPreviousBalance,
+        'balanceAfter': _clientBalanceAfterInvoice,
+        'clientBalance': _clientBalanceAfterInvoice,
         'notes': _notes,
       };
 
@@ -331,7 +446,9 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
         newInvoice: newInvoiceData,
       );
 
-      setState(() => _isSubmitting = false);
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
 
       if (success && mounted) {
         Navigator.of(context).pop();
@@ -339,21 +456,40 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
       return;
     }
 
+    var invoiceWasSaved = false;
     try {
-      await _syncService.createSalesInvoice(
+      final List<Map<String, dynamic>> activeFees =
+          _additionalFees
+              .where((f) => ((f['amount'] ?? 0.0) as num) > 0)
+              .map(
+                (f) => {
+                  'name':
+                      (f['name'] as String? ?? '').trim().isEmpty
+                          ? (isArabic ? 'مصروف إضافي' : 'Additional Fee')
+                          : (f['name'] as String).trim(),
+                  'amount': (f['amount'] as num).toDouble(),
+                },
+              )
+              .toList();
+
+      final creationResult = await _syncService.createSalesInvoice(
         clientId: _selectedClientId!,
         clientName: _selectedClientName ?? '',
+        clientPhone: _selectedClientPhone,
         invoiceNumber: _invoiceNumber,
         paymentMethod: _paymentMethod,
         items: _lineItems,
         subtotal: _subtotal,
         discount: _discount,
+        additionalFees: activeFees,
+        additionalFeeAmount: _totalAdditionalFees,
         totalAmount: _totalAmount,
         paidAmount: _paidAmount,
         remainingAmount: _remainingAmount,
         invoiceDate: _selectedDate,
         notes: _notes,
       );
+      invoiceWasSaved = true;
 
       if (!mounted) return;
 
@@ -367,19 +503,30 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
         'items': List<Map<String, dynamic>>.from(_lineItems),
         'subtotal': _subtotal,
         'discount': _discount,
+        'additionalFees': activeFees,
+        'additionalFeeAmount': _totalAdditionalFees,
         'totalAmount': _totalAmount,
         'paidAmount': _paidAmount,
         'remainingAmount': _remainingAmount,
+        'previousBalance': creationResult.previousBalance,
+        'clientPreviousBalance': creationResult.previousBalance,
+        'balanceAfter': creationResult.balanceAfter,
+        'clientBalance': creationResult.balanceAfter,
       };
 
       setState(() {
-        _isSubmitting = false;
+        _submitStatus =
+            isArabic
+                ? 'تم الحفظ، جاري تجهيز الفاتورة...'
+                : 'Saved. Preparing invoice...';
         _selectedClientId = null;
         _selectedClientName = null;
         _selectedClientPhone = null;
+        _selectedClientCurrentBalance = 0.0;
         _clientSearchController.clear();
         _lineItems.clear();
         _discount = 0.0;
+        _clearAdditionalFees();
         _paidAmount = 0.0;
         _discountController.text = '0.0';
         _paidController.text = '0.0';
@@ -409,16 +556,30 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
         context: context,
         invoiceData: invoiceDataToPrint,
         locale: isArabic ? 'ar' : 'en',
+        onReady: () {
+          if (mounted && _isSubmitting) {
+            setState(() => _isSubmitting = false);
+          }
+        },
       );
     } catch (e) {
       if (!mounted) return;
-      setState(() => _isSubmitting = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${isArabic ? "خطأ: " : "Error: "}$e'),
-          backgroundColor: Colors.red,
+          content: Text(
+            invoiceWasSaved
+                ? (isArabic
+                    ? 'تم حفظ الفاتورة، لكن تعذر تجهيز نافذة العرض: $e'
+                    : 'Invoice saved, but the preview dialog could not be prepared: $e')
+                : '${isArabic ? "خطأ في حفظ الفاتورة: " : "Invoice save error: "}$e',
+          ),
+          backgroundColor: invoiceWasSaved ? AppTheme.warningColor : Colors.red,
         ),
       );
+    } finally {
+      if (mounted && _isSubmitting) {
+        setState(() => _isSubmitting = false);
+      }
     }
   }
 
@@ -540,62 +701,101 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
 
     return Directionality(
       textDirection: isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(
-            _isEditMode
-                ? (isArabic
-                    ? 'تعديل فاتورة مبيعات #$_invoiceNumber'
-                    : 'Edit Sales Invoice #$_invoiceNumber')
-                : (isArabic
-                    ? 'إدارة فواتير المبيعات'
-                    : 'Sales Invoices Management'),
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          leading:
-              Navigator.canPop(context)
-                  ? IconButton(
-                    icon: const Icon(Icons.arrow_back_rounded),
-                    tooltip: isArabic ? 'رجوع' : 'Back',
-                    onPressed: () => Navigator.maybePop(context),
-                  )
-                  : null,
-          bottom: TabBar(
-            controller: _tabController,
-            tabs: [
-              Tab(
-                icon: const Icon(Icons.point_of_sale),
-                text:
-                    _isEditMode
-                        ? (isArabic ? 'تعديل الفاتورة' : 'Edit Invoice')
-                        : (isArabic
-                            ? 'فاتورة مبيعات جديدة'
-                            : 'New Sales Invoice'),
+      child: Stack(
+        children: [
+          Scaffold(
+            appBar: AppBar(
+              title: Text(
+                _isEditMode
+                    ? (isArabic
+                        ? 'تعديل فاتورة مبيعات #$_invoiceNumber'
+                        : 'Edit Sales Invoice #$_invoiceNumber')
+                    : (isArabic
+                        ? 'إدارة فواتير المبيعات'
+                        : 'Sales Invoices Management'),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-              Tab(
-                icon: const Icon(Icons.assignment_return),
-                text: isArabic ? 'إرجاع مبيعات' : 'Sales Return',
+              leading:
+                  Navigator.canPop(context)
+                      ? IconButton(
+                        icon: const Icon(Icons.arrow_back_rounded),
+                        tooltip: isArabic ? 'رجوع' : 'Back',
+                        onPressed: () => Navigator.maybePop(context),
+                      )
+                      : null,
+              bottom: TabBar(
+                controller: _tabController,
+                tabs: [
+                  Tab(
+                    icon: const Icon(Icons.point_of_sale),
+                    text:
+                        _isEditMode
+                            ? (isArabic ? 'تعديل الفاتورة' : 'Edit Invoice')
+                            : (isArabic
+                                ? 'فاتورة مبيعات جديدة'
+                                : 'New Sales Invoice'),
+                  ),
+                  Tab(
+                    icon: const Icon(Icons.assignment_return),
+                    text: isArabic ? 'إرجاع مبيعات' : 'Sales Return',
+                  ),
+                  Tab(
+                    icon: const Icon(Icons.receipt_long),
+                    text: isArabic ? 'سجل الفواتير' : 'Invoices History',
+                  ),
+                ],
               ),
-              Tab(
-                icon: const Icon(Icons.receipt_long),
-                text: isArabic ? 'سجل الفواتير' : 'Invoices History',
-              ),
-            ],
-          ),
-        ),
-        body: TabBarView(
-          controller: _tabController,
-          children: [
-            // Tab 1: New Sales Invoice Builder
-            _buildInvoiceBuilderTab(context, isArabic),
+            ),
+            body: TabBarView(
+              controller: _tabController,
+              children: [
+                // Tab 1: New Sales Invoice Builder
+                _buildInvoiceBuilderTab(context, isArabic),
 
-            // Tab 2: Sales Returns Direct View
-            _buildReturnsTab(context, isArabic),
+                // Tab 2: Sales Returns Direct View
+                _buildReturnsTab(context, isArabic),
 
-            // Tab 3: Sales Invoices History List
-            _buildInvoicesHistoryTab(context, isArabic),
-          ],
-        ),
+                // Tab 3: Sales Invoices History List
+                _buildInvoicesHistoryTab(context, isArabic),
+              ],
+            ),
+          ),
+          if (_isSubmitting && !_isEditMode)
+            Positioned.fill(
+              child: AbsorbPointer(
+                child: ColoredBox(
+                  color: Colors.black54,
+                  child: Center(
+                    child: Card(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 28,
+                          vertical: 22,
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const CircularProgressIndicator(),
+                            const SizedBox(height: 16),
+                            Text(
+                              _submitStatus,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -687,6 +887,9 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                                     _selectedClientId = c['id'];
                                     _selectedClientName = c['name'];
                                     _selectedClientPhone = c['phone'];
+                                    _selectedClientCurrentBalance = _asDouble(
+                                      c['balance'],
+                                    );
                                   });
                                 },
                                 fieldViewBuilder: (
@@ -720,6 +923,8 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                                                     _selectedClientId = null;
                                                     _selectedClientName = null;
                                                     _selectedClientPhone = null;
+                                                    _selectedClientCurrentBalance =
+                                                        0.0;
                                                   });
                                                 },
                                               )
@@ -1080,7 +1285,122 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                   isArabic ? 'المجموع الفرعي' : 'Subtotal',
                   '\$${_subtotal.toStringAsFixed(2)}',
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
+
+                // Additional Expenses Header & Add Button
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      isArabic
+                          ? 'مصاريف إضافية (مثل: نقل/مواصلات)'
+                          : 'Additional Expenses / Fees',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12.5,
+                      ),
+                    ),
+                    TextButton.icon(
+                      icon: const Icon(Icons.add_circle_outline, size: 16),
+                      label: Text(
+                        isArabic ? 'إضافة مصروف' : 'Add Fee',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      onPressed: () => _addAdditionalFeeField(),
+                    ),
+                  ],
+                ),
+                if (_additionalFees.isEmpty) ...[
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      isArabic
+                          ? 'اضغط "+ إضافة مصروف" لإضافة نقل، مواصلات، إلخ'
+                          : 'Click "+ Add Fee" to add transportation, freight, etc.',
+                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                    ),
+                  ),
+                ] else ...[
+                  ..._additionalFees.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final feeItem = entry.value;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            flex: 3,
+                            child: TextField(
+                              controller:
+                                  feeItem['nameController']
+                                      as TextEditingController,
+                              decoration: InputDecoration(
+                                labelText:
+                                    isArabic ? 'اسم المصروف' : 'Fee Name',
+                                prefixIcon: const Icon(
+                                  Icons.local_shipping_outlined,
+                                  size: 18,
+                                ),
+                                isDense: true,
+                              ),
+                              onChanged: (val) {
+                                feeItem['name'] = val;
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            flex: 2,
+                            child: TextField(
+                              controller:
+                                  feeItem['amountController']
+                                      as TextEditingController,
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                              decoration: InputDecoration(
+                                labelText:
+                                    isArabic ? 'المبلغ (\$)' : 'Amount (\$)',
+                                prefixIcon: const Icon(
+                                  Icons.attach_money,
+                                  size: 18,
+                                ),
+                                isDense: true,
+                              ),
+                              onChanged: (val) {
+                                setState(() {
+                                  feeItem['amount'] =
+                                      double.tryParse(val) ?? 0.0;
+                                });
+                              },
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.delete_outline,
+                              color: Colors.red,
+                              size: 20,
+                            ),
+                            tooltip: isArabic ? 'حذف المصروف' : 'Remove Fee',
+                            onPressed: () => _removeAdditionalFeeField(index),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
+                const SizedBox(height: 6),
+
+                if (_totalAdditionalFees > 0) ...[
+                  _buildCalcRow(
+                    isArabic ? 'إجمالي المصاريف الإضافية' : 'Total Extra Fees',
+                    '+\$${_totalAdditionalFees.toStringAsFixed(2)}',
+                    color: Colors.orange,
+                  ),
+                  const SizedBox(height: 8),
+                ],
+
                 TextField(
                   controller: _discountController,
                   keyboardType: const TextInputType.numberWithOptions(
@@ -1128,6 +1448,27 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                           ? AppTheme.dangerColor
                           : AppTheme.successColor,
                 ),
+                const SizedBox(height: 10),
+                const Divider(),
+                const SizedBox(height: 10),
+                _buildCalcRow(
+                  isArabic ? 'رصيد العميل السابق' : 'Client Previous Balance',
+                  '\$${_clientPreviousBalance.toStringAsFixed(2)}',
+                  isBold: true,
+                  color: AppTheme.warningColor,
+                ),
+                const SizedBox(height: 10),
+                _buildCalcRow(
+                  isArabic
+                      ? 'رصيد العميل بعد الفاتورة'
+                      : 'Client Balance After Invoice',
+                  '\$${_clientBalanceAfterInvoice.toStringAsFixed(2)}',
+                  isBold: true,
+                  color:
+                      _clientBalanceAfterInvoice > 0
+                          ? AppTheme.dangerColor
+                          : AppTheme.successColor,
+                ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: _notesController,
@@ -1142,11 +1483,22 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton.icon(
-                    icon: const Icon(Icons.check_circle),
+                    icon:
+                        _isSubmitting
+                            ? const SizedBox.square(
+                              dimension: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                            : const Icon(Icons.check_circle),
                     label: Text(
-                      isArabic
-                          ? 'حفظ وحساب الفاتورة (PDF)'
-                          : 'Save & Print Invoice (PDF)',
+                      _isSubmitting
+                          ? (isArabic ? 'جاري الحفظ...' : 'Saving...')
+                          : (isArabic
+                              ? 'حفظ وحساب الفاتورة (PDF)'
+                              : 'Save & Print Invoice (PDF)'),
                     ),
                     onPressed:
                         _isSubmitting ? null : () => _submitInvoice(isArabic),
@@ -1840,82 +2192,113 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
           margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Icon(
-                  Icons.filter_alt_rounded,
-                  color: AppTheme.primaryColor,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                ResponsiveActionBar(
+                  breakpoint: 650,
+                  primary: Row(
                     children: [
-                      Text(
-                        isArabic
-                            ? 'تصفية الفواتير بالفترة'
-                            : 'Invoice Date Filter',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      const Icon(
+                        Icons.filter_alt_rounded,
+                        color: AppTheme.primaryColor,
                       ),
-                      Text(
-                        isArabic
-                            ? 'ترشيد استهلاك قراءة الفايربيس (Firebase Quota Saver)'
-                            : 'Optimizes Firebase database reads quota',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey,
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          isArabic
+                              ? 'تصفية الفواتير بالفترة'
+                              : 'Invoice Date Filter',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
                     ],
                   ),
-                ),
-                // Month Selector Dropdown
-                DropdownButton<int>(
-                  value: _selectedHistoryMonth,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Theme.of(context).textTheme.bodyMedium?.color,
+                  actions: Wrap(
+                    spacing: 12,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      DropdownButton<int>(
+                        value: _selectedHistoryMonth,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Theme.of(context).textTheme.bodyMedium?.color,
+                        ),
+                        items: [
+                          DropdownMenuItem(
+                            value: 0,
+                            child: Text(isArabic ? 'كل الشهور' : 'All Months'),
+                          ),
+                          ...List.generate(12, (index) {
+                            final m = index + 1;
+                            final monthName = DateFormat.MMMM(
+                              isArabic ? 'ar' : 'en',
+                            ).format(DateTime(2026, m));
+                            return DropdownMenuItem(
+                              value: m,
+                              child: Text(monthName),
+                            );
+                          }),
+                        ],
+                        onChanged: (val) {
+                          if (val != null) {
+                            setState(() => _selectedHistoryMonth = val);
+                          }
+                        },
+                      ),
+                      DropdownButton<int>(
+                        value: _selectedHistoryYear,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Theme.of(context).textTheme.bodyMedium?.color,
+                        ),
+                        items: [
+                          DropdownMenuItem(
+                            value: 0,
+                            child: Text(isArabic ? 'كل السنوات' : 'All Years'),
+                          ),
+                          ...List.generate(6, (index) {
+                            final y = DateTime.now().year - 3 + index;
+                            return DropdownMenuItem(
+                              value: y,
+                              child: Text('$y'),
+                            );
+                          }),
+                        ],
+                        onChanged: (val) {
+                          if (val != null) {
+                            setState(() => _selectedHistoryYear = val);
+                          }
+                        },
+                      ),
+                    ],
                   ),
-                  items: [
-                    DropdownMenuItem(
-                      value: 0,
-                      child: Text(isArabic ? 'كل الشهور' : 'All Months'),
-                    ),
-                    ...List.generate(12, (index) {
-                      final m = index + 1;
-                      final monthName = DateFormat.MMMM(
-                        isArabic ? 'ar' : 'en',
-                      ).format(DateTime(2026, m));
-                      return DropdownMenuItem(value: m, child: Text(monthName));
-                    }),
-                  ],
-                  onChanged: (val) {
-                    if (val != null)
-                      setState(() => _selectedHistoryMonth = val);
-                  },
                 ),
-                const SizedBox(width: 12),
-
-                // Year Selector Dropdown
-                DropdownButton<int>(
-                  value: _selectedHistoryYear,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Theme.of(context).textTheme.bodyMedium?.color,
-                  ),
-                  items: [
-                    DropdownMenuItem(
-                      value: 0,
-                      child: Text(isArabic ? 'كل السنوات' : 'All Years'),
-                    ),
-                    ...List.generate(6, (index) {
-                      final y = DateTime.now().year - 3 + index;
-                      return DropdownMenuItem(value: y, child: Text('$y'));
-                    }),
-                  ],
-                  onChanged: (val) {
-                    if (val != null) setState(() => _selectedHistoryYear = val);
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _invoiceHistorySearchController,
+                  onChanged: (value) {
+                    setState(() => _invoiceHistorySearchQuery = value);
                   },
+                  decoration: InputDecoration(
+                    isDense: true,
+                    hintText:
+                        isArabic
+                            ? 'ابحث برقم الفاتورة أو اسم العميل أو الهاتف...'
+                            : 'Search by invoice number, client, or phone...',
+                    prefixIcon: const Icon(Icons.search_rounded),
+                    suffixIcon:
+                        _invoiceHistorySearchQuery.isEmpty
+                            ? null
+                            : IconButton(
+                              tooltip: isArabic ? 'مسح البحث' : 'Clear search',
+                              onPressed: () {
+                                _invoiceHistorySearchController.clear();
+                                setState(() => _invoiceHistorySearchQuery = '');
+                              },
+                              icon: const Icon(Icons.close_rounded),
+                            ),
+                  ),
                 ),
               ],
             ),
@@ -1957,11 +2340,61 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                 );
               }
 
+              final filteredDocs =
+                  docs.where((doc) {
+                    final invoice = Map<String, dynamic>.from(
+                      doc.data() as Map,
+                    );
+                    return invoiceMatchesHistorySearch(
+                      invoice,
+                      _invoiceHistorySearchQuery,
+                    );
+                  }).toList();
+
+              if (filteredDocs.isEmpty) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.search_off_rounded,
+                          size: 54,
+                          color: Colors.grey,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          isArabic
+                              ? 'لا توجد فواتير مطابقة للبحث'
+                              : 'No invoices match your search',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontSize: 15,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextButton.icon(
+                          onPressed: () {
+                            _invoiceHistorySearchController.clear();
+                            setState(() => _invoiceHistorySearchQuery = '');
+                          },
+                          icon: const Icon(Icons.close_rounded),
+                          label: Text(isArabic ? 'مسح البحث' : 'Clear search'),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
               return ListView.builder(
                 padding: const EdgeInsets.all(16),
-                itemCount: docs.length,
+                itemCount: filteredDocs.length,
                 itemBuilder: (context, index) {
-                  final data = docs[index].data() as Map<String, dynamic>;
+                  final invoiceDoc = filteredDocs[index];
+                  final data = invoiceDoc.data() as Map<String, dynamic>;
                   final invNum = data['invoiceNumber'] ?? '';
                   final client = data['clientName'] ?? '';
                   final total = (data['totalAmount'] ?? 0.0).toDouble();
@@ -1974,7 +2407,8 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                   final paidLabel = isArabic ? 'مدفوع: ' : 'Paid: ';
                   final remLabel = isArabic ? 'متبقي: ' : 'Rem: ';
                   final subText =
-                      '$paidLabel\$${paid.toStringAsFixed(2)} | $remLabel\$${remaining.toStringAsFixed(2)}';
+                      '$paidLabel\$${paid.toStringAsFixed(2)} | '
+                      '$remLabel\$${remaining.toStringAsFixed(2)}';
 
                   return Card(
                     margin: const EdgeInsets.only(bottom: 12),
@@ -1993,25 +2427,29 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                '\$${total.toStringAsFixed(2)}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: AlignmentDirectional.centerEnd,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  '\$${total.toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
                                 ),
-                              ),
-                              Text(
-                                subText,
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  color: Colors.grey,
+                                Text(
+                                  subText,
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.grey,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                           const SizedBox(width: 8),
                           IconButton(
@@ -2036,7 +2474,7 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                               if (value == 'edit') {
                                 final invoiceDataWithId =
                                     Map<String, dynamic>.from(data);
-                                invoiceDataWithId['id'] = docs[index].id;
+                                invoiceDataWithId['id'] = invoiceDoc.id;
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
@@ -2049,7 +2487,7 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                               } else if (value == 'delete') {
                                 final invoiceDataWithId =
                                     Map<String, dynamic>.from(data);
-                                invoiceDataWithId['id'] = docs[index].id;
+                                invoiceDataWithId['id'] = invoiceDoc.id;
                                 await SalesInvoiceActionsService.deleteSalesInvoice(
                                   context: context,
                                   invoiceData: invoiceDataWithId,

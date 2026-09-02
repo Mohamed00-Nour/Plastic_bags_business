@@ -50,15 +50,17 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
         if (state is SupplierOperationSuccess) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-                content: Text(state.message),
-                backgroundColor: AppTheme.successColor),
+              content: Text(state.message),
+              backgroundColor: AppTheme.successColor,
+            ),
           );
           context.read<SupplierBloc>().add(SupplierLoadRequested());
         } else if (state is SupplierError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-                content: Text(state.message),
-                backgroundColor: AppTheme.dangerColor),
+              content: Text(state.message),
+              backgroundColor: AppTheme.dangerColor,
+            ),
           );
         }
       },
@@ -67,23 +69,19 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: SearchField(
-                      hint: l10n.searchSuppliers,
-                      onChanged: (query) => context
-                          .read<SupplierBloc>()
-                          .add(SupplierSearchRequested(query: query)),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  ElevatedButton.icon(
-                    onPressed: () => _showSupplierForm(context),
-                    icon: const Icon(Icons.add, size: 18),
-                    label: Text(l10n.addSupplier),
-                  ),
-                ],
+              ResponsiveActionBar(
+                primary: SearchField(
+                  hint: l10n.searchSuppliers,
+                  onChanged:
+                      (query) => context.read<SupplierBloc>().add(
+                        SupplierSearchRequested(query: query),
+                      ),
+                ),
+                actions: ElevatedButton.icon(
+                  onPressed: () => _showSupplierForm(context),
+                  icon: const Icon(Icons.add, size: 18),
+                  label: Text(l10n.addSupplier),
+                ),
               ),
               const SizedBox(height: 20),
               Expanded(child: _buildContent(state)),
@@ -127,72 +125,115 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                 DataColumn(label: Text(l10n.modifiedByLabel)),
                 DataColumn(label: Text(l10n.actions)),
               ],
-              rows: state.filteredSuppliers.map((supplier) {
-                return DataRow(cells: [
-                  DataCell(Text(supplier.name,
-                      style: const TextStyle(fontWeight: FontWeight.w500))),
-                  DataCell(Text(supplier.phone)),
-                  DataCell(Text(supplier.address ?? '-')),
-                  DataCell(Text(
-                    currFmt.format(supplier.balance),
-                    style: TextStyle(
-                      color: supplier.balance >= 0
-                          ? AppTheme.successColor
-                          : AppTheme.dangerColor,
-                    ),
-                  )),
-                  DataCell(Text(currFmt.format(supplier.totalSupplied))),
-                  DataCell(Text(supplier.createdBy.isNotEmpty ? supplier.createdBy : '-')),
-                  DataCell(Text(supplier.modifiedBy.isNotEmpty ? supplier.modifiedBy : '-')),
-                  DataCell(Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.payment,
-                            size: 20, color: AppTheme.successColor),
-                        tooltip: l10n.recordPayment,
-                        onPressed: () =>
-                            _showPaymentDialog(context, supplier),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.receipt_long,
-                            size: 20, color: AppTheme.infoColor),
-                        tooltip: l10n.viewHistory,
-                        onPressed: () =>
-                            _showSupplierHistory(context, supplier),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.edit_outlined,
-                            size: 20, color: AppTheme.primaryColor),
-                        tooltip: l10n.edit,
-                        onPressed: () =>
-                            _showSupplierForm(context, supplier: supplier),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete_outline,
-                            size: 20, color: AppTheme.dangerColor),
-                        tooltip: l10n.delete,
-                        onPressed: () async {
-                          final confirmed = await ConfirmationDialog.show(
-                            context,
-                            title: l10n.deleteSupplier,
-                            message:
-                                l10n.areYouSureDelete(supplier.name),
-                            confirmLabel: l10n.delete,
-                            confirmColor: AppTheme.dangerColor,
-                          );
-                          if (confirmed == true && mounted) {
-                            context.read<SupplierBloc>().add(
-                                  SupplierDeleteRequested(
-                                      supplierId: supplier.id),
-                                );
-                          }
-                        },
-                      ),
-                    ],
-                  )),
-                ]);
-              }).toList(),
+              rows:
+                  state.filteredSuppliers.map((supplier) {
+                    return DataRow(
+                      cells: [
+                        DataCell(
+                          Text(
+                            supplier.name,
+                            style: const TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                        DataCell(Text(supplier.phone)),
+                        DataCell(Text(supplier.address ?? '-')),
+                        DataCell(
+                          Text(
+                            currFmt.format(supplier.balance),
+                            style: TextStyle(
+                              color:
+                                  supplier.balance >= 0
+                                      ? AppTheme.successColor
+                                      : AppTheme.dangerColor,
+                            ),
+                          ),
+                        ),
+                        DataCell(Text(currFmt.format(supplier.totalSupplied))),
+                        DataCell(
+                          Text(
+                            supplier.createdBy.isNotEmpty
+                                ? supplier.createdBy
+                                : '-',
+                          ),
+                        ),
+                        DataCell(
+                          Text(
+                            supplier.modifiedBy.isNotEmpty
+                                ? supplier.modifiedBy
+                                : '-',
+                          ),
+                        ),
+                        DataCell(
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.payment,
+                                  size: 20,
+                                  color: AppTheme.successColor,
+                                ),
+                                tooltip: l10n.recordPayment,
+                                onPressed:
+                                    () => _showPaymentDialog(context, supplier),
+                              ),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.receipt_long,
+                                  size: 20,
+                                  color: AppTheme.infoColor,
+                                ),
+                                tooltip: l10n.viewHistory,
+                                onPressed:
+                                    () =>
+                                        _showSupplierHistory(context, supplier),
+                              ),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.edit_outlined,
+                                  size: 20,
+                                  color: AppTheme.primaryColor,
+                                ),
+                                tooltip: l10n.edit,
+                                onPressed:
+                                    () => _showSupplierForm(
+                                      context,
+                                      supplier: supplier,
+                                    ),
+                              ),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.delete_outline,
+                                  size: 20,
+                                  color: AppTheme.dangerColor,
+                                ),
+                                tooltip: l10n.delete,
+                                onPressed: () async {
+                                  final confirmed =
+                                      await ConfirmationDialog.show(
+                                        context,
+                                        title: l10n.deleteSupplier,
+                                        message: l10n.areYouSureDelete(
+                                          supplier.name,
+                                        ),
+                                        confirmLabel: l10n.delete,
+                                        confirmColor: AppTheme.dangerColor,
+                                      );
+                                  if (confirmed == true && mounted) {
+                                    context.read<SupplierBloc>().add(
+                                      SupplierDeleteRequested(
+                                        supplierId: supplier.id,
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    );
+                  }).toList(),
             ),
           ),
         ),
@@ -213,7 +254,9 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
       builder: (ctx) {
         final dialogL10n = AppLocalizations.of(ctx)!;
         return AlertDialog(
-          title: Text(isEditing ? dialogL10n.editSupplier : dialogL10n.addSupplier),
+          title: Text(
+            isEditing ? dialogL10n.editSupplier : dialogL10n.addSupplier,
+          ),
           content: SizedBox(
             width: 450,
             child: Form(
@@ -224,22 +267,29 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                   TextFormField(
                     controller: nameCtrl,
                     decoration: InputDecoration(labelText: dialogL10n.name),
-                    validator: (v) =>
-                        v?.trim().isEmpty == true ? dialogL10n.required_field : null,
+                    validator:
+                        (v) =>
+                            v?.trim().isEmpty == true
+                                ? dialogL10n.required_field
+                                : null,
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: phoneCtrl,
                     decoration: InputDecoration(labelText: dialogL10n.phone),
                     keyboardType: TextInputType.phone,
-                    validator: (v) =>
-                        v?.trim().isEmpty == true ? dialogL10n.required_field : null,
+                    validator:
+                        (v) =>
+                            v?.trim().isEmpty == true
+                                ? dialogL10n.required_field
+                                : null,
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: addressCtrl,
-                    decoration:
-                        InputDecoration(labelText: dialogL10n.addressOptional),
+                    decoration: InputDecoration(
+                      labelText: dialogL10n.addressOptional,
+                    ),
                   ),
                 ],
               ),
@@ -258,22 +308,23 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                     id: supplier?.id ?? const Uuid().v4(),
                     name: nameCtrl.text.trim(),
                     phone: phoneCtrl.text.trim(),
-                    address: addressCtrl.text.trim().isNotEmpty
-                        ? addressCtrl.text.trim()
-                        : null,
+                    address:
+                        addressCtrl.text.trim().isNotEmpty
+                            ? addressCtrl.text.trim()
+                            : null,
                     balance: supplier?.balance ?? 0,
                     totalSupplied: supplier?.totalSupplied ?? 0,
                     createdAt: supplier?.createdAt ?? now,
                     updatedAt: now,
                   );
                   if (isEditing) {
-                    context
-                        .read<SupplierBloc>()
-                        .add(SupplierUpdateRequested(supplier: s));
+                    context.read<SupplierBloc>().add(
+                      SupplierUpdateRequested(supplier: s),
+                    );
                   } else {
-                    context
-                        .read<SupplierBloc>()
-                        .add(SupplierAddRequested(supplier: s));
+                    context.read<SupplierBloc>().add(
+                      SupplierAddRequested(supplier: s),
+                    );
                   }
                   Navigator.pop(ctx);
                 }
@@ -304,8 +355,11 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(dialogL10n.supplierColon(supplier.name)),
-                Text(dialogL10n.currentBalanceColon(
-                    supplier.balance.toStringAsFixed(2))),
+                Text(
+                  dialogL10n.currentBalanceColon(
+                    supplier.balance.toStringAsFixed(2),
+                  ),
+                ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: amountCtrl,
@@ -316,7 +370,8 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                 TextField(
                   controller: descCtrl,
                   decoration: InputDecoration(
-                      labelText: dialogL10n.descriptionOptional),
+                    labelText: dialogL10n.descriptionOptional,
+                  ),
                 ),
               ],
             ),
@@ -335,23 +390,24 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                     final transactionRepo =
                         context.read<TransactionRepository>();
 
-                    await supplierRepo.updateBalance(
-                        supplier.id, -amount);
+                    await supplierRepo.updateBalance(supplier.id, -amount);
 
-                    await transactionRepo
-                        .addTransaction(TransactionModel(
-                      id: const Uuid().v4(),
-                      supplierId: supplier.id,
-                      supplierName: supplier.name,
-                      type: TransactionType.supplierPayment,
-                      amount: amount,
-                      balanceAfter: supplier.balance - amount,
-                      description: descCtrl.text.isNotEmpty
-                          ? descCtrl.text
-                          : l10n.paymentToSupplier,
-                      createdBy: CurrentUserService.instance.userName,
-                      createdAt: DateTime.now(),
-                    ));
+                    await transactionRepo.addTransaction(
+                      TransactionModel(
+                        id: const Uuid().v4(),
+                        supplierId: supplier.id,
+                        supplierName: supplier.name,
+                        type: TransactionType.supplierPayment,
+                        amount: amount,
+                        balanceAfter: supplier.balance - amount,
+                        description:
+                            descCtrl.text.isNotEmpty
+                                ? descCtrl.text
+                                : l10n.paymentToSupplier,
+                        createdBy: CurrentUserService.instance.userName,
+                        createdAt: DateTime.now(),
+                      ),
+                    );
 
                     if (ctx.mounted) Navigator.pop(ctx);
                     if (context.mounted) {
@@ -361,9 +417,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                           backgroundColor: AppTheme.successColor,
                         ),
                       );
-                      context
-                          .read<SupplierBloc>()
-                          .add(SupplierLoadRequested());
+                      context.read<SupplierBloc>().add(SupplierLoadRequested());
                     }
                   } catch (e) {
                     if (context.mounted) {
@@ -378,7 +432,8 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                 }
               },
               style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.successColor),
+                backgroundColor: AppTheme.successColor,
+              ),
               child: Text(dialogL10n.recordPayment),
             ),
           ],
@@ -396,17 +451,29 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
       builder: (ctx) {
         final dialogL10n = AppLocalizations.of(ctx)!;
         return AlertDialog(
-          title: Text(dialogL10n.historyFor(supplier.name)),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 24,
+          ),
+          title: Text(
+            dialogL10n.historyFor(supplier.name),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
           content: SizedBox(
             width: 700,
-            height: 500,
+            height:
+                (MediaQuery.sizeOf(ctx).height * 0.6)
+                    .clamp(260.0, 500.0)
+                    .toDouble(),
             child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('transactions')
-                  .where('supplierId', isEqualTo: supplier.id)
-                  .orderBy('createdAt', descending: true)
-                  .limit(50)
-                  .snapshots(),
+              stream:
+                  FirebaseFirestore.instance
+                      .collection('transactions')
+                      .where('supplierId', isEqualTo: supplier.id)
+                      .orderBy('createdAt', descending: true)
+                      .limit(50)
+                      .snapshots(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
@@ -415,9 +482,8 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                 if (docs.isEmpty) {
                   return Center(child: Text(dialogL10n.noTransactionsFound));
                 }
-                final transactions = docs
-                    .map((d) => TransactionModel.fromFirestore(d))
-                    .toList();
+                final transactions =
+                    docs.map((d) => TransactionModel.fromFirestore(d)).toList();
                 return HorizontalScrollableTable(
                   minWidth: 700,
                   child: SingleChildScrollView(
@@ -426,30 +492,46 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                         DataColumn(label: Text(dialogL10n.date)),
                         DataColumn(label: Text(dialogL10n.type)),
                         DataColumn(
-                            label: Text(dialogL10n.amount), numeric: true),
+                          label: Text(dialogL10n.amount),
+                          numeric: true,
+                        ),
                         DataColumn(
-                            label: Text(dialogL10n.balance), numeric: true),
+                          label: Text(dialogL10n.balance),
+                          numeric: true,
+                        ),
                         DataColumn(label: Text(dialogL10n.description)),
                       ],
-                      rows: transactions.map((t) {
-                        return DataRow(cells: [
-                          DataCell(Text(dateFmt.format(t.createdAt))),
-                          DataCell(StatusBadge(
-                            label: _localizedTransactionType(
-                                dialogL10n, t.type),
-                            color: t.type == TransactionType.supplierPayment
-                                ? AppTheme.successColor
-                                : AppTheme.warningColor,
-                          )),
-                          DataCell(Text(
-                            currFmt.format(t.amount),
-                            style:
-                                const TextStyle(fontWeight: FontWeight.w500),
-                          )),
-                          DataCell(Text(currFmt.format(t.balanceAfter))),
-                          DataCell(Text(t.description ?? '-')),
-                        ]);
-                      }).toList(),
+                      rows:
+                          transactions.map((t) {
+                            return DataRow(
+                              cells: [
+                                DataCell(Text(dateFmt.format(t.createdAt))),
+                                DataCell(
+                                  StatusBadge(
+                                    label: _localizedTransactionType(
+                                      dialogL10n,
+                                      t.type,
+                                    ),
+                                    color:
+                                        t.type ==
+                                                TransactionType.supplierPayment
+                                            ? AppTheme.successColor
+                                            : AppTheme.warningColor,
+                                  ),
+                                ),
+                                DataCell(
+                                  Text(
+                                    currFmt.format(t.amount),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                                DataCell(Text(currFmt.format(t.balanceAfter))),
+                                DataCell(Text(t.description ?? '-')),
+                              ],
+                            );
+                          }).toList(),
                     ),
                   ),
                 );

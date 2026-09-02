@@ -43,17 +43,11 @@ import 'package:store_manager/data/repositories/material_supplier_repository.dar
 import 'package:store_manager/data/repositories/material_stock_log_repository.dart';
 import 'package:store_manager/data/repositories/damaged_inventory_repository.dart';
 import 'package:store_manager/features/manufacturing/bloc/raw_material_bloc.dart';
-import 'package:store_manager/features/manufacturing/bloc/raw_material_event.dart';
 import 'package:store_manager/features/manufacturing/bloc/manufacturing_mix_bloc.dart';
-import 'package:store_manager/features/manufacturing/bloc/manufacturing_mix_event.dart';
 import 'package:store_manager/features/manufacturing/bloc/production_run_bloc.dart';
-import 'package:store_manager/features/manufacturing/bloc/production_run_event.dart';
 import 'package:store_manager/features/manufacturing/bloc/waste_processing_bloc.dart';
-import 'package:store_manager/features/manufacturing/bloc/waste_processing_event.dart';
 import 'package:store_manager/features/manufacturing/bloc/manufacturing_expense_bloc.dart';
-import 'package:store_manager/features/manufacturing/bloc/manufacturing_expense_event.dart';
 import 'package:store_manager/features/manufacturing/bloc/material_supplier_bloc.dart';
-import 'package:store_manager/features/manufacturing/bloc/material_supplier_event.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:store_manager/core/services/firebase_desktop_init.dart';
 import 'package:store_manager/core/services/notification_service.dart';

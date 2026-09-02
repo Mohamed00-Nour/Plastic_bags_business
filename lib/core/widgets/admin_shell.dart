@@ -131,14 +131,17 @@ class _AdminShellState extends State<AdminShell> {
           _selectedIndex = 0;
         }
 
+        final compactLayout = _MobileLayout(
+          navItems: navItems,
+          selectedIndex: _selectedIndex,
+          onIndexChanged: (i) => setState(() => _selectedIndex = i),
+          user: user,
+          onLogout: () => context.read<AuthBloc>().add(AuthLogoutRequested()),
+        );
+
         return ResponsiveLayout(
-          mobile: _MobileLayout(
-            navItems: navItems,
-            selectedIndex: _selectedIndex,
-            onIndexChanged: (i) => setState(() => _selectedIndex = i),
-            user: user,
-            onLogout: () => context.read<AuthBloc>().add(AuthLogoutRequested()),
-          ),
+          mobile: compactLayout,
+          tablet: compactLayout,
           desktop: _DesktopLayout(
             navItems: navItems,
             selectedIndex: _selectedIndex,
@@ -512,37 +515,50 @@ class _MobileLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     // Show max 5 items in bottom nav; rest in drawer
     final bottomNavItems = navItems.take(5).toList();
+    final isCompact = MediaQuery.sizeOf(context).width < 480;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(navItems[selectedIndex].label),
+        title: Text(
+          navItems[selectedIndex].label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
         actions: [
-          IconButton(
-            onPressed: () => context.read<ThemeCubit>().toggleTheme(),
-            icon: Icon(
-              context.watch<ThemeCubit>().isDark
-                  ? Icons.light_mode_rounded
-                  : Icons.dark_mode_rounded,
+          if (!isCompact) ...[
+            IconButton(
+              onPressed: () => context.read<ThemeCubit>().toggleTheme(),
+              icon: Icon(
+                context.watch<ThemeCubit>().isDark
+                    ? Icons.light_mode_rounded
+                    : Icons.dark_mode_rounded,
+              ),
+              tooltip: AppLocalizations.of(context)!.toggleTheme,
             ),
-            tooltip: AppLocalizations.of(context)!.toggleTheme,
-          ),
-          IconButton(
-            onPressed: () {
-              context.read<LocaleCubit>().toggleLocale();
-            },
-            icon: const Icon(Icons.language_rounded),
-            tooltip: AppLocalizations.of(context)!.toggleLanguage,
-          ),
-          IconButton(
-            onPressed: () {},
-            icon: const Badge(
-              smallSize: 8,
-              child: Icon(Icons.notifications_outlined),
+            IconButton(
+              onPressed: () {
+                context.read<LocaleCubit>().toggleLocale();
+              },
+              icon: const Icon(Icons.language_rounded),
+              tooltip: AppLocalizations.of(context)!.toggleLanguage,
             ),
-          ),
+            IconButton(
+              onPressed: () {},
+              icon: const Badge(
+                smallSize: 8,
+                child: Icon(Icons.notifications_outlined),
+              ),
+            ),
+          ],
           PopupMenuButton<String>(
             onSelected: (value) {
-              if (value == 'logout') onLogout();
+              if (value == 'theme') {
+                context.read<ThemeCubit>().toggleTheme();
+              } else if (value == 'locale') {
+                context.read<LocaleCubit>().toggleLocale();
+              } else if (value == 'logout') {
+                onLogout();
+              }
             },
             itemBuilder:
                 (context) => [
@@ -563,6 +579,28 @@ class _MobileLayout extends StatelessWidget {
                     ),
                   ),
                   const PopupMenuDivider(),
+                  if (isCompact) ...[
+                    PopupMenuItem(
+                      value: 'theme',
+                      child: Row(
+                        children: [
+                          const Icon(Icons.contrast_rounded, size: 20),
+                          const SizedBox(width: 8),
+                          Text(AppLocalizations.of(context)!.toggleTheme),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'locale',
+                      child: Row(
+                        children: [
+                          const Icon(Icons.language_rounded, size: 20),
+                          const SizedBox(width: 8),
+                          Text(AppLocalizations.of(context)!.toggleLanguage),
+                        ],
+                      ),
+                    ),
+                  ],
                   PopupMenuItem(
                     value: 'logout',
                     child: Row(

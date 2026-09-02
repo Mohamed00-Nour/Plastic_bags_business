@@ -50,9 +50,10 @@ class _ShopAppShellState extends State<ShopAppShell> {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       // Pick the locale-appropriate title/body from data payload if available
       final data = message.data;
-      final isArabic = mounted
-          ? context.read<LocaleCubit>().state.languageCode == 'ar'
-          : false;
+      final isArabic =
+          mounted
+              ? context.read<LocaleCubit>().state.languageCode == 'ar'
+              : false;
 
       final titleEn = data['titleEn'] ?? message.notification?.title ?? '';
       final titleAr = data['titleAr'] ?? titleEn;
@@ -103,75 +104,138 @@ class _ShopAppShellState extends State<ShopAppShell> {
       builder: (context, state) {
         final user = state is AuthAuthenticated ? state.user : null;
 
-        return Scaffold(
-          appBar: AppBar(
-            title: Text(user?.shopName ?? l10n.shopDashboard),
-            actions: [
-              // Theme toggle
-              IconButton(
-                onPressed: () => context.read<ThemeCubit>().toggleTheme(),
-                icon: Icon(
-                  context.watch<ThemeCubit>().isDark
-                      ? Icons.light_mode_rounded
-                      : Icons.dark_mode_rounded,
-                  size: 22,
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final useRail = constraints.maxWidth >= 900;
+            final isCompact = constraints.maxWidth < 480;
+
+            return Scaffold(
+              appBar: AppBar(
+                title: Text(
+                  user?.shopName ?? l10n.shopDashboard,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                tooltip: l10n.toggleTheme,
-              ),
-              // Locale toggle
-              IconButton(
-                onPressed: () => context.read<LocaleCubit>().toggleLocale(),
-                icon: const Icon(Icons.language_rounded, size: 22),
-                tooltip: l10n.toggleLanguage,
-              ),
-              // User menu
-              PopupMenuButton<String>(
-                onSelected: (value) {
-                  if (value == 'logout') {
-                    context.read<AuthBloc>().add(AuthLogoutRequested());
-                  }
-                },
-                itemBuilder: (context) => [
-                  PopupMenuItem(
-                    enabled: false,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(user?.name ?? 'User',
-                            style:
-                                const TextStyle(fontWeight: FontWeight.bold)),
-                        Text(user?.email ?? '',
-                            style: const TextStyle(fontSize: 12)),
-                      ],
+                actions: [
+                  if (!isCompact) ...[
+                    IconButton(
+                      onPressed: () => context.read<ThemeCubit>().toggleTheme(),
+                      icon: Icon(
+                        context.watch<ThemeCubit>().isDark
+                            ? Icons.light_mode_rounded
+                            : Icons.dark_mode_rounded,
+                        size: 22,
+                      ),
+                      tooltip: l10n.toggleTheme,
                     ),
-                  ),
-                  const PopupMenuDivider(),
-                  PopupMenuItem(
-                    value: 'logout',
-                    child: Row(
-                      children: [
-                        const Icon(Icons.logout, size: 20),
-                        const SizedBox(width: 8),
-                        Text(l10n.logout),
-                      ],
+                    IconButton(
+                      onPressed:
+                          () => context.read<LocaleCubit>().toggleLocale(),
+                      icon: const Icon(Icons.language_rounded, size: 22),
+                      tooltip: l10n.toggleLanguage,
                     ),
+                  ],
+                  PopupMenuButton<String>(
+                    onSelected: (value) {
+                      if (value == 'theme') {
+                        context.read<ThemeCubit>().toggleTheme();
+                      } else if (value == 'locale') {
+                        context.read<LocaleCubit>().toggleLocale();
+                      } else if (value == 'logout') {
+                        context.read<AuthBloc>().add(AuthLogoutRequested());
+                      }
+                    },
+                    itemBuilder:
+                        (context) => [
+                          PopupMenuItem(
+                            enabled: false,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  user?.name ?? 'User',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  user?.email ?? '',
+                                  style: const TextStyle(fontSize: 12),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuDivider(),
+                          if (isCompact) ...[
+                            PopupMenuItem(
+                              value: 'theme',
+                              child: Text(l10n.toggleTheme),
+                            ),
+                            PopupMenuItem(
+                              value: 'locale',
+                              child: Text(l10n.toggleLanguage),
+                            ),
+                          ],
+                          PopupMenuItem(
+                            value: 'logout',
+                            child: Row(
+                              children: [
+                                const Icon(Icons.logout, size: 20),
+                                const SizedBox(width: 8),
+                                Text(l10n.logout),
+                              ],
+                            ),
+                          ),
+                        ],
                   ),
                 ],
               ),
-            ],
-          ),
-          body: screens[_selectedIndex].screen,
-          bottomNavigationBar: NavigationBar(
-            selectedIndex: _selectedIndex,
-            onDestinationSelected: (i) => setState(() => _selectedIndex = i),
-            labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-            destinations: screens
-                .map((s) => NavigationDestination(
-                      icon: Icon(s.icon),
-                      label: s.label,
-                    ))
-                .toList(),
-          ),
+              body:
+                  useRail
+                      ? Row(
+                        children: [
+                          NavigationRail(
+                            selectedIndex: _selectedIndex,
+                            onDestinationSelected:
+                                (i) => setState(() => _selectedIndex = i),
+                            labelType: NavigationRailLabelType.all,
+                            groupAlignment: -0.85,
+                            destinations:
+                                screens
+                                    .map(
+                                      (screen) => NavigationRailDestination(
+                                        icon: Icon(screen.icon),
+                                        label: Text(screen.label),
+                                      ),
+                                    )
+                                    .toList(),
+                          ),
+                          const VerticalDivider(width: 1),
+                          Expanded(child: screens[_selectedIndex].screen),
+                        ],
+                      )
+                      : screens[_selectedIndex].screen,
+              bottomNavigationBar:
+                  useRail
+                      ? null
+                      : NavigationBar(
+                        selectedIndex: _selectedIndex,
+                        onDestinationSelected:
+                            (i) => setState(() => _selectedIndex = i),
+                        labelBehavior:
+                            NavigationDestinationLabelBehavior.onlyShowSelected,
+                        destinations:
+                            screens
+                                .map(
+                                  (screen) => NavigationDestination(
+                                    icon: Icon(screen.icon),
+                                    label: screen.label,
+                                  ),
+                                )
+                                .toList(),
+                      ),
+            );
+          },
         );
       },
     );

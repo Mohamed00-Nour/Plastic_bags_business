@@ -46,26 +46,33 @@ class StatsCard extends StatelessWidget {
                   ),
                   const Spacer(),
                   if (onTap != null)
-                    Icon(Icons.arrow_forward_ios,
-                        size: 14, color: subtitleColor),
+                    Icon(
+                      Icons.arrow_forward_ios,
+                      size: 14,
+                      color: subtitleColor,
+                    ),
                 ],
               ),
               const SizedBox(height: 16),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: textColor,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: AlignmentDirectional.centerStart,
+                child: Text(
+                  value,
+                  maxLines: 1,
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: textColor,
+                  ),
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 title,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: subtitleColor,
-                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 13, color: subtitleColor),
               ),
               if (subtitle != null) ...[
                 const SizedBox(height: 4),

@@ -31,12 +31,17 @@ class _ProductsScreenState extends State<ProductsScreen> {
     final isArabic = Localizations.localeOf(context).languageCode == 'ar';
     List<ProductModel> products = [];
     if (state is ProductLoaded) {
-      products = state.filteredProducts.isNotEmpty ? state.filteredProducts : state.products;
+      products =
+          state.filteredProducts.isNotEmpty
+              ? state.filteredProducts
+              : state.products;
     }
 
     if (products.isEmpty) {
-      final snap = await FirebaseFirestore.instance.collection('products').get();
-      products = snap.docs.map((doc) => ProductModel.fromFirestore(doc)).toList();
+      final snap =
+          await FirebaseFirestore.instance.collection('products').get();
+      products =
+          snap.docs.map((doc) => ProductModel.fromFirestore(doc)).toList();
     }
 
     if (products.isEmpty) {
@@ -44,7 +49,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              isArabic ? 'لا توجد منتجات لحفظ تقرير الجرد' : 'No products found to audit',
+              isArabic
+                  ? 'لا توجد منتجات لحفظ تقرير الجرد'
+                  : 'No products found to audit',
             ),
             backgroundColor: Colors.red,
           ),
@@ -112,9 +119,15 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                   backgroundColor: const Color(0xFF10B981),
                                   foregroundColor: Colors.white,
                                 ),
-                                onPressed: () => _exportInventoryAudit(context, state),
-                                icon: const Icon(Icons.inventory_rounded, size: 18),
-                                label: Text(isArabic ? 'جرد المنتجات' : 'Stock Audit'),
+                                onPressed:
+                                    () => _exportInventoryAudit(context, state),
+                                icon: const Icon(
+                                  Icons.inventory_rounded,
+                                  size: 18,
+                                ),
+                                label: Text(
+                                  isArabic ? 'جرد المنتجات' : 'Stock Audit',
+                                ),
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -252,8 +265,20 @@ class _ProductsScreenState extends State<ProductsScreen> {
                           ),
                         ),
                         DataCell(Text(product.supplierName ?? '-')),
-                        DataCell(Text(product.createdBy.isNotEmpty ? product.createdBy : '-')),
-                        DataCell(Text(product.modifiedBy.isNotEmpty ? product.modifiedBy : '-')),
+                        DataCell(
+                          Text(
+                            product.createdBy.isNotEmpty
+                                ? product.createdBy
+                                : '-',
+                          ),
+                        ),
+                        DataCell(
+                          Text(
+                            product.modifiedBy.isNotEmpty
+                                ? product.modifiedBy
+                                : '-',
+                          ),
+                        ),
                         DataCell(
                           Row(
                             mainAxisSize: MainAxisSize.min,
@@ -307,14 +332,16 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                 ),
                                 tooltip: l10n.delete,
                                 onPressed: () async {
-                                  final confirmed = await ConfirmationDialog.show(
-                                    context,
-                                    title: l10n.deleteProduct,
-                                    message:
-                                        l10n.areYouSureDelete(product.name),
-                                    confirmLabel: l10n.delete,
-                                    confirmColor: AppTheme.dangerColor,
-                                  );
+                                  final confirmed =
+                                      await ConfirmationDialog.show(
+                                        context,
+                                        title: l10n.deleteProduct,
+                                        message: l10n.areYouSureDelete(
+                                          product.name,
+                                        ),
+                                        confirmLabel: l10n.delete,
+                                        confirmColor: AppTheme.dangerColor,
+                                      );
                                   if (confirmed == true && mounted) {
                                     context.read<ProductBloc>().add(
                                       ProductDeleteRequested(
@@ -369,8 +396,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
       final state = context.read<ProductBloc>().state;
       if (state is! ProductLoaded) return false;
       final lower = name.trim().toLowerCase();
-      return state.products.any((p) =>
-          p.name.toLowerCase() == lower && p.id != product?.id);
+      return state.products.any(
+        (p) => p.name.toLowerCase() == lower && p.id != product?.id,
+      );
     }
 
     showDialog(
@@ -380,6 +408,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
         return StatefulBuilder(
           builder:
               (ctx, setDialogState) => AlertDialog(
+                insetPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 24,
+                ),
                 title: Text(isEditing ? l10n.editProduct : l10n.addProduct),
                 content: SizedBox(
                   width: 500,
@@ -393,9 +425,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             controller: nameCtrl,
                             decoration: InputDecoration(
                               labelText: l10n.name,
-                              errorText: nameExists(nameCtrl.text)
-                                  ? l10n.productExistsWarning
-                                  : null,
+                              errorText:
+                                  nameExists(nameCtrl.text)
+                                      ? l10n.productExistsWarning
+                                      : null,
                             ),
                             onChanged: (_) => setDialogState(() {}),
                             validator: (v) {
@@ -432,8 +465,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                   ),
                                   keyboardType: TextInputType.number,
                                   validator: (v) {
-                                    if (v?.trim().isEmpty == true) return l10n.required_field;
-                                    if (double.tryParse(v!) == null) return l10n.invalid_value;
+                                    if (v?.trim().isEmpty == true)
+                                      return l10n.required_field;
+                                    if (double.tryParse(v!) == null)
+                                      return l10n.invalid_value;
                                     return null;
                                   },
                                 ),
@@ -447,8 +482,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                   ),
                                   keyboardType: TextInputType.number,
                                   validator: (v) {
-                                    if (v?.trim().isEmpty == true) return l10n.required_field;
-                                    if (double.tryParse(v!) == null) return l10n.invalid_value;
+                                    if (v?.trim().isEmpty == true)
+                                      return l10n.required_field;
+                                    if (double.tryParse(v!) == null)
+                                      return l10n.invalid_value;
                                     return null;
                                   },
                                 ),
@@ -466,7 +503,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                   ),
                                   keyboardType: TextInputType.number,
                                   validator: (v) {
-                                    if (v != null && v.trim().isNotEmpty && double.tryParse(v) == null) {
+                                    if (v != null &&
+                                        v.trim().isNotEmpty &&
+                                        double.tryParse(v) == null) {
                                       return l10n.invalid_value;
                                     }
                                     return null;
@@ -482,7 +521,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                   ),
                                   keyboardType: TextInputType.number,
                                   validator: (v) {
-                                    if (v != null && v.trim().isNotEmpty && double.tryParse(v) == null) {
+                                    if (v != null &&
+                                        v.trim().isNotEmpty &&
+                                        double.tryParse(v) == null) {
                                       return l10n.invalid_value;
                                     }
                                     return null;
@@ -548,9 +589,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                   decoration: InputDecoration(
                                     labelText: l10n.initialStock,
                                   ),
-                                  keyboardType: const TextInputType.numberWithOptions(
-                                    decimal: true,
-                                  ),
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                        decimal: true,
+                                      ),
                                   enabled: !isEditing,
                                 ),
                               ),
@@ -561,9 +603,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                   decoration: InputDecoration(
                                     labelText: l10n.lowStockAlert,
                                   ),
-                                  keyboardType: const TextInputType.numberWithOptions(
-                                    decimal: true,
-                                  ),
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                        decimal: true,
+                                      ),
                                 ),
                               ),
                             ],
@@ -579,47 +622,62 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     child: Text(l10n.cancel),
                   ),
                   ElevatedButton(
-                    onPressed: nameExists(nameCtrl.text)
-                        ? null
-                        : () {
-                      if (formKey.currentState!.validate()) {
-                        final now = DateTime.now();
-                        final p1Val = double.parse(price1Ctrl.text.trim());
-                        final p2Val = price2Ctrl.text.trim().isNotEmpty ? double.tryParse(price2Ctrl.text.trim()) : null;
-                        final p3Val = price3Ctrl.text.trim().isNotEmpty ? double.tryParse(price3Ctrl.text.trim()) : null;
+                    onPressed:
+                        nameExists(nameCtrl.text)
+                            ? null
+                            : () {
+                              if (formKey.currentState!.validate()) {
+                                final now = DateTime.now();
+                                final p1Val = double.parse(
+                                  price1Ctrl.text.trim(),
+                                );
+                                final p2Val =
+                                    price2Ctrl.text.trim().isNotEmpty
+                                        ? double.tryParse(
+                                          price2Ctrl.text.trim(),
+                                        )
+                                        : null;
+                                final p3Val =
+                                    price3Ctrl.text.trim().isNotEmpty
+                                        ? double.tryParse(
+                                          price3Ctrl.text.trim(),
+                                        )
+                                        : null;
 
-                        final p = ProductModel(
-                          id: product?.id ?? const Uuid().v4(),
-                          name: nameCtrl.text.trim(),
-                          size: sizeCtrl.text.trim(),
-                          price: p1Val,
-                          costPrice: double.parse(costCtrl.text.trim()),
-                          price1: p1Val,
-                          price2: p2Val,
-                          price3: p3Val,
-                          stockQuantity:
-                              isEditing
-                                  ? product.stockQuantity
-                                  : double.tryParse(stockCtrl.text) ?? 0.0,
-                          supplierId: selectedSupplierId,
-                          supplierName: selectedSupplierName,
-                          lowStockThreshold:
-                              double.tryParse(thresholdCtrl.text) ?? 10.0,
-                          createdAt: product?.createdAt ?? now,
-                          updatedAt: now,
-                        );
-                        if (isEditing) {
-                          context.read<ProductBloc>().add(
-                            ProductUpdateRequested(product: p),
-                          );
-                        } else {
-                          context.read<ProductBloc>().add(
-                            ProductAddRequested(product: p),
-                          );
-                        }
-                        Navigator.pop(ctx);
-                      }
-                    },
+                                final p = ProductModel(
+                                  id: product?.id ?? const Uuid().v4(),
+                                  name: nameCtrl.text.trim(),
+                                  size: sizeCtrl.text.trim(),
+                                  price: p1Val,
+                                  costPrice: double.parse(costCtrl.text.trim()),
+                                  price1: p1Val,
+                                  price2: p2Val,
+                                  price3: p3Val,
+                                  stockQuantity:
+                                      isEditing
+                                          ? product.stockQuantity
+                                          : double.tryParse(stockCtrl.text) ??
+                                              0.0,
+                                  supplierId: selectedSupplierId,
+                                  supplierName: selectedSupplierName,
+                                  lowStockThreshold:
+                                      double.tryParse(thresholdCtrl.text) ??
+                                      10.0,
+                                  createdAt: product?.createdAt ?? now,
+                                  updatedAt: now,
+                                );
+                                if (isEditing) {
+                                  context.read<ProductBloc>().add(
+                                    ProductUpdateRequested(product: p),
+                                  );
+                                } else {
+                                  context.read<ProductBloc>().add(
+                                    ProductAddRequested(product: p),
+                                  );
+                                }
+                                Navigator.pop(ctx);
+                              }
+                            },
                     child: Text(isEditing ? l10n.update : l10n.add),
                   ),
                 ],
@@ -656,7 +714,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('${l10n.product}: ${product.name}'),
-                      Text('${l10n.currentStock}: ${formatQuantity(product.stockQuantity)}'),
+                      Text(
+                        '${l10n.currentStock}: ${formatQuantity(product.stockQuantity)}',
+                      ),
                       if (isIncrease)
                         Text(
                           '${l10n.currentAvgCost}: \$${product.costPrice.toStringAsFixed(2)}',
@@ -668,9 +728,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       const SizedBox(height: 16),
                       TextField(
                         controller: amountCtrl,
-                        decoration: InputDecoration(
-                          labelText: l10n.quantity,
-                        ),
+                        decoration: InputDecoration(labelText: l10n.quantity),
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,
                         ),
@@ -683,7 +741,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             labelText: l10n.stockInUnitCostOptional,
                           ),
                           keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true),
+                            decimal: true,
+                          ),
                         ),
                       ],
                       const SizedBox(height: 12),

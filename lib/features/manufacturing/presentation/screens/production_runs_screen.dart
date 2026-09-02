@@ -42,21 +42,21 @@ class _ProductionRunsScreenState extends State<ProductionRunsScreen> {
     return BlocConsumer<ProductionRunBloc, ProductionRunState>(
       listener: (context, state) {
         if (state is ProductionRunOperationSuccess) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(state.message),
-            backgroundColor: AppTheme.successColor,
-          ));
-          context
-              .read<ProductionRunBloc>()
-              .add(ProductionRunLoadRequested());
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: AppTheme.successColor,
+            ),
+          );
+          context.read<ProductionRunBloc>().add(ProductionRunLoadRequested());
         } else if (state is ProductionRunError) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(state.message),
-            backgroundColor: AppTheme.dangerColor,
-          ));
-          context
-              .read<ProductionRunBloc>()
-              .add(ProductionRunLoadRequested());
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: AppTheme.dangerColor,
+            ),
+          );
+          context.read<ProductionRunBloc>().add(ProductionRunLoadRequested());
         }
       },
       builder: (context, state) {
@@ -88,9 +88,8 @@ class _ProductionRunsScreenState extends State<ProductionRunsScreen> {
 
   Widget _buildFilterBar(BuildContext context, ProductionRunState state) {
     final l10n = AppLocalizations.of(context)!;
-    final activePeriod = state is ProductionRunLoaded
-        ? state.activePeriod
-        : RunFilterPeriod.all;
+    final activePeriod =
+        state is ProductionRunLoaded ? state.activePeriod : RunFilterPeriod.all;
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -99,33 +98,45 @@ class _ProductionRunsScreenState extends State<ProductionRunsScreen> {
           _FilterChip(
             label: l10n.mfgAll,
             selected: activePeriod == RunFilterPeriod.all,
-            onTap: () => context.read<ProductionRunBloc>().add(
-                const ProductionRunFilterRequested(
-                    period: RunFilterPeriod.all)),
+            onTap:
+                () => context.read<ProductionRunBloc>().add(
+                  const ProductionRunFilterRequested(
+                    period: RunFilterPeriod.all,
+                  ),
+                ),
           ),
           const SizedBox(width: 8),
           _FilterChip(
             label: l10n.rangeToday,
             selected: activePeriod == RunFilterPeriod.today,
-            onTap: () => context.read<ProductionRunBloc>().add(
-                const ProductionRunFilterRequested(
-                    period: RunFilterPeriod.today)),
+            onTap:
+                () => context.read<ProductionRunBloc>().add(
+                  const ProductionRunFilterRequested(
+                    period: RunFilterPeriod.today,
+                  ),
+                ),
           ),
           const SizedBox(width: 8),
           _FilterChip(
             label: l10n.rangeThisWeek,
             selected: activePeriod == RunFilterPeriod.thisWeek,
-            onTap: () => context.read<ProductionRunBloc>().add(
-                const ProductionRunFilterRequested(
-                    period: RunFilterPeriod.thisWeek)),
+            onTap:
+                () => context.read<ProductionRunBloc>().add(
+                  const ProductionRunFilterRequested(
+                    period: RunFilterPeriod.thisWeek,
+                  ),
+                ),
           ),
           const SizedBox(width: 8),
           _FilterChip(
             label: l10n.rangeThisMonth,
             selected: activePeriod == RunFilterPeriod.thisMonth,
-            onTap: () => context.read<ProductionRunBloc>().add(
-                const ProductionRunFilterRequested(
-                    period: RunFilterPeriod.thisMonth)),
+            onTap:
+                () => context.read<ProductionRunBloc>().add(
+                  const ProductionRunFilterRequested(
+                    period: RunFilterPeriod.thisMonth,
+                  ),
+                ),
           ),
           const SizedBox(width: 8),
           _FilterChip(
@@ -149,11 +160,13 @@ class _ProductionRunsScreenState extends State<ProductionRunsScreen> {
       ),
     );
     if (picked != null && context.mounted) {
-      context.read<ProductionRunBloc>().add(ProductionRunFilterRequested(
-        period: RunFilterPeriod.custom,
-        customStart: picked.start,
-        customEnd: picked.end,
-      ));
+      context.read<ProductionRunBloc>().add(
+        ProductionRunFilterRequested(
+          period: RunFilterPeriod.custom,
+          customStart: picked.start,
+          customEnd: picked.end,
+        ),
+      );
     }
   }
 
@@ -163,24 +176,28 @@ class _ProductionRunsScreenState extends State<ProductionRunsScreen> {
     return Row(
       children: [
         _StatCard(
-            label: l10n.mfgTotalOutput,
-            value: '${state.totalOutput.toStringAsFixed(1)} ${l10n.mfgKg}',
-            color: AppTheme.successColor),
+          label: l10n.mfgTotalOutput,
+          value: '${state.totalOutput.toStringAsFixed(1)} ${l10n.mfgKg}',
+          color: AppTheme.successColor,
+        ),
         const SizedBox(width: 8),
         _StatCard(
-            label: l10n.mfgTotalWaste,
-            value: '${state.totalWaste.toStringAsFixed(1)} ${l10n.mfgKg}',
-            color: AppTheme.warningColor),
+          label: l10n.mfgTotalWaste,
+          value: '${state.totalWaste.toStringAsFixed(1)} ${l10n.mfgKg}',
+          color: AppTheme.warningColor,
+        ),
         const SizedBox(width: 8),
         _StatCard(
-            label: l10n.mfgTotalCost,
-            value: '\$${state.totalCost.toStringAsFixed(2)}',
-            color: AppTheme.dangerColor),
+          label: l10n.mfgTotalCost,
+          value: '\$${state.totalCost.toStringAsFixed(2)}',
+          color: AppTheme.dangerColor,
+        ),
         const SizedBox(width: 8),
         _StatCard(
-            label: l10n.mfgAvgCostPerKg,
-            value: '\$${state.averageCostPerKg.toStringAsFixed(2)}',
-            color: AppTheme.infoColor),
+          label: l10n.mfgAvgCostPerKg,
+          value: '\$${state.averageCostPerKg.toStringAsFixed(2)}',
+          color: AppTheme.infoColor,
+        ),
       ],
     );
   }
@@ -191,7 +208,9 @@ class _ProductionRunsScreenState extends State<ProductionRunsScreen> {
       return const Center(child: CircularProgressIndicator());
     }
     final runs =
-        state is ProductionRunLoaded ? state.filteredRuns : <ProductionRunModel>[];
+        state is ProductionRunLoaded
+            ? state.filteredRuns
+            : <ProductionRunModel>[];
     if (runs.isEmpty) {
       return Center(child: Text(l10n.mfgNoRuns));
     }
@@ -203,26 +222,33 @@ class _ProductionRunsScreenState extends State<ProductionRunsScreen> {
           margin: const EdgeInsets.only(bottom: 8),
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor:
-                  (r.isExecuted ? AppTheme.successColor : AppTheme.warningColor)
-                      .withValues(alpha: 0.1),
-              child: Icon(
-                  r.isExecuted
-                      ? Icons.check_circle_outline
-                      : Icons.pending_outlined,
-                  color: r.isExecuted
+              backgroundColor: (r.isExecuted
                       ? AppTheme.successColor
-                      : AppTheme.warningColor),
+                      : AppTheme.warningColor)
+                  .withValues(alpha: 0.1),
+              child: Icon(
+                r.isExecuted
+                    ? Icons.check_circle_outline
+                    : Icons.pending_outlined,
+                color:
+                    r.isExecuted
+                        ? AppTheme.successColor
+                        : AppTheme.warningColor,
+              ),
             ),
             title: Row(
               children: [
                 Expanded(
-                  child: Text(r.mixName,
-                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                  child: Text(
+                    r.mixName,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 2),
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: (r.isExecuted
                             ? AppTheme.successColor
@@ -235,9 +261,10 @@ class _ProductionRunsScreenState extends State<ProductionRunsScreen> {
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
-                      color: r.isExecuted
-                          ? AppTheme.successColor
-                          : AppTheme.warningColor,
+                      color:
+                          r.isExecuted
+                              ? AppTheme.successColor
+                              : AppTheme.warningColor,
                     ),
                   ),
                 ),
@@ -272,8 +299,9 @@ class _ProductionRunsScreenState extends State<ProductionRunsScreen> {
                     Text(
                       '\$${r.costPerKg.toStringAsFixed(2)} / ${l10n.mfgKg}',
                       style: const TextStyle(
-                          color: AppTheme.primaryColor,
-                          fontWeight: FontWeight.bold),
+                        color: AppTheme.primaryColor,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     Text(
                       '${l10n.mfgTotalLabel}: \$${r.totalCost.toStringAsFixed(2)}',
@@ -287,8 +315,10 @@ class _ProductionRunsScreenState extends State<ProductionRunsScreen> {
                   onPressed: () => _showForm(context, r),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.delete_outline,
-                      color: AppTheme.dangerColor),
+                  icon: const Icon(
+                    Icons.delete_outline,
+                    color: AppTheme.dangerColor,
+                  ),
                   onPressed: () => _confirmDelete(context, r),
                 ),
               ],
@@ -303,27 +333,28 @@ class _ProductionRunsScreenState extends State<ProductionRunsScreen> {
   void _showForm(BuildContext context, ProductionRunModel? editing) {
     showDialog(
       context: context,
-      builder: (ctx) => _ProductionRunDialog(
-        editing: editing,
-        mixState: context.read<ManufacturingMixBloc>().state,
-        materialState: context.read<RawMaterialBloc>().state,
-        onSave: (run) {
-          if (editing == null) {
-            context
-                .read<ProductionRunBloc>()
-                .add(ProductionRunAddRequested(run: run));
-          } else {
-            context
-                .read<ProductionRunBloc>()
-                .add(ProductionRunUpdateRequested(run: run));
-          }
-        },
-        onExecute: (run) {
-          context
-              .read<ProductionRunBloc>()
-              .add(ProductionRunExecuteRequested(run: run));
-        },
-      ),
+      builder:
+          (ctx) => _ProductionRunDialog(
+            editing: editing,
+            mixState: context.read<ManufacturingMixBloc>().state,
+            materialState: context.read<RawMaterialBloc>().state,
+            onSave: (run) {
+              if (editing == null) {
+                context.read<ProductionRunBloc>().add(
+                  ProductionRunAddRequested(run: run),
+                );
+              } else {
+                context.read<ProductionRunBloc>().add(
+                  ProductionRunUpdateRequested(run: run),
+                );
+              }
+            },
+            onExecute: (run) {
+              context.read<ProductionRunBloc>().add(
+                ProductionRunExecuteRequested(run: run),
+              );
+            },
+          ),
     );
   }
 
@@ -331,26 +362,29 @@ class _ProductionRunsScreenState extends State<ProductionRunsScreen> {
     final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.mfgConfirmDelete),
-        content: Text(l10n.mfgDeleteConfirm(r.mixName)),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(l10n.cancel)),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.dangerColor),
-            onPressed: () {
-              context
-                  .read<ProductionRunBloc>()
-                  .add(ProductionRunDeleteRequested(id: r.id));
-              Navigator.pop(ctx);
-            },
-            child: Text(l10n.mfgDelete),
+      builder:
+          (ctx) => AlertDialog(
+            title: Text(l10n.mfgConfirmDelete),
+            content: Text(l10n.mfgDeleteConfirm(r.mixName)),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(l10n.cancel),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.dangerColor,
+                ),
+                onPressed: () {
+                  context.read<ProductionRunBloc>().add(
+                    ProductionRunDeleteRequested(id: r.id),
+                  );
+                  Navigator.pop(ctx);
+                },
+                child: Text(l10n.mfgDelete),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 }
@@ -359,8 +393,11 @@ class _FilterChip extends StatelessWidget {
   final String label;
   final bool selected;
   final VoidCallback onTap;
-  const _FilterChip(
-      {required this.label, required this.selected, required this.onTap});
+  const _FilterChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -369,14 +406,16 @@ class _FilterChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
-          color: selected
-              ? AppTheme.primaryColor
-              : AppTheme.primaryColor.withValues(alpha: 0.08),
+          color:
+              selected
+                  ? AppTheme.primaryColor
+                  : AppTheme.primaryColor.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: selected
-                ? AppTheme.primaryColor
-                : AppTheme.primaryColor.withValues(alpha: 0.3),
+            color:
+                selected
+                    ? AppTheme.primaryColor
+                    : AppTheme.primaryColor.withValues(alpha: 0.3),
           ),
         ),
         child: Text(
@@ -396,8 +435,11 @@ class _StatCard extends StatelessWidget {
   final String label;
   final String value;
   final Color color;
-  const _StatCard(
-      {required this.label, required this.value, required this.color});
+  const _StatCard({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -412,14 +454,16 @@ class _StatCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label,
-                style: TextStyle(fontSize: 11, color: color)),
+            Text(label, style: TextStyle(fontSize: 11, color: color)),
             const SizedBox(height: 4),
-            Text(value,
-                style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: color)),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
           ],
         ),
       ),
@@ -444,8 +488,7 @@ class _ProductionRunDialog extends StatefulWidget {
   });
 
   @override
-  State<_ProductionRunDialog> createState() =>
-      _ProductionRunDialogState();
+  State<_ProductionRunDialog> createState() => _ProductionRunDialogState();
 }
 
 class _ProductionRunDialogState extends State<_ProductionRunDialog> {
@@ -481,17 +524,22 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
       _additionalCosts.addAll(e.additionalCosts);
       _customFields.addAll(e.customFields);
       _outputs.addAll(e.outputs);
-      final mixes = widget.mixState is ManufacturingMixLoaded
-          ? (widget.mixState as ManufacturingMixLoaded).all
-          : <ManufacturingMixModel>[];
-      _selectedMix = mixes.isNotEmpty
-          ? mixes.firstWhere((m) => m.id == e.mixId,
-              orElse: () => mixes.first)
-          : null;
+      final mixes =
+          widget.mixState is ManufacturingMixLoaded
+              ? (widget.mixState as ManufacturingMixLoaded).all
+              : <ManufacturingMixModel>[];
+      _selectedMix =
+          mixes.isNotEmpty
+              ? mixes.firstWhere(
+                (m) => m.id == e.mixId,
+                orElse: () => mixes.first,
+              )
+              : null;
     } else {
-      final mixes = widget.mixState is ManufacturingMixLoaded
-          ? (widget.mixState as ManufacturingMixLoaded).all
-          : <ManufacturingMixModel>[];
+      final mixes =
+          widget.mixState is ManufacturingMixLoaded
+              ? (widget.mixState as ManufacturingMixLoaded).all
+              : <ManufacturingMixModel>[];
       if (mixes.isNotEmpty) _selectedMix = mixes.first;
     }
     _recalculate();
@@ -508,25 +556,25 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
 
   void _recalculate() {
     final inputKg = double.tryParse(_inputCtrl.text) ?? 0;
-    final outputKg =
-        _outputs.fold(0.0, (sum, o) => sum + o.quantityKg);
+    final outputKg = _outputs.fold(0.0, (sum, o) => sum + o.quantityKg);
     final tech = double.tryParse(_techCtrl.text) ?? 0;
     final elec = double.tryParse(_elecCtrl.text) ?? 0;
     final addl = _additionalCosts.fold(0.0, (s, c) => s + c.amount);
-    final customCost =
-        _customFields.fold(0.0, (s, f) => s + f.value);
+    final customCost = _customFields.fold(0.0, (s, f) => s + f.value);
 
     double rawCost = 0;
     if (_selectedMix != null && inputKg > 0) {
-      final materials = widget.materialState is RawMaterialLoaded
-          ? (widget.materialState as RawMaterialLoaded).all
-          : <RawMaterialModel>[];
+      final materials =
+          widget.materialState is RawMaterialLoaded
+              ? (widget.materialState as RawMaterialLoaded).all
+              : <RawMaterialModel>[];
       final totalMixKg = _selectedMix!.totalQuantityKg;
       if (totalMixKg > 0) {
         for (final comp in _selectedMix!.components) {
           final mat = materials.cast<RawMaterialModel?>().firstWhere(
-              (m) => m?.id == comp.materialId,
-              orElse: () => null);
+            (m) => m?.id == comp.materialId,
+            orElse: () => null,
+          );
           if (mat != null) {
             rawCost +=
                 (comp.quantityKg / totalMixKg) * inputKg * mat.pricePerKg;
@@ -563,16 +611,16 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
     final now = DateTime.now();
     final inputKg = double.tryParse(_inputCtrl.text) ?? 0;
     final mergedOutputs = mergeProductionRunOutputs(_outputs);
-    final totalOutput =
-        mergedOutputs.fold(0.0, (sum, o) => sum + o.quantityKg);
+    final totalOutput = mergedOutputs.fold(0.0, (sum, o) => sum + o.quantityKg);
 
     return ProductionRunModel(
       id: widget.editing?.id ?? const Uuid().v4(),
       mixId: _selectedMix!.id,
       mixName: _selectedMix!.name,
-      productName: mergedOutputs.isNotEmpty
-          ? mergedOutputs.map((o) => o.productName).join(', ')
-          : _selectedMix!.productName,
+      productName:
+          mergedOutputs.isNotEmpty
+              ? mergedOutputs.map((o) => o.productName).join(', ')
+              : _selectedMix!.productName,
       inputKg: inputKg,
       outputKg: totalOutput > 0 ? totalOutput : null,
       outputs: mergedOutputs,
@@ -585,14 +633,12 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
       totalCost: _totalCost,
       costPerKg: _costPerKg,
       status: widget.editing?.status ?? ProductionRunStatus.draft,
-      notes:
-          _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+      notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
       date: _date,
-      createdBy: widget.editing?.createdBy ??
-          CurrentUserService.instance.userName,
-      modifiedBy: widget.editing != null
-          ? CurrentUserService.instance.userName
-          : '',
+      createdBy:
+          widget.editing?.createdBy ?? CurrentUserService.instance.userName,
+      modifiedBy:
+          widget.editing != null ? CurrentUserService.instance.userName : '',
       createdAt: widget.editing?.createdAt ?? now,
     );
   }
@@ -601,9 +647,8 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
-      title: Text(widget.editing == null
-          ? l10n.mfgAddRun
-          : l10n.mfgEditRun),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      title: Text(widget.editing == null ? l10n.mfgAddRun : l10n.mfgEditRun),
       content: SizedBox(
         width: 600,
         child: SingleChildScrollView(
@@ -620,73 +665,87 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
                     color: AppTheme.successColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                        color: AppTheme.successColor.withValues(alpha: 0.3)),
+                      color: AppTheme.successColor.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.check_circle,
-                          color: AppTheme.successColor, size: 18),
+                      const Icon(
+                        Icons.check_circle,
+                        color: AppTheme.successColor,
+                        size: 18,
+                      ),
                       const SizedBox(width: 8),
-                      Text(l10n.mfgExecutedNote,
-                          style: const TextStyle(
-                              color: AppTheme.successColor,
-                              fontWeight: FontWeight.w600)),
+                      Text(
+                        l10n.mfgExecutedNote,
+                        style: const TextStyle(
+                          color: AppTheme.successColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ],
                   ),
                 ),
               DropdownButtonFormField<ManufacturingMixModel>(
                 value: _selectedMix,
-                decoration:
-                    InputDecoration(labelText: l10n.mfgMixLabel),
-                items: _mixes
-                    .map((m) => DropdownMenuItem(
-                        value: m, child: Text(m.name)))
-                    .toList(),
-                onChanged: _isExecuted
-                    ? null
-                    : (v) {
-                        setState(() => _selectedMix = v);
-                        _recalculate();
-                      },
+                decoration: InputDecoration(labelText: l10n.mfgMixLabel),
+                items:
+                    _mixes
+                        .map(
+                          (m) =>
+                              DropdownMenuItem(value: m, child: Text(m.name)),
+                        )
+                        .toList(),
+                onChanged:
+                    _isExecuted
+                        ? null
+                        : (v) {
+                          setState(() => _selectedMix = v);
+                          _recalculate();
+                        },
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: _inputCtrl,
                 keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true),
-                decoration:
-                    InputDecoration(labelText: l10n.mfgInputQty),
+                  decimal: true,
+                ),
+                decoration: InputDecoration(labelText: l10n.mfgInputQty),
                 onChanged: (_) => _recalculate(),
                 readOnly: _isExecuted,
               ),
               const SizedBox(height: 12),
               BlocBuilder<ProductBloc, ProductState>(
                 builder: (context, productState) {
-                  final products = productState is ProductLoaded
-                      ? productState.products
-                          .where((p) => p.isActive)
-                          .toList()
-                      : <ProductModel>[];
+                  final products =
+                      productState is ProductLoaded
+                          ? productState.products
+                              .where((p) => p.isActive)
+                              .toList()
+                          : <ProductModel>[];
 
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          Text(l10n.mfgOutputProducts,
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.w600)),
+                          Text(
+                            l10n.mfgOutputProducts,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
                           const Spacer(),
                           if (!_isExecuted && products.isNotEmpty)
                             TextButton.icon(
                               onPressed: () {
                                 final product = products.first;
                                 setState(() {
-                                  _outputs.add(ProductionRunOutput(
-                                    productId: product.id,
-                                    productName: product.name,
-                                    quantityKg: 0,
-                                  ));
+                                  _outputs.add(
+                                    ProductionRunOutput(
+                                      productId: product.id,
+                                      productName: product.name,
+                                      quantityKg: 0,
+                                    ),
+                                  );
                                 });
                                 _recalculate();
                               },
@@ -697,9 +756,13 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
                       ),
                       const SizedBox(height: 8),
                       if (products.isEmpty)
-                        Text(l10n.mfgNoProductsAvailable,
-                            style: TextStyle(
-                                color: Colors.grey[600], fontSize: 13))
+                        Text(
+                          l10n.mfgNoProductsAvailable,
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 13,
+                          ),
+                        )
                       else
                         ..._outputs.asMap().entries.map((entry) {
                           final idx = entry.key;
@@ -712,12 +775,13 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
                               setState(() => _outputs[idx] = updated);
                               _recalculate();
                             },
-                            onRemove: _isExecuted
-                                ? null
-                                : () {
-                                    setState(() => _outputs.removeAt(idx));
-                                    _recalculate();
-                                  },
+                            onRemove:
+                                _isExecuted
+                                    ? null
+                                    : () {
+                                      setState(() => _outputs.removeAt(idx));
+                                      _recalculate();
+                                    },
                           );
                         }),
                       if (_totalOutputKg > 0) ...[
@@ -725,8 +789,7 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: AppTheme.infoColor
-                                .withValues(alpha: 0.08),
+                            color: AppTheme.infoColor.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Row(
@@ -755,12 +818,16 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
                     color: AppTheme.warningColor.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                        color: AppTheme.warningColor.withValues(alpha: 0.3)),
+                      color: AppTheme.warningColor.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.warning_amber,
-                          size: 18, color: AppTheme.warningColor),
+                      const Icon(
+                        Icons.warning_amber,
+                        size: 18,
+                        color: AppTheme.warningColor,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         '${l10n.mfgDamagedLabel}: ${_damagedKg.toStringAsFixed(1)} ${l10n.mfgKg}',
@@ -772,40 +839,39 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
                       const Spacer(),
                       Text(
                         '(${l10n.mfgInputLabel} - ${l10n.mfgOutputLabel})',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 11, color: Colors.grey[600]),
                       ),
                     ],
                   ),
                 ),
               const SizedBox(height: 12),
-              Row(children: [
-                Expanded(
-                  child: TextField(
-                    controller: _techCtrl,
-                    keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true),
-                    decoration:
-                        InputDecoration(labelText: l10n.mfgTechCost),
-                    onChanged: (_) => _recalculate(),
-                    readOnly: _isExecuted,
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _techCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: InputDecoration(labelText: l10n.mfgTechCost),
+                      onChanged: (_) => _recalculate(),
+                      readOnly: _isExecuted,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(
-                    controller: _elecCtrl,
-                    keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true),
-                    decoration:
-                        InputDecoration(labelText: l10n.mfgElecCost),
-                    onChanged: (_) => _recalculate(),
-                    readOnly: _isExecuted,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      controller: _elecCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: InputDecoration(labelText: l10n.mfgElecCost),
+                      onChanged: (_) => _recalculate(),
+                      readOnly: _isExecuted,
+                    ),
                   ),
-                ),
-              ]),
+                ],
+              ),
               const SizedBox(height: 12),
               // Custom fields section
               _buildCustomFieldsSection(l10n),
@@ -814,7 +880,8 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
                 children: [
                   Expanded(
                     child: Text(
-                        '${l10n.date}: ${DateFormat('dd/MM/yyyy').format(_date)}'),
+                      '${l10n.date}: ${DateFormat('dd/MM/yyyy').format(_date)}',
+                    ),
                   ),
                   if (!_isExecuted)
                     TextButton.icon(
@@ -852,17 +919,20 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
                 child: Column(
                   children: [
                     _CostRow(
-                        label: l10n.mfgRawMaterialCostLabel,
-                        value: _rawMaterialCost),
+                      label: l10n.mfgRawMaterialCostLabel,
+                      value: _rawMaterialCost,
+                    ),
                     _CostRow(
-                        label: l10n.mfgTotalCost,
-                        value: _totalCost,
-                        bold: true),
+                      label: l10n.mfgTotalCost,
+                      value: _totalCost,
+                      bold: true,
+                    ),
                     _CostRow(
-                        label: l10n.mfgCostPerKgLabel,
-                        value: _costPerKg,
-                        bold: true,
-                        color: AppTheme.primaryColor),
+                      label: l10n.mfgCostPerKgLabel,
+                      value: _costPerKg,
+                      bold: true,
+                      color: AppTheme.primaryColor,
+                    ),
                   ],
                 ),
               ),
@@ -872,8 +942,9 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
       ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l10n.cancel)),
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.cancel),
+        ),
         if (!_isExecuted)
           ElevatedButton(
             onPressed: () {
@@ -882,8 +953,7 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
               widget.onSave(_buildRun());
               Navigator.pop(context);
             },
-            child:
-                Text(widget.editing == null ? l10n.mfgAddRun : l10n.mfgSave),
+            child: Text(widget.editing == null ? l10n.mfgAddRun : l10n.mfgSave),
           ),
         if (!_isExecuted && widget.editing != null && _canExecute)
           ElevatedButton(
@@ -900,15 +970,16 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
     );
   }
 
-
   Widget _buildCustomFieldsSection(AppLocalizations l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Text(l10n.mfgCustomFields,
-                style: const TextStyle(fontWeight: FontWeight.w600)),
+            Text(
+              l10n.mfgCustomFields,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
             const Spacer(),
             if (!_isExecuted)
               TextButton.icon(
@@ -927,8 +998,7 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
               children: [
                 Expanded(
                   flex: 2,
-                  child: Text(f.label,
-                      style: const TextStyle(fontSize: 13)),
+                  child: Text(f.label, style: const TextStyle(fontSize: 13)),
                 ),
                 Expanded(
                   child: Text(
@@ -972,26 +1042,25 @@ class _ProductionRunDialogState extends State<_ProductionRunDialog> {
               const SizedBox(height: 12),
               TextField(
                 controller: valueCtrl,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 decoration: InputDecoration(labelText: l10n.mfgFieldValue),
               ),
             ],
           ),
           actions: [
             TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: Text(l10n.cancel)),
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(l10n.cancel),
+            ),
             ElevatedButton(
               onPressed: () {
                 final label = labelCtrl.text.trim();
                 final value = double.tryParse(valueCtrl.text) ?? 0;
                 if (label.isEmpty || value <= 0) return;
                 setState(() {
-                  _customFields.add(CustomRunField(
-                    label: label,
-                    value: value,
-                  ));
+                  _customFields.add(CustomRunField(label: label, value: value));
                 });
                 _recalculate();
                 Navigator.pop(ctx);
@@ -1032,14 +1101,16 @@ class _OutputProductRowState extends State<_OutputProductRow> {
   void initState() {
     super.initState();
     _qtyCtrl = TextEditingController(
-      text: widget.output.quantityKg > 0
-          ? widget.output.quantityKg.toString()
-          : '',
+      text:
+          widget.output.quantityKg > 0
+              ? widget.output.quantityKg.toString()
+              : '',
     );
-    _selectedId = widget.output.productId.isNotEmpty &&
-            widget.products.any((p) => p.id == widget.output.productId)
-        ? widget.output.productId
-        : (widget.products.isNotEmpty ? widget.products.first.id : '');
+    _selectedId =
+        widget.output.productId.isNotEmpty &&
+                widget.products.any((p) => p.id == widget.output.productId)
+            ? widget.output.productId
+            : (widget.products.isNotEmpty ? widget.products.first.id : '');
   }
 
   @override
@@ -1059,26 +1130,32 @@ class _OutputProductRowState extends State<_OutputProductRow> {
             flex: 3,
             child: DropdownButtonFormField<String>(
               value: _selectedId.isEmpty ? null : _selectedId,
-              decoration:
-                  InputDecoration(labelText: l10n.mfgSelectProduct),
-              items: widget.products
-                  .map((p) => DropdownMenuItem(
-                        value: p.id,
-                        child: Text('${p.name} (${p.size})'),
-                      ))
-                  .toList(),
-              onChanged: widget.readOnly
-                  ? null
-                  : (v) {
-                      if (v == null) return;
-                      setState(() => _selectedId = v);
-                      final product =
-                          widget.products.firstWhere((p) => p.id == v);
-                      widget.onChanged(widget.output.copyWith(
-                        productId: v,
-                        productName: product.name,
-                      ));
-                    },
+              decoration: InputDecoration(labelText: l10n.mfgSelectProduct),
+              items:
+                  widget.products
+                      .map(
+                        (p) => DropdownMenuItem(
+                          value: p.id,
+                          child: Text('${p.name} (${p.size})'),
+                        ),
+                      )
+                      .toList(),
+              onChanged:
+                  widget.readOnly
+                      ? null
+                      : (v) {
+                        if (v == null) return;
+                        setState(() => _selectedId = v);
+                        final product = widget.products.firstWhere(
+                          (p) => p.id == v,
+                        );
+                        widget.onChanged(
+                          widget.output.copyWith(
+                            productId: v,
+                            productName: product.name,
+                          ),
+                        );
+                      },
             ),
           ),
           const SizedBox(width: 8),
@@ -1087,14 +1164,14 @@ class _OutputProductRowState extends State<_OutputProductRow> {
             child: TextField(
               controller: _qtyCtrl,
               readOnly: widget.readOnly,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              decoration:
-                  InputDecoration(labelText: l10n.mfgOutputProductQty),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: InputDecoration(labelText: l10n.mfgOutputProductQty),
               onChanged: (v) {
-                widget.onChanged(widget.output.copyWith(
-                  quantityKg: double.tryParse(v) ?? 0,
-                ));
+                widget.onChanged(
+                  widget.output.copyWith(quantityKg: double.tryParse(v) ?? 0),
+                );
               },
             ),
           ),
@@ -1114,11 +1191,12 @@ class _CostRow extends StatelessWidget {
   final double value;
   final bool bold;
   final Color? color;
-  const _CostRow(
-      {required this.label,
-      required this.value,
-      this.bold = false,
-      this.color});
+  const _CostRow({
+    required this.label,
+    required this.value,
+    this.bold = false,
+    this.color,
+  });
 
   @override
   Widget build(BuildContext context) {

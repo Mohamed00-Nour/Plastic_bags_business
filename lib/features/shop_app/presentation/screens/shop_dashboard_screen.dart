@@ -31,21 +31,21 @@ class ShopDashboardScreen extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.store_mall_directory_outlined,
-                      size: 64,
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: 0.3)),
+                  Icon(
+                    Icons.store_mall_directory_outlined,
+                    size: 64,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.3),
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'No shop assigned.\nContact your admin.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: 0.5),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.5),
                     ),
                   ),
                 ],
@@ -55,28 +55,29 @@ class ShopDashboardScreen extends StatelessWidget {
         }
 
         return StreamBuilder<DocumentSnapshot>(
-          stream: FirebaseFirestore.instance
-              .collection('shops')
-              .doc(shopId)
-              .snapshots(),
+          stream:
+              FirebaseFirestore.instance
+                  .collection('shops')
+                  .doc(shopId)
+                  .snapshots(),
           builder: (context, shopSnap) {
             if (!shopSnap.hasData) {
               return const Center(child: CircularProgressIndicator());
             }
             final shopData =
                 shopSnap.data!.data() as Map<String, dynamic>? ?? {};
-            final totalPurchases =
-                (shopData['totalPurchases'] ?? 0).toDouble();
+            final totalPurchases = (shopData['totalPurchases'] ?? 0).toDouble();
             final balance = (shopData['balance'] ?? 0).toDouble();
             final numFmt = NumberFormat('#,##0.0');
 
             return StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('orders')
-                  .where('shopId', isEqualTo: shopId)
-                  .orderBy('createdAt', descending: true)
-                  .limit(3)
-                  .snapshots(),
+              stream:
+                  FirebaseFirestore.instance
+                      .collection('orders')
+                      .where('shopId', isEqualTo: shopId)
+                      .orderBy('createdAt', descending: true)
+                      .limit(3)
+                      .snapshots(),
               builder: (context, ordersSnap) {
                 final recentOrders = ordersSnap.data?.docs ?? [];
 
@@ -133,16 +134,17 @@ class ShopDashboardScreen extends StatelessWidget {
                       if (recentOrders.isNotEmpty) ...[
                         Text(
                           l10n.recentOrders,
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
+                          style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 10),
                         ...recentOrders.map((doc) {
                           final data = doc.data() as Map<String, dynamic>;
                           return _RecentOrderTile(
-                              docId: doc.id, data: data, numFmt: numFmt);
+                            docId: doc.id,
+                            data: data,
+                            numFmt: numFmt,
+                          );
                         }),
                       ],
                     ],
@@ -195,38 +197,36 @@ class _WelcomeBanner extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Welcome, $name',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final identity = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Welcome, $name',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  shopName,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                shopName,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  email,
-                  style: const TextStyle(color: Colors.white60, fontSize: 11),
-                ),
-              ],
-            ),
-          ),
-          Column(
+              ),
+              const SizedBox(height: 2),
+              Text(
+                email,
+                style: const TextStyle(color: Colors.white60, fontSize: 11),
+              ),
+            ],
+          );
+          final balanceView = Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
@@ -243,8 +243,29 @@ class _WelcomeBanner extends StatelessWidget {
                 ),
               ),
             ],
-          ),
-        ],
+          );
+
+          if (constraints.maxWidth < 380) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                identity,
+                const SizedBox(height: 14),
+                Align(
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: balanceView,
+                ),
+              ],
+            );
+          }
+          return Row(
+            children: [
+              Expanded(child: identity),
+              const SizedBox(width: 12),
+              balanceView,
+            ],
+          );
+        },
       ),
     );
   }
@@ -286,17 +307,23 @@ class _QuickStatCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(label,
-                      style: TextStyle(
-                          fontSize: 11,
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurface
-                              .withValues(alpha: 0.55))),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.55),
+                    ),
+                  ),
                   const SizedBox(height: 2),
-                  Text(value,
-                      style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text(
+                    value,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -314,8 +341,11 @@ class _RecentOrderTile extends StatelessWidget {
   final Map<String, dynamic> data;
   final NumberFormat numFmt;
 
-  const _RecentOrderTile(
-      {required this.docId, required this.data, required this.numFmt});
+  const _RecentOrderTile({
+    required this.docId,
+    required this.data,
+    required this.numFmt,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -323,9 +353,8 @@ class _RecentOrderTile extends StatelessWidget {
     final total = (data['totalPrice'] ?? 0).toDouble();
     final itemCount = (data['items'] as List?)?.length ?? 0;
     final createdAt = (data['createdAt'] as Timestamp?)?.toDate();
-    final dateStr = createdAt != null
-        ? DateFormat('MMM dd, yyyy').format(createdAt)
-        : '';
+    final dateStr =
+        createdAt != null ? DateFormat('MMM dd, yyyy').format(createdAt) : '';
 
     Color statusColor;
     IconData statusIcon;
@@ -350,8 +379,7 @@ class _RecentOrderTile extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
         leading: Container(
           width: 40,
           height: 40,
@@ -365,8 +393,10 @@ class _RecentOrderTile extends StatelessWidget {
           '#${docId.substring(0, 8).toUpperCase()}',
           style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
         ),
-        subtitle: Text('$itemCount items  •  $dateStr',
-            style: const TextStyle(fontSize: 11)),
+        subtitle: Text(
+          '$itemCount items  •  $dateStr',
+          style: const TextStyle(fontSize: 11),
+        ),
         trailing: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -374,13 +404,13 @@ class _RecentOrderTile extends StatelessWidget {
             Text(
               numFmt.format(total),
               style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                  color: AppTheme.primaryColor),
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                color: AppTheme.primaryColor,
+              ),
             ),
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
                 color: statusColor.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(6),
@@ -412,32 +442,40 @@ class _AnnouncementBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('announcements')
-          .where('active', isEqualTo: true)
-          .orderBy('createdAt', descending: true)
-          .snapshots(),
+      stream:
+          FirebaseFirestore.instance
+              .collection('announcements')
+              .where('active', isEqualTo: true)
+              .orderBy('createdAt', descending: true)
+              .snapshots(),
       builder: (context, snap) {
         final docs = snap.data?.docs ?? [];
         if (docs.isEmpty) return const SizedBox.shrink();
 
         final isArabic = Localizations.localeOf(context).languageCode == 'ar';
         return Column(
-          children: docs.map((doc) {
-            final data = doc.data() as Map<String, dynamic>;
-            final titleEn = data['titleEn'] as String? ?? data['title'] as String? ?? '';
-            final titleAr = data['titleAr'] as String? ?? titleEn;
-            final messageEn = data['messageEn'] as String? ?? data['message'] as String? ?? '';
-            final messageAr = data['messageAr'] as String? ?? messageEn;
-            final title = isArabic ? titleAr : titleEn;
-            final message = isArabic ? messageAr : messageEn;
-            return _AnnouncementCard(
-              title: title,
-              message: message,
-              shopId: shopId,
-              shopName: shopName,
-            );
-          }).toList(),
+          children:
+              docs.map((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                final titleEn =
+                    data['titleEn'] as String? ??
+                    data['title'] as String? ??
+                    '';
+                final titleAr = data['titleAr'] as String? ?? titleEn;
+                final messageEn =
+                    data['messageEn'] as String? ??
+                    data['message'] as String? ??
+                    '';
+                final messageAr = data['messageAr'] as String? ?? messageEn;
+                final title = isArabic ? titleAr : titleEn;
+                final message = isArabic ? messageAr : messageEn;
+                return _AnnouncementCard(
+                  title: title,
+                  message: message,
+                  shopId: shopId,
+                  shopName: shopName,
+                );
+              }).toList(),
         );
       },
     );
@@ -489,15 +527,17 @@ class _AnnouncementCardState extends State<_AnnouncementCard> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => PlaceOrderScreen(
-                shopId: widget.shopId,
-                shopName: widget.shopName,
+          onTap:
+              () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder:
+                      (_) => PlaceOrderScreen(
+                        shopId: widget.shopId,
+                        shopName: widget.shopName,
+                      ),
+                ),
               ),
-            ),
-          ),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
@@ -509,8 +549,11 @@ class _AnnouncementCardState extends State<_AnnouncementCard> {
                     color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.campaign_rounded,
-                      color: Colors.white, size: 22),
+                  child: const Icon(
+                    Icons.campaign_rounded,
+                    color: Colors.white,
+                    size: 22,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -529,20 +572,27 @@ class _AnnouncementCardState extends State<_AnnouncementCard> {
                       Text(
                         widget.message,
                         style: const TextStyle(
-                            color: Colors.white, fontSize: 13, height: 1.4),
+                          color: Colors.white,
+                          fontSize: 13,
+                          height: 1.4,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          const Icon(Icons.shopping_cart_rounded,
-                              color: Colors.white70, size: 14),
+                          const Icon(
+                            Icons.shopping_cart_rounded,
+                            color: Colors.white70,
+                            size: 14,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             AppLocalizations.of(context)!.tapToOrder,
                             style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500),
+                              color: Colors.white70,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ],
                       ),
@@ -551,8 +601,11 @@ class _AnnouncementCardState extends State<_AnnouncementCard> {
                 ),
                 GestureDetector(
                   onTap: () => setState(() => _dismissed = true),
-                  child:
-                      const Icon(Icons.close, color: Colors.white70, size: 18),
+                  child: const Icon(
+                    Icons.close,
+                    color: Colors.white70,
+                    size: 18,
+                  ),
                 ),
               ],
             ),
@@ -562,4 +615,3 @@ class _AnnouncementCardState extends State<_AnnouncementCard> {
     );
   }
 }
-

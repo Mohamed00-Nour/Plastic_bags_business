@@ -1,5 +1,17 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+class SalesInvoiceCreationResult {
+  final String invoiceId;
+  final double previousBalance;
+  final double balanceAfter;
+
+  const SalesInvoiceCreationResult({
+    required this.invoiceId,
+    required this.previousBalance,
+    required this.balanceAfter,
+  });
+}
+
 /// Helper class to represent a client balance history item
 class ClientBalanceRecord {
   final String id;
@@ -14,6 +26,7 @@ class ClientBalanceRecord {
   final double balanceBefore;
   final double balanceAfter;
   final DateTime timestamp;
+  final int entryOrder;
 
   ClientBalanceRecord({
     required this.id,
@@ -28,28 +41,37 @@ class ClientBalanceRecord {
     this.balanceBefore = 0.0,
     this.balanceAfter = 0.0,
     required this.timestamp,
+    this.entryOrder = 0,
   });
 
   factory ClientBalanceRecord.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>? ?? {};
+    final type = data['type']?.toString() ?? 'transaction';
     final rawNotes = data['notes']?.toString().trim() ?? '';
     final rawDesc = data['description']?.toString().trim() ?? '';
-    final isGeneric = rawDesc == 'تحصيل دفعة نقداً' ||
+    var invoiceNumber = data['invoiceNumber']?.toString().trim() ?? '';
+    if (invoiceNumber.isEmpty) {
+      invoiceNumber =
+          RegExp(r'#([^\s]+)').firstMatch(rawDesc)?.group(1)?.trim() ?? '';
+    }
+    final isGeneric =
+        rawDesc == 'تحصيل دفعة نقداً' ||
         rawDesc == 'تحصيل دفعة مالية' ||
         rawDesc == 'إضافة مديونية' ||
         rawDesc.startsWith('تحصيل من فاتورة #') ||
         rawDesc.startsWith('تعديل قيمة فاتورة #') ||
         rawDesc.startsWith('فاتورة مبيعات معدلة #') ||
         rawDesc.startsWith('نقل فاتورة #');
-    final extractedNotes = rawNotes.isNotEmpty
-        ? rawNotes
-        : (!isGeneric && rawDesc.isNotEmpty ? rawDesc : '');
+    final extractedNotes =
+        rawNotes.isNotEmpty
+            ? rawNotes
+            : (!isGeneric && rawDesc.isNotEmpty ? rawDesc : '');
 
     return ClientBalanceRecord(
       id: doc.id,
-      type: data['type'] ?? 'transaction',
+      type: type,
       invoiceId: data['invoiceId'] ?? '',
-      invoiceNumber: data['invoiceNumber'] ?? '',
+      invoiceNumber: invoiceNumber,
       description: rawDesc,
       notes: extractedNotes,
       amount: (data['amount'] ?? 0).toDouble(),
@@ -57,7 +79,12 @@ class ClientBalanceRecord {
       paidAmount: (data['paidAmount'] ?? 0).toDouble(),
       balanceBefore: (data['balanceBefore'] ?? 0).toDouble(),
       balanceAfter: (data['balanceAfter'] ?? 0).toDouble(),
-      timestamp: ClientInvoiceBalanceSyncService.parseInvoiceDate(data['timestamp']),
+      timestamp: ClientInvoiceBalanceSyncService.parseInvoiceDate(
+        data['timestamp'] ?? data['createdAt'],
+      ),
+      entryOrder:
+          (data['entryOrder'] as num?)?.toInt() ??
+          ClientInvoiceBalanceSyncService.defaultEntryOrder(type),
     );
   }
 }
@@ -66,7 +93,7 @@ class ClientInvoiceBalanceSyncService {
   final FirebaseFirestore _firestore;
 
   ClientInvoiceBalanceSyncService({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   /// Safe Date Parsing Helper
   /// Handles Firestore Timestamp, Dart DateTime, ISO String, and int epoch timestamps.
@@ -93,10 +120,11 @@ class ClientInvoiceBalanceSyncService {
 
   /// Check online in Firestore for duplicate client name before creation
   Future<bool> isDuplicateClientName(String name, {String? excludeId}) async {
-    final query = await _firestore
-        .collection('clients')
-        .where('name', isEqualTo: name.trim())
-        .get();
+    final query =
+        await _firestore
+            .collection('clients')
+            .where('name', isEqualTo: name.trim())
+            .get();
 
     if (excludeId != null) {
       return query.docs.any((doc) => doc.id != excludeId);
@@ -146,105 +174,133 @@ class ClientInvoiceBalanceSyncService {
       'balanceBefore': 0.0,
       'balanceAfter': openingBalance,
       'timestamp': FieldValue.serverTimestamp(),
+      'entryOrder': 0,
     });
 
     await batch.commit();
     return clientId;
   }
 
-  /// Create Sales Invoice with atomic WriteBatch:
+  /// Create a sales invoice atomically, using the client's live balance as the
+  /// invoice's previous balance.
   /// 1. Decrement Stock level in products/{id} (FieldValue.increment(-qty))
   /// 2. Log stock movement in products/{id}/changes
   /// 3. Create document in sales_invoices
   /// 4. Write audit entry into clients/{id}/balanceHistory
   /// 5. Update client remaining balance in clients/{id}
-  Future<String> createSalesInvoice({
+  Future<SalesInvoiceCreationResult> createSalesInvoice({
     required String clientId,
     required String clientName,
+    String? clientPhone,
     required String invoiceNumber,
     required String paymentMethod, // 'Cash', 'Credit', 'Card', 'Check'
-    required List<Map<String, dynamic>> items, // [{productId, productName, quantity, price, total}]
+    required List<Map<String, dynamic>>
+    items, // [{productId, productName, quantity, price, total}]
     required double subtotal,
     required double discount,
+    List<Map<String, dynamic>>? additionalFees,
+    String? additionalFeeName,
+    double additionalFeeAmount = 0.0,
     required double totalAmount,
     required double paidAmount,
     required double remainingAmount,
     DateTime? invoiceDate,
     String? notes,
   }) async {
-    final batch = _firestore.batch();
     final invoiceRef = _firestore.collection('sales_invoices').doc();
     final invoiceId = invoiceRef.id;
-    final timestamp = invoiceDate != null ? Timestamp.fromDate(invoiceDate) : FieldValue.serverTimestamp();
+    final timestamp =
+        invoiceDate != null
+            ? Timestamp.fromDate(invoiceDate)
+            : FieldValue.serverTimestamp();
 
-    // 1. Write Invoice document
-    batch.set(invoiceRef, {
-      'invoiceNumber': invoiceNumber,
-      'clientId': clientId,
-      'clientName': clientName,
-      'paymentMethod': paymentMethod,
-      'items': items,
-      'subtotal': subtotal,
-      'discount': discount,
-      'totalAmount': totalAmount,
-      'paidAmount': paidAmount,
-      'remainingAmount': remainingAmount,
-      'notes': notes ?? '',
-      'isReturn': false,
-      'date': timestamp,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
+    final clientRef = _firestore.collection('clients').doc(clientId);
 
-    // 2. Decrement inventory stock & log changes
-    for (final item in items) {
-      final String productId = item['productId'] ?? '';
-      final double qty = (item['quantity'] ?? 0.0) is num
-          ? (item['quantity'] as num).toDouble()
-          : double.tryParse(item['quantity'].toString()) ?? 0.0;
+    return _firestore.runTransaction((transaction) async {
+      // Firestore requires every read to happen before the first write.
+      final clientSnapshot = await transaction.get(clientRef);
+      if (!clientSnapshot.exists) {
+        throw StateError('Client $clientId no longer exists.');
+      }
 
-      if (productId.isNotEmpty && qty > 0) {
+      final clientData = clientSnapshot.data() ?? const <String, dynamic>{};
+      final rawBalance = clientData['balance'] ?? 0.0;
+      final previousBalance =
+          rawBalance is num
+              ? rawBalance.toDouble()
+              : double.tryParse(rawBalance.toString()) ?? 0.0;
+      final balanceAfter = previousBalance + remainingAmount;
+
+      transaction.set(invoiceRef, {
+        'invoiceNumber': invoiceNumber,
+        'clientId': clientId,
+        'clientName': clientName,
+        'clientPhone': clientPhone ?? '',
+        'paymentMethod': paymentMethod,
+        'items': items,
+        'subtotal': subtotal,
+        'discount': discount,
+        'additionalFees': additionalFees ?? [],
+        'additionalFeeName': additionalFeeName ?? '',
+        'additionalFeeAmount': additionalFeeAmount,
+        'totalAmount': totalAmount,
+        'paidAmount': paidAmount,
+        'remainingAmount': remainingAmount,
+        'previousBalance': previousBalance,
+        'clientPreviousBalance': previousBalance,
+        'balanceAfter': balanceAfter,
+        'clientBalance': balanceAfter,
+        'notes': notes ?? '',
+        'isReturn': false,
+        'date': timestamp,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      for (final item in items) {
+        final productId = item['productId']?.toString() ?? '';
+        final rawQuantity = item['quantity'] ?? 0.0;
+        final quantity =
+            rawQuantity is num
+                ? rawQuantity.toDouble()
+                : double.tryParse(rawQuantity.toString()) ?? 0.0;
+
+        if (productId.isEmpty || quantity <= 0) continue;
         final productRef = _firestore.collection('products').doc(productId);
-        batch.update(productRef, {
-          'stockQuantity': FieldValue.increment(-qty),
+        transaction.update(productRef, {
+          'stockQuantity': FieldValue.increment(-quantity),
           'updatedAt': FieldValue.serverTimestamp(),
         });
-
-        final changeRef = productRef.collection('changes').doc();
-        batch.set(changeRef, {
+        transaction.set(productRef.collection('changes').doc(), {
           'timestamp': FieldValue.serverTimestamp(),
-          'quantityChange': -qty,
+          'quantityChange': -quantity,
           'operationType': 'sales_invoice',
           'invoiceId': invoiceId,
           'invoiceNumber': invoiceNumber,
           'productName': item['productName'] ?? '',
         });
       }
-    }
 
-    // 3. Update Client Balance & write balanceHistory
-    if (clientId.isNotEmpty) {
-      final clientRef = _firestore.collection('clients').doc(clientId);
-      batch.update(clientRef, {
-        'balance': FieldValue.increment(remainingAmount),
+      transaction.update(clientRef, {
+        'balance': balanceAfter,
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      // Record 1: Full Invoice Total
-      final historyRef1 = clientRef.collection('balanceHistory').doc();
-      batch.set(historyRef1, {
+      transaction.set(clientRef.collection('balanceHistory').doc(), {
         'type': 'sales_invoice',
         'invoiceId': invoiceId,
         'invoiceNumber': invoiceNumber,
         'amount': totalAmount,
         'totalAmount': totalAmount,
         'paidAmount': paidAmount,
-        'timestamp': FieldValue.serverTimestamp(),
+        'balanceBefore': previousBalance,
+        'balanceAfter': previousBalance + totalAmount,
+        'timestamp': timestamp,
+        'entryOrder': 0,
+        'createdAt': FieldValue.serverTimestamp(),
       });
 
-      // Record 2: Paid Amount (if > 0)
       if (paidAmount > 0) {
-        final historyRef2 = clientRef.collection('balanceHistory').doc();
-        batch.set(historyRef2, {
+        transaction.set(clientRef.collection('balanceHistory').doc(), {
           'type': 'payment',
           'invoiceId': invoiceId,
           'invoiceNumber': invoiceNumber,
@@ -252,13 +308,20 @@ class ClientInvoiceBalanceSyncService {
           'amount': paidAmount,
           'totalAmount': totalAmount,
           'paidAmount': paidAmount,
-          'timestamp': FieldValue.serverTimestamp(),
+          'balanceBefore': previousBalance + totalAmount,
+          'balanceAfter': balanceAfter,
+          'timestamp': timestamp,
+          'entryOrder': 1,
+          'createdAt': FieldValue.serverTimestamp(),
         });
       }
-    }
 
-    await batch.commit();
-    return invoiceId;
+      return SalesInvoiceCreationResult(
+        invoiceId: invoiceId,
+        previousBalance: previousBalance,
+        balanceAfter: balanceAfter,
+      );
+    });
   }
 
   /// Process Sales Return with atomic WriteBatch:
@@ -284,7 +347,10 @@ class ClientInvoiceBalanceSyncService {
     final batch = _firestore.batch();
     final returnRef = _firestore.collection('return_invoices').doc();
     final returnId = returnRef.id;
-    final timestamp = returnDate != null ? Timestamp.fromDate(returnDate) : FieldValue.serverTimestamp();
+    final timestamp =
+        returnDate != null
+            ? Timestamp.fromDate(returnDate)
+            : FieldValue.serverTimestamp();
 
     // 1. Write Sales Return document
     final returnData = {
@@ -300,7 +366,10 @@ class ClientInvoiceBalanceSyncService {
       'returnTotalAmount': returnTotalAmount,
       'totalAmount': returnTotalAmount,
       'paidAmount': refundAmount,
-      'remainingAmount': (returnTotalAmount - refundAmount) < 0 ? 0.0 : (returnTotalAmount - refundAmount),
+      'remainingAmount':
+          (returnTotalAmount - refundAmount) < 0
+              ? 0.0
+              : (returnTotalAmount - refundAmount),
       'isReturn': true,
       'reason': reason ?? '',
       'notes': reason ?? '',
@@ -314,9 +383,10 @@ class ClientInvoiceBalanceSyncService {
     // 2. Increment Stock level & log changes
     for (final item in returnedItems) {
       final String productId = item['productId'] ?? '';
-      final double qty = (item['quantity'] ?? 0.0) is num
-          ? (item['quantity'] as num).toDouble()
-          : double.tryParse(item['quantity'].toString()) ?? 0.0;
+      final double qty =
+          (item['quantity'] ?? 0.0) is num
+              ? (item['quantity'] as num).toDouble()
+              : double.tryParse(item['quantity'].toString()) ?? 0.0;
 
       if (productId.isNotEmpty && qty > 0) {
         final productRef = _firestore.collection('products').doc(productId);
@@ -356,6 +426,7 @@ class ClientInvoiceBalanceSyncService {
         'totalAmount': returnTotalAmount,
         'paidAmount': refundAmount,
         'timestamp': timestamp,
+        'entryOrder': 0,
         'createdAt': FieldValue.serverTimestamp(),
       });
 
@@ -371,6 +442,7 @@ class ClientInvoiceBalanceSyncService {
           'totalAmount': returnTotalAmount,
           'paidAmount': refundAmount,
           'timestamp': timestamp,
+          'entryOrder': 1,
           'createdAt': FieldValue.serverTimestamp(),
         });
       }
@@ -382,11 +454,9 @@ class ClientInvoiceBalanceSyncService {
 
   /// Get Client Stream from Firestore
   Stream<List<Map<String, dynamic>>> getClientsStream() {
-    return _firestore
-        .collection('clients')
-        .orderBy('name')
-        .snapshots()
-        .map((snapshot) {
+    return _firestore.collection('clients').orderBy('name').snapshots().map((
+      snapshot,
+    ) {
       return snapshot.docs.map((doc) {
         final data = doc.data();
         data['id'] = doc.id;
@@ -400,136 +470,174 @@ class ClientInvoiceBalanceSyncService {
   /// - `type: 'opening'` MUST always evaluate as item #1 (starting at balanceBefore: 0.00).
   /// - UI movement table displays transactions in descending order (newest top),
   ///   with `type: 'opening'` anchored cleanly at the very bottom.
-  Stream<List<ClientBalanceRecord>> getClientBalanceHistoryStream(String clientId) {
-    return _firestore
-        .collection('clients')
-        .doc(clientId)
-        .collection('balanceHistory')
-        .snapshots()
-        .map((snapshot) {
-      final records = snapshot.docs
-          .map((doc) => ClientBalanceRecord.fromFirestore(doc))
-          .toList();
+  Stream<List<ClientBalanceRecord>> getClientBalanceHistoryStream(
+    String clientId,
+  ) {
+    final clientRef = _firestore.collection('clients').doc(clientId);
+    return clientRef.collection('balanceHistory').snapshots().asyncMap((
+      snapshot,
+    ) async {
+      final records =
+          snapshot.docs
+              .map((doc) => ClientBalanceRecord.fromFirestore(doc))
+              .toList();
 
       if (records.isEmpty) return [];
 
-      // Separate opening and normal records
-      ClientBalanceRecord? openingRecord;
-      final otherRecords = <ClientBalanceRecord>[];
-
-      for (final r in records) {
-        if (r.type == 'opening' && openingRecord == null) {
-          openingRecord = r;
-        } else {
-          otherRecords.add(r);
-        }
+      double? clientBalance;
+      try {
+        final clientSnapshot = await clientRef.get();
+        final rawBalance = clientSnapshot.data()?['balance'];
+        clientBalance =
+            rawBalance is num
+                ? rawBalance.toDouble()
+                : double.tryParse(rawBalance?.toString() ?? '');
+      } catch (_) {
+        // The history can still be displayed from its own ledger if the
+        // client document is temporarily unavailable.
       }
 
-      // Sort other records chronologically for math evaluation
-      otherRecords.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-
-      final calculatedRecords = <ClientBalanceRecord>[];
-      double currentBalance = 0.0;
-
-      if (openingRecord != null) {
-        currentBalance = openingRecord.amount;
-        calculatedRecords.add(ClientBalanceRecord(
-          id: openingRecord.id,
-          type: 'opening',
-          invoiceId: openingRecord.invoiceId,
-          invoiceNumber: openingRecord.invoiceNumber,
-          description: openingRecord.description,
-          notes: openingRecord.notes,
-          amount: openingRecord.amount,
-          totalAmount: openingRecord.totalAmount,
-          paidAmount: openingRecord.paidAmount,
-          balanceBefore: 0.0,
-          balanceAfter: currentBalance,
-          timestamp: openingRecord.timestamp,
-        ));
-      }
-
-      for (final r in otherRecords) {
-        if (r.type == 'sales_invoice' && r.totalAmount > 0 && r.paidAmount > 0 && r.amount != r.totalAmount) {
-          // Legacy single record split into 2 accounting entries:
-          // 1. Invoice Total entry (+)
-          final double beforeTotal = currentBalance;
-          currentBalance += r.totalAmount;
-          calculatedRecords.add(ClientBalanceRecord(
-            id: '${r.id}_total',
-            type: 'sales_invoice',
-            invoiceId: r.invoiceId,
-            invoiceNumber: r.invoiceNumber,
-            description: r.description,
-            notes: r.notes,
-            amount: r.totalAmount,
-            totalAmount: r.totalAmount,
-            paidAmount: r.paidAmount,
-            balanceBefore: beforeTotal,
-            balanceAfter: currentBalance,
-            timestamp: r.timestamp,
-          ));
-
-          // 2. Paid Amount entry (-)
-          final double beforePaid = currentBalance;
-          currentBalance -= r.paidAmount;
-          calculatedRecords.add(ClientBalanceRecord(
-            id: '${r.id}_paid',
-            type: 'payment',
-            invoiceId: r.invoiceId,
-            invoiceNumber: r.invoiceNumber,
-            description: r.description,
-            notes: r.notes,
-            amount: r.paidAmount,
-            totalAmount: r.totalAmount,
-            paidAmount: r.paidAmount,
-            balanceBefore: beforePaid,
-            balanceAfter: currentBalance,
-            timestamp: r.timestamp,
-          ));
-        } else {
-          final double before = currentBalance;
-          final double delta = r.amount;
-
-          final isReduction = r.type == 'payment' ||
-              r.type == 'sales_return' ||
-              r.type == 'cancellation' ||
-              r.type == 'discount' ||
-              r.type == 'decrease';
-
-          if (isReduction) {
-            currentBalance -= delta;
-          } else {
-            currentBalance += delta;
-          }
-
-          calculatedRecords.add(ClientBalanceRecord(
-            id: r.id,
-            type: r.type,
-            invoiceId: r.invoiceId,
-            invoiceNumber: r.invoiceNumber,
-            description: r.description,
-            notes: r.notes,
-            amount: r.amount,
-            totalAmount: r.totalAmount,
-            paidAmount: r.paidAmount,
-            balanceBefore: before,
-            balanceAfter: currentBalance,
-            timestamp: r.timestamp,
-          ));
-        }
-      }
-
-      // Prepare UI list: descending order (newest first), with 'opening' anchored at the bottom
-      final nonOpeningDesc = calculatedRecords
-          .where((r) => r.type != 'opening')
-          .toList()
-        ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
-
-      final openingItems = calculatedRecords.where((r) => r.type == 'opening').toList();
-
-      return [...nonOpeningDesc, ...openingItems];
+      return calculateBalanceHistory(
+        records: records,
+        currentClientBalance: clientBalance,
+      );
     });
+  }
+
+  /// Builds a deterministic newest-first ledger and recalculates every
+  /// balance. [currentClientBalance] is treated as the source of truth, so the
+  /// newest record always matches the balance stored on the client document.
+  static List<ClientBalanceRecord> calculateBalanceHistory({
+    required List<ClientBalanceRecord> records,
+    double? currentClientBalance,
+  }) {
+    if (records.isEmpty) return [];
+
+    ClientBalanceRecord? openingRecord;
+    final chronological = <ClientBalanceRecord>[];
+    for (final record in records) {
+      if (record.type == 'opening' && openingRecord == null) {
+        openingRecord = record;
+      } else {
+        chronological.addAll(_expandLegacyInvoiceRecord(record));
+      }
+    }
+
+    chronological.sort(_compareChronologically);
+    final ordered = <ClientBalanceRecord>[
+      if (openingRecord != null) openingRecord,
+      ...chronological,
+    ];
+
+    final ledgerDelta = ordered.fold<double>(
+      0.0,
+      (total, record) => total + signedAmount(record),
+    );
+    var runningBalance =
+        currentClientBalance == null ? 0.0 : currentClientBalance - ledgerDelta;
+
+    final calculated = <ClientBalanceRecord>[];
+    for (final record in ordered) {
+      final balanceBefore = runningBalance;
+      runningBalance += signedAmount(record);
+      calculated.add(
+        ClientBalanceRecord(
+          id: record.id,
+          type: record.type,
+          invoiceId: record.invoiceId,
+          invoiceNumber: record.invoiceNumber,
+          description: record.description,
+          notes: record.notes,
+          amount: record.amount,
+          totalAmount: record.totalAmount,
+          paidAmount: record.paidAmount,
+          balanceBefore: balanceBefore,
+          balanceAfter: runningBalance,
+          timestamp: record.timestamp,
+          entryOrder: record.entryOrder,
+        ),
+      );
+    }
+
+    // Reversing the exact calculation order is important. A payment created
+    // with an invoice is calculated after its total and therefore appears
+    // above that total in the newest-first UI with the final balance.
+    final nonOpeningNewestFirst =
+        calculated
+            .where((record) => record.type != 'opening')
+            .toList()
+            .reversed
+            .toList();
+    final openingItems =
+        calculated.where((record) => record.type == 'opening').toList();
+
+    return [...nonOpeningNewestFirst, ...openingItems];
+  }
+
+  static List<ClientBalanceRecord> _expandLegacyInvoiceRecord(
+    ClientBalanceRecord record,
+  ) {
+    final needsSplit =
+        record.type == 'sales_invoice' &&
+        record.totalAmount > 0 &&
+        record.paidAmount > 0 &&
+        record.amount != record.totalAmount;
+    if (!needsSplit) return [record];
+
+    return [
+      ClientBalanceRecord(
+        id: '${record.id}_total',
+        type: 'sales_invoice',
+        invoiceId: record.invoiceId,
+        invoiceNumber: record.invoiceNumber,
+        description: record.description,
+        notes: record.notes,
+        amount: record.totalAmount,
+        totalAmount: record.totalAmount,
+        paidAmount: record.paidAmount,
+        timestamp: record.timestamp,
+        entryOrder: 0,
+      ),
+      ClientBalanceRecord(
+        id: '${record.id}_paid',
+        type: 'payment',
+        invoiceId: record.invoiceId,
+        invoiceNumber: record.invoiceNumber,
+        description: record.description,
+        notes: record.notes,
+        amount: record.paidAmount,
+        totalAmount: record.totalAmount,
+        paidAmount: record.paidAmount,
+        timestamp: record.timestamp,
+        entryOrder: 1,
+      ),
+    ];
+  }
+
+  static int _compareChronologically(
+    ClientBalanceRecord a,
+    ClientBalanceRecord b,
+  ) {
+    final timestampComparison = a.timestamp.compareTo(b.timestamp);
+    if (timestampComparison != 0) return timestampComparison;
+
+    final orderComparison = a.entryOrder.compareTo(b.entryOrder);
+    if (orderComparison != 0) return orderComparison;
+    return a.id.compareTo(b.id);
+  }
+
+  static int defaultEntryOrder(String type) => type == 'payment' ? 1 : 0;
+
+  static double signedAmount(ClientBalanceRecord record) {
+    return _isReductionType(record.type) ? -record.amount : record.amount;
+  }
+
+  static bool _isReductionType(String type) {
+    return type == 'payment' ||
+        type == 'sales_return' ||
+        type == 'cancellation' ||
+        type == 'discount' ||
+        type == 'decrease';
   }
 
   /// Update Client Info (Name, Phone, Address)
@@ -578,7 +686,8 @@ class ClientInvoiceBalanceSyncService {
         .collection('balanceHistory')
         .doc(docId);
 
-    final isReduction = record.type == 'payment' ||
+    final isReduction =
+        record.type == 'payment' ||
         record.type == 'sales_return' ||
         record.type == 'cancellation' ||
         record.type == 'discount' ||
@@ -614,15 +723,18 @@ class ClientInvoiceBalanceSyncService {
         .doc(docId);
 
     // 1. Revert old record impact
-    final oldIsReduction = oldRecord.type == 'payment' ||
+    final oldIsReduction =
+        oldRecord.type == 'payment' ||
         oldRecord.type == 'sales_return' ||
         oldRecord.type == 'cancellation' ||
         oldRecord.type == 'discount' ||
         oldRecord.type == 'decrease';
-    final double revertAdjustment = oldIsReduction ? oldRecord.amount : -oldRecord.amount;
+    final double revertAdjustment =
+        oldIsReduction ? oldRecord.amount : -oldRecord.amount;
 
     // 2. Apply new record impact
-    final newIsReduction = newType == 'payment' ||
+    final newIsReduction =
+        newType == 'payment' ||
         newType == 'sales_return' ||
         newType == 'cancellation' ||
         newType == 'discount' ||
@@ -640,6 +752,7 @@ class ClientInvoiceBalanceSyncService {
     final Map<String, dynamic> updateData = {
       'amount': newAmount,
       'type': newType,
+      'entryOrder': defaultEntryOrder(newType),
       'updatedAt': FieldValue.serverTimestamp(),
     };
     if (newDate != null) updateData['timestamp'] = Timestamp.fromDate(newDate);

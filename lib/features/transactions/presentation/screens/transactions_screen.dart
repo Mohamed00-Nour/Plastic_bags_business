@@ -34,36 +34,44 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: SearchField(
-                      hint: l10n.searchTransactions,
-                      onChanged: (query) => context
-                          .read<TransactionBloc>()
-                          .add(TransactionSearchRequested(query: query)),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  ...TransactionType.values.map((type) {
-                    final isSelected = _selectedFilter == type;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 6),
-                      child: FilterChip(
-                        label: Text(_localizedTransactionType(l10n, type)),
-                        selected: isSelected,
-                        onSelected: (selected) {
-                          setState(() {
-                            _selectedFilter = selected ? type : null;
-                          });
-                          context.read<TransactionBloc>().add(
-                              TransactionFilterByType(
-                                  type: selected ? type : null));
-                        },
+              ResponsiveActionBar(
+                breakpoint: 850,
+                primary: SearchField(
+                  hint: l10n.searchTransactions,
+                  onChanged:
+                      (query) => context.read<TransactionBloc>().add(
+                        TransactionSearchRequested(query: query),
                       ),
-                    );
-                  }),
-                ],
+                ),
+                actions: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children:
+                        TransactionType.values.map((type) {
+                          final isSelected = _selectedFilter == type;
+                          return Padding(
+                            padding: const EdgeInsetsDirectional.only(end: 6),
+                            child: FilterChip(
+                              label: Text(
+                                _localizedTransactionType(l10n, type),
+                              ),
+                              selected: isSelected,
+                              onSelected: (selected) {
+                                setState(() {
+                                  _selectedFilter = selected ? type : null;
+                                });
+                                context.read<TransactionBloc>().add(
+                                  TransactionFilterByType(
+                                    type: selected ? type : null,
+                                  ),
+                                );
+                              },
+                            ),
+                          );
+                        }).toList(),
+                  ),
+                ),
               ),
               const SizedBox(height: 20),
               Expanded(child: _buildContent(state, l10n)),
@@ -100,27 +108,43 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 DataColumn(label: Text(l10n.description)),
                 DataColumn(label: Text(l10n.createdByLabel)),
               ],
-              rows: state.filteredTransactions.map((t) {
-                return DataRow(cells: [
-                  DataCell(Text(dateFmt.format(t.createdAt),
-                      style: const TextStyle(fontSize: 12))),
-                  DataCell(_buildTypeBadge(l10n, t.type)),
-                  DataCell(Text(t.shopName ?? t.supplierName ?? '-')),
-                  DataCell(Text(
-                    currFmt.format(t.amount),
-                    style: TextStyle(
-                      color: t.amount >= 0
-                          ? AppTheme.successColor
-                          : AppTheme.dangerColor,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  )),
-                  DataCell(Text(currFmt.format(t.balanceAfter))),
-                  DataCell(Text(t.description ?? '-',
-                      style: const TextStyle(fontSize: 12))),
-                  DataCell(Text(t.createdBy.isNotEmpty ? t.createdBy : '-')),
-                ]);
-              }).toList(),
+              rows:
+                  state.filteredTransactions.map((t) {
+                    return DataRow(
+                      cells: [
+                        DataCell(
+                          Text(
+                            dateFmt.format(t.createdAt),
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                        DataCell(_buildTypeBadge(l10n, t.type)),
+                        DataCell(Text(t.shopName ?? t.supplierName ?? '-')),
+                        DataCell(
+                          Text(
+                            currFmt.format(t.amount),
+                            style: TextStyle(
+                              color:
+                                  t.amount >= 0
+                                      ? AppTheme.successColor
+                                      : AppTheme.dangerColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        DataCell(Text(currFmt.format(t.balanceAfter))),
+                        DataCell(
+                          Text(
+                            t.description ?? '-',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                        DataCell(
+                          Text(t.createdBy.isNotEmpty ? t.createdBy : '-'),
+                        ),
+                      ],
+                    );
+                  }).toList(),
             ),
           ),
         ),
@@ -145,10 +169,16 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         color = AppTheme.infoColor;
         break;
     }
-    return StatusBadge(label: _localizedTransactionType(l10n, type), color: color);
+    return StatusBadge(
+      label: _localizedTransactionType(l10n, type),
+      color: color,
+    );
   }
 
-  String _localizedTransactionType(AppLocalizations l10n, TransactionType type) {
+  String _localizedTransactionType(
+    AppLocalizations l10n,
+    TransactionType type,
+  ) {
     switch (type) {
       case TransactionType.balanceCharge:
         return l10n.transactionBalanceCharge;

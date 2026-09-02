@@ -26,10 +26,7 @@ class ClientStatementPdfService {
     final boldFont = await PdfGoogleFonts.notoNaskhArabicBold();
 
     final pdf = pw.Document(
-      theme: pw.ThemeData.withFont(
-        base: bodyFont,
-        bold: boldFont,
-      ),
+      theme: pw.ThemeData.withFont(base: bodyFont, bold: boldFont),
     );
     final isArabic = locale == 'ar';
     final dateFmt = DateFormat('yyyy/MM/dd HH:mm');
@@ -50,226 +47,229 @@ class ClientStatementPdfService {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              // Header Title
-              pw.Row(
+            // Header Title
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      'كشف حساب عميل',
+                      style: pw.TextStyle(
+                        font: boldFont,
+                        fontSize: 20,
+                        color: PdfColor.fromHex('#4338CA'),
+                      ),
+                    ),
+                    pw.SizedBox(height: 4),
+                    pw.Text(
+                      'تاريخ التقرير: ${dateFmt.format(DateTime.now())}',
+                      style: pw.TextStyle(
+                        font: bodyFont,
+                        fontSize: 10,
+                        color: PdfColors.grey700,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+
+            pw.SizedBox(height: 16),
+            pw.Divider(color: PdfColors.grey300, thickness: 1),
+            pw.SizedBox(height: 12),
+
+            // Client Info Section
+            pw.Container(
+              padding: const pw.EdgeInsets.all(12),
+              decoration: pw.BoxDecoration(
+                color: PdfColor.fromHex('#F8FAFC'),
+                borderRadius: pw.BorderRadius.circular(8),
+                border: pw.Border.all(color: PdfColors.grey300),
+              ),
+              child: pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
                   pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
                       pw.Text(
-                        'كشف حساب عميل',
-                        style: pw.TextStyle(
-                          font: boldFont,
-                          fontSize: 20,
-                          color: PdfColor.fromHex('#4338CA'),
-                        ),
+                        'اسم العميل: $clientName',
+                        style: pw.TextStyle(font: boldFont, fontSize: 12),
                       ),
-                      pw.SizedBox(height: 4),
-                      pw.Text(
-                        'تاريخ التقرير: ${dateFmt.format(DateTime.now())}',
-                        style: pw.TextStyle(
-                          font: bodyFont,
-                          fontSize: 10,
-                          color: PdfColors.grey700,
+                      if (clientPhone.isNotEmpty) ...[
+                        pw.SizedBox(height: 4),
+                        pw.Text(
+                          'الهاتف: $clientPhone',
+                          style: pw.TextStyle(font: bodyFont, fontSize: 10),
                         ),
-                      ),
+                      ],
+                      if (clientAddress.isNotEmpty) ...[
+                        pw.SizedBox(height: 2),
+                        pw.Text(
+                          'العنوان: $clientAddress',
+                          style: pw.TextStyle(font: bodyFont, fontSize: 10),
+                        ),
+                      ],
                     ],
                   ),
-                ],
-              ),
-
-              pw.SizedBox(height: 16),
-              pw.Divider(color: PdfColors.grey300, thickness: 1),
-              pw.SizedBox(height: 12),
-
-              // Client Info Section
-              pw.Container(
-                padding: const pw.EdgeInsets.all(12),
-                decoration: pw.BoxDecoration(
-                  color: PdfColor.fromHex('#F8FAFC'),
-                  borderRadius: pw.BorderRadius.circular(8),
-                  border: pw.Border.all(color: PdfColors.grey300),
-                ),
-                child: pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                  children: [
-                    pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.start,
-                      children: [
-                        pw.Text(
-                          'اسم العميل: $clientName',
-                          style: pw.TextStyle(font: boldFont, fontSize: 12),
-                        ),
-                        if (clientPhone.isNotEmpty) ...[
-                          pw.SizedBox(height: 4),
-                          pw.Text(
-                            'الهاتف: $clientPhone',
-                            style: pw.TextStyle(font: bodyFont, fontSize: 10),
-                          ),
-                        ],
-                        if (clientAddress.isNotEmpty) ...[
-                          pw.SizedBox(height: 2),
-                          pw.Text(
-                            'العنوان: $clientAddress',
-                            style: pw.TextStyle(font: bodyFont, fontSize: 10),
-                          ),
-                        ],
-                      ],
+                  pw.Container(
+                    padding: const pw.EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
                     ),
-                    pw.Container(
-                      padding: const pw.EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      decoration: pw.BoxDecoration(
+                    decoration: pw.BoxDecoration(
+                      color:
+                          currentBalance > 0
+                              ? PdfColor.fromHex('#FEF2F2')
+                              : PdfColor.fromHex('#ECFDF5'),
+                      borderRadius: pw.BorderRadius.circular(6),
+                      border: pw.Border.all(
                         color:
                             currentBalance > 0
-                                ? PdfColor.fromHex('#FEF2F2')
-                                : PdfColor.fromHex('#ECFDF5'),
-                        borderRadius: pw.BorderRadius.circular(6),
-                        border: pw.Border.all(
-                          color:
-                              currentBalance > 0
-                                  ? PdfColor.fromHex('#FCA5A5')
-                                  : PdfColor.fromHex('#6EE7B7'),
+                                ? PdfColor.fromHex('#FCA5A5')
+                                : PdfColor.fromHex('#6EE7B7'),
+                      ),
+                    ),
+                    child: pw.Column(
+                      children: [
+                        pw.Text(
+                          'الرصيد المستحق الحالي',
+                          style: pw.TextStyle(
+                            font: bodyFont,
+                            fontSize: 9,
+                            color: PdfColors.grey700,
+                          ),
                         ),
-                      ),
-                      child: pw.Column(
-                        children: [
-                          pw.Text(
-                            'الرصيد المستحق الحالي',
-                            style: pw.TextStyle(
-                              font: bodyFont,
-                              fontSize: 9,
-                              color: PdfColors.grey700,
-                            ),
+                        pw.SizedBox(height: 2),
+                        pw.Text(
+                          '\$${currentBalance.toStringAsFixed(2)}',
+                          style: pw.TextStyle(
+                            font: boldFont,
+                            fontSize: 16,
+                            color:
+                                currentBalance > 0
+                                    ? PdfColor.fromHex('#DC2626')
+                                    : PdfColor.fromHex('#059669'),
                           ),
-                          pw.SizedBox(height: 2),
-                          pw.Text(
-                            '\$${currentBalance.toStringAsFixed(2)}',
-                            style: pw.TextStyle(
-                              font: boldFont,
-                              fontSize: 16,
-                              color:
-                                  currentBalance > 0
-                                      ? PdfColor.fromHex('#DC2626')
-                                      : PdfColor.fromHex('#059669'),
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
-
-              pw.SizedBox(height: 16),
-
-              // Balance Movement Table
-              pw.TableHelper.fromTextArray(
-                headerDirection: direction,
-                headerDecoration: pw.BoxDecoration(
-                  color: PdfColor.fromHex('#4338CA'),
-                  borderRadius: const pw.BorderRadius.only(
-                    topLeft: pw.Radius.circular(6),
-                    topRight: pw.Radius.circular(6),
                   ),
-                ),
-                headerStyle: pw.TextStyle(
-                  font: boldFont,
-                  fontSize: 9,
-                  color: PdfColors.white,
-                ),
-                cellStyle: pw.TextStyle(font: bodyFont, fontSize: 9),
-                cellPadding: const pw.EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 6,
-                ),
-                headerPadding: const pw.EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 6,
-                ),
-                oddRowDecoration: pw.BoxDecoration(
-                  color: PdfColor.fromHex('#F1F5F9'),
-                ),
-                border: pw.TableBorder.all(
-                  color: PdfColors.grey300,
-                  width: 0.5,
-                ),
-                headers: [
-                  'تاريخ',
-                  'النوع',
-                  'رقم المستند',
-                  'المبلغ',
-                  'الرصيد المتبقي',
                 ],
-                data:
-                    records.map((rec) {
-                      final note = rec.notes.isNotEmpty ? rec.notes : rec.description;
-                      return [
-                        DateFormat('yyyy/MM/dd HH:mm').format(rec.timestamp),
-                        _formatRecordType(rec.type, isArabic, invoiceNumber: rec.invoiceNumber, notes: note),
-                        rec.invoiceNumber.isEmpty ? '-' : rec.invoiceNumber,
-                        '\$${rec.amount.toStringAsFixed(2)}',
-                        '\$${rec.balanceAfter.toStringAsFixed(2)}',
-                      ];
-                    }).toList(),
               ),
+            ),
 
-              pw.SizedBox(height: 12),
+            pw.SizedBox(height: 16),
 
-              // Easy App Branding right after table
-              pw.Center(
-                child: pw.Column(
-                  children: [
-                    pw.Text(
-                      'برمجة شركة easy app',
-                      style: pw.TextStyle(
-                        font: boldFont,
-                        fontSize: 11,
-                        color: PdfColor.fromHex('#4338CA'),
-                      ),
-                    ),
-                    pw.SizedBox(height: 2),
-                    pw.Text(
-                      '01126697513',
-                      style: pw.TextStyle(
-                        font: bodyFont,
-                        fontSize: 10,
-                        color: PdfColors.grey800,
-                      ),
-                    ),
-                  ],
+            // Balance Movement Table
+            pw.TableHelper.fromTextArray(
+              headerDirection: direction,
+              headerDecoration: pw.BoxDecoration(
+                color: PdfColor.fromHex('#4338CA'),
+                borderRadius: const pw.BorderRadius.only(
+                  topLeft: pw.Radius.circular(6),
+                  topRight: pw.Radius.circular(6),
                 ),
               ),
+              headerStyle: pw.TextStyle(
+                font: boldFont,
+                fontSize: 9,
+                color: PdfColors.white,
+              ),
+              cellStyle: pw.TextStyle(font: bodyFont, fontSize: 9),
+              cellPadding: const pw.EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 6,
+              ),
+              headerPadding: const pw.EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 6,
+              ),
+              oddRowDecoration: pw.BoxDecoration(
+                color: PdfColor.fromHex('#F1F5F9'),
+              ),
+              border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+              headers: [
+                'تاريخ',
+                'النوع',
+                'رقم المستند',
+                'المبلغ',
+                'الرصيد المتبقي',
+              ],
+              data:
+                  records.map((rec) {
+                    final note =
+                        rec.notes.isNotEmpty ? rec.notes : rec.description;
+                    return [
+                      DateFormat('yyyy/MM/dd HH:mm').format(rec.timestamp),
+                      _formatRecordType(
+                        rec.type,
+                        isArabic,
+                        invoiceNumber: rec.invoiceNumber,
+                        notes: note,
+                      ),
+                      rec.invoiceNumber.isEmpty ? '-' : rec.invoiceNumber,
+                      '\$${rec.amount.toStringAsFixed(2)}',
+                      '\$${rec.balanceAfter.toStringAsFixed(2)}',
+                    ];
+                  }).toList(),
+            ),
 
-              pw.Spacer(),
+            pw.SizedBox(height: 12),
 
-              // Footer
-              pw.Divider(color: PdfColors.grey300),
-              pw.SizedBox(height: 4),
-              pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            // Easy App Branding right after table
+            pw.Center(
+              child: pw.Column(
                 children: [
                   pw.Text(
-                    'تم إنشاء التقرير آلياً',
+                    'برمجة شركة easy app',
                     style: pw.TextStyle(
-                      font: bodyFont,
-                      fontSize: 8,
-                      color: PdfColors.grey600,
+                      font: boldFont,
+                      fontSize: 11,
+                      color: PdfColor.fromHex('#4338CA'),
                     ),
                   ),
+                  pw.SizedBox(height: 2),
                   pw.Text(
-                    'الصفحة 1 من 1',
+                    '01126697513',
                     style: pw.TextStyle(
                       font: bodyFont,
-                      fontSize: 8,
-                      color: PdfColors.grey600,
+                      fontSize: 10,
+                      color: PdfColors.grey800,
                     ),
                   ),
                 ],
               ),
+            ),
+
+            pw.Spacer(),
+
+            // Footer
+            pw.Divider(color: PdfColors.grey300),
+            pw.SizedBox(height: 4),
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Text(
+                  'تم إنشاء التقرير آلياً',
+                  style: pw.TextStyle(
+                    font: bodyFont,
+                    fontSize: 8,
+                    color: PdfColors.grey600,
+                  ),
+                ),
+                pw.Text(
+                  'الصفحة 1 من 1',
+                  style: pw.TextStyle(
+                    font: bodyFont,
+                    fontSize: 8,
+                    color: PdfColors.grey600,
+                  ),
+                ),
+              ],
+            ),
             ],
           );
         },
@@ -288,10 +288,7 @@ class ClientStatementPdfService {
     final boldFont = await PdfGoogleFonts.notoNaskhArabicBold();
 
     final pdf = pw.Document(
-      theme: pw.ThemeData.withFont(
-        base: bodyFont,
-        bold: boldFont,
-      ),
+      theme: pw.ThemeData.withFont(base: bodyFont, bold: boldFont),
     );
     final dateFmt = DateFormat('yyyy/MM/dd HH:mm');
 
@@ -309,204 +306,263 @@ class ClientStatementPdfService {
 
     final subtotal = (invoiceData['subtotal'] ?? 0.0).toDouble();
     final discount = (invoiceData['discount'] ?? 0.0).toDouble();
+    final rawFees = invoiceData['additionalFees'] as List?;
+    final List<Map<String, dynamic>> additionalFees =
+        rawFees != null
+            ? rawFees.cast<Map<String, dynamic>>()
+            : (invoiceData['additionalFeeAmount'] != null &&
+                    (invoiceData['additionalFeeAmount'] as num) > 0
+                ? [
+                  {
+                    'name':
+                        (invoiceData['additionalFeeName'] ?? '')
+                                .toString()
+                                .trim()
+                                .isNotEmpty
+                            ? (invoiceData['additionalFeeName'] ?? '')
+                                .toString()
+                                .trim()
+                            : 'مصروف إضافي',
+                    'amount':
+                        (invoiceData['additionalFeeAmount'] ?? 0.0).toDouble(),
+                  },
+                ]
+                : []);
     final totalAmount = (invoiceData['totalAmount'] ?? 0.0).toDouble();
     final paidAmount = (invoiceData['paidAmount'] ?? 0.0).toDouble();
     final remainingAmount = (invoiceData['remainingAmount'] ?? 0.0).toDouble();
+    final previousBalance =
+        (invoiceData['previousBalance'] ??
+                invoiceData['clientPreviousBalance'] ??
+                0.0)
+            .toDouble();
+    final balanceAfter =
+        (invoiceData['balanceAfter'] ??
+                invoiceData['clientBalance'] ??
+                invoiceData['currentBalance'] ??
+                (previousBalance + remainingAmount))
+            .toDouble();
 
     pdf.addPage(
-      pw.Page(
+      pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         textDirection: direction,
         margin: const pw.EdgeInsets.all(32),
         build: (context) {
-          return pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              // Invoice Top Banner
-              pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Text(
-                        'فاتورة مبيعات',
-                        style: pw.TextStyle(
-                          font: boldFont,
-                          fontSize: 22,
-                          color: PdfColor.fromHex('#4338CA'),
-                        ),
-                      ),
-                      pw.SizedBox(height: 2),
-                      pw.Text(
-                        '#$invoiceNumber',
-                        style: pw.TextStyle(
-                          font: boldFont,
-                          fontSize: 14,
-                          color: PdfColor.fromHex('#6366F1'),
-                        ),
-                      ),
-                    ],
-                  ),
-                  pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.end,
-                    children: [
-                      pw.Text(
-                        dateFmt.format(parsedDate),
-                        style: pw.TextStyle(
-                          font: bodyFont,
-                          fontSize: 10,
-                          color: PdfColors.grey700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-
-              pw.SizedBox(height: 16),
-              pw.Divider(color: PdfColors.grey300),
-              pw.SizedBox(height: 10),
-
-              // Details Grid
-              pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Text(
-                        'العميل: $clientName',
-                        style: pw.TextStyle(font: boldFont, fontSize: 11),
-                      ),
-                      pw.SizedBox(height: 4),
-                      pw.Text(
-                        'طريقة الدفع: $paymentMethod',
-                        style: pw.TextStyle(font: bodyFont, fontSize: 10),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-
-              pw.SizedBox(height: 16),
-
-              // Items Table
-              pw.TableHelper.fromTextArray(
-                headerDirection: direction,
-                headerDecoration: pw.BoxDecoration(
-                  color: PdfColor.fromHex('#4338CA'),
-                  borderRadius: const pw.BorderRadius.only(
-                    topLeft: pw.Radius.circular(6),
-                    topRight: pw.Radius.circular(6),
-                  ),
-                ),
-                headerStyle: pw.TextStyle(
-                  font: boldFont,
-                  fontSize: 9,
-                  color: PdfColors.white,
-                ),
-                cellStyle: pw.TextStyle(font: bodyFont, fontSize: 9),
-                cellPadding: const pw.EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 6,
-                ),
-                headers: ['المنتج', 'الكمية', 'سعر الوحدة', 'الإجمالي'],
-                data:
-                    items.map((item) {
-                      final name = item['productName'] ?? '';
-                      final qty = item['quantity'] ?? 0;
-                      final price = (item['price'] ?? 0.0).toDouble();
-                      final total = (item['total'] ?? ((qty is num ? qty : double.tryParse(qty.toString()) ?? 0.0) * price)).toDouble();
-                      return [
-                        name,
-                        formatQuantity(qty is num ? qty : double.tryParse(qty.toString())),
-                        '\$${price.toStringAsFixed(2)}',
-                        '\$${total.toStringAsFixed(2)}',
-                      ];
-                    }).toList(),
-              ),
-
-              pw.SizedBox(height: 14),
-
-              // Calculations Box
-              pw.Align(
-                alignment: pw.Alignment.centerLeft,
-                child: pw.Container(
-                  width: 220,
-                  padding: const pw.EdgeInsets.all(10),
-                  decoration: pw.BoxDecoration(
-                    color: PdfColor.fromHex('#F8FAFC'),
-                    borderRadius: pw.BorderRadius.circular(8),
-                    border: pw.Border.all(color: PdfColors.grey300),
-                  ),
-                  child: pw.Column(
-                    children: [
-                      _buildSummaryRow('المجموع الفرعي', subtotal, bodyFont),
-                      if (discount > 0)
-                        _buildSummaryRow('الخصم', -discount, bodyFont),
-                      pw.Divider(color: PdfColors.grey300),
-                      _buildSummaryRow(
-                        'الإجمالي النهائي',
-                        totalAmount,
-                        boldFont,
-                        isPrimary: true,
-                      ),
-                      _buildSummaryRow('المبلغ المدفوع', paidAmount, bodyFont),
-                      _buildSummaryRow(
-                        'المتبقي',
-                        remainingAmount,
-                        boldFont,
-                        colorHex: '#DC2626',
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              pw.SizedBox(height: 14),
-
-              // Easy App Branding right after calculations box
-              pw.Center(
-                child: pw.Column(
+          return [
+            // Invoice Top Banner
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
                     pw.Text(
-                      'شكراً لتعاملكم معنا!',
+                      'فاتورة مبيعات',
                       style: pw.TextStyle(
                         font: boldFont,
-                        fontSize: 11,
-                        color: PdfColors.grey800,
-                      ),
-                    ),
-                    pw.SizedBox(height: 6),
-                    pw.Text(
-                      'برمجة شركة easy app',
-                      style: pw.TextStyle(
-                        font: boldFont,
-                        fontSize: 11,
+                        fontSize: 22,
                         color: PdfColor.fromHex('#4338CA'),
                       ),
                     ),
                     pw.SizedBox(height: 2),
                     pw.Text(
-                      '01126697513',
+                      '#$invoiceNumber',
                       style: pw.TextStyle(
-                        font: bodyFont,
-                        fontSize: 10,
-                        color: PdfColors.grey800,
+                        font: boldFont,
+                        fontSize: 14,
+                        color: PdfColor.fromHex('#6366F1'),
                       ),
                     ),
                   ],
                 ),
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.end,
+                  children: [
+                    pw.Text(
+                      dateFmt.format(parsedDate),
+                      style: pw.TextStyle(
+                        font: bodyFont,
+                        fontSize: 10,
+                        color: PdfColors.grey700,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+
+            pw.SizedBox(height: 16),
+            pw.Divider(color: PdfColors.grey300),
+            pw.SizedBox(height: 10),
+
+            // Details Grid
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      'العميل: $clientName',
+                      style: pw.TextStyle(font: boldFont, fontSize: 11),
+                    ),
+                    pw.SizedBox(height: 4),
+                    pw.Text(
+                      'طريقة الدفع: $paymentMethod',
+                      style: pw.TextStyle(font: bodyFont, fontSize: 10),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+
+            pw.SizedBox(height: 16),
+
+            // Items Table
+            pw.TableHelper.fromTextArray(
+              headerDirection: direction,
+              headerDecoration: pw.BoxDecoration(
+                color: PdfColor.fromHex('#4338CA'),
+                borderRadius: const pw.BorderRadius.only(
+                  topLeft: pw.Radius.circular(6),
+                  topRight: pw.Radius.circular(6),
+                ),
               ),
+              headerStyle: pw.TextStyle(
+                font: boldFont,
+                fontSize: 9,
+                color: PdfColors.white,
+              ),
+              cellStyle: pw.TextStyle(font: bodyFont, fontSize: 9),
+              cellPadding: const pw.EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 6,
+              ),
+              headers: ['المنتج', 'الكمية', 'سعر الوحدة', 'الإجمالي'],
+              data:
+                  items.map((item) {
+                    final name = item['productName'] ?? '';
+                    final qty = item['quantity'] ?? 0;
+                    final price = (item['price'] ?? 0.0).toDouble();
+                    final total =
+                        (item['total'] ??
+                                ((qty is num
+                                        ? qty
+                                        : double.tryParse(qty.toString()) ??
+                                            0.0) *
+                                    price))
+                            .toDouble();
+                    return [
+                      name,
+                      formatQuantity(
+                        qty is num ? qty : double.tryParse(qty.toString()),
+                      ),
+                      '\$${price.toStringAsFixed(2)}',
+                      '\$${total.toStringAsFixed(2)}',
+                    ];
+                  }).toList(),
+            ),
 
-              pw.Spacer(),
+            pw.SizedBox(height: 14),
 
-              // Footer
-              pw.Divider(color: PdfColors.grey300),
-              pw.SizedBox(height: 4),
-            ],
-          );
+            // Calculations Box
+            pw.Align(
+              alignment: pw.Alignment.centerLeft,
+              child: pw.Container(
+                width: 220,
+                padding: const pw.EdgeInsets.all(10),
+                decoration: pw.BoxDecoration(
+                  color: PdfColor.fromHex('#F8FAFC'),
+                  borderRadius: pw.BorderRadius.circular(8),
+                  border: pw.Border.all(color: PdfColors.grey300),
+                ),
+                child: pw.Column(
+                  children: [
+                    _buildSummaryRow('المجموع الفرعي', subtotal, bodyFont),
+                    for (final fee in additionalFees)
+                      if (((fee['amount'] ?? 0.0) as num) > 0)
+                        _buildSummaryRow(
+                          (fee['name'] ?? '').toString().trim().isNotEmpty
+                              ? (fee['name'] ?? '').toString().trim()
+                              : 'مصروف إضافي',
+                          (fee['amount'] as num).toDouble(),
+                          bodyFont,
+                        ),
+                    if (discount > 0)
+                      _buildSummaryRow('الخصم', -discount, bodyFont),
+                    pw.Divider(color: PdfColors.grey300),
+                    _buildSummaryRow(
+                      'الإجمالي النهائي',
+                      totalAmount,
+                      boldFont,
+                      isPrimary: true,
+                    ),
+                    _buildSummaryRow('المبلغ المدفوع', paidAmount, bodyFont),
+                    _buildSummaryRow(
+                      'المتبقي',
+                      remainingAmount,
+                      boldFont,
+                      colorHex: '#DC2626',
+                    ),
+                    pw.Divider(color: PdfColors.grey300),
+                    _buildSummaryRow(
+                      'رصيد العميل السابق',
+                      previousBalance,
+                      bodyFont,
+                      colorHex: '#D97706',
+                    ),
+                    _buildSummaryRow(
+                      'رصيد العميل بعد الفاتورة',
+                      balanceAfter,
+                      boldFont,
+                      colorHex: '#4338CA',
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            pw.SizedBox(height: 14),
+
+            // Easy App Branding right after calculations box
+            pw.Center(
+              child: pw.Column(
+                children: [
+                  pw.Text(
+                    'شكراً لتعاملكم معنا!',
+                    style: pw.TextStyle(
+                      font: boldFont,
+                      fontSize: 11,
+                      color: PdfColors.grey800,
+                    ),
+                  ),
+                  pw.SizedBox(height: 6),
+                  pw.Text(
+                    'برمجة شركة easy app',
+                    style: pw.TextStyle(
+                      font: boldFont,
+                      fontSize: 11,
+                      color: PdfColor.fromHex('#4338CA'),
+                    ),
+                  ),
+                  pw.SizedBox(height: 2),
+                  pw.Text(
+                    '01126697513',
+                    style: pw.TextStyle(
+                      font: bodyFont,
+                      fontSize: 10,
+                      color: PdfColors.grey800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Footer
+            pw.Divider(color: PdfColors.grey300),
+            pw.SizedBox(height: 4),
+          ];
         },
       ),
     );
@@ -565,13 +621,22 @@ class ClientStatementPdfService {
           base = 'إضافة مديونية';
           break;
         case 'sales_invoice':
-          base = invoiceNumber.isNotEmpty ? 'فاتورة مبيعات #$invoiceNumber' : 'فاتورة مبيعات';
+          base =
+              invoiceNumber.isNotEmpty
+                  ? 'فاتورة مبيعات #$invoiceNumber'
+                  : 'فاتورة مبيعات';
           break;
         case 'sales_return':
-          base = invoiceNumber.isNotEmpty ? 'مرتجع فاتورة #$invoiceNumber' : 'مرتجع مبيعات';
+          base =
+              invoiceNumber.isNotEmpty
+                  ? 'مرتجع فاتورة #$invoiceNumber'
+                  : 'مرتجع مبيعات';
           break;
         case 'payment':
-          base = invoiceNumber.isNotEmpty ? 'تحصيل من فاتورة #$invoiceNumber' : 'تحصيل دفعة';
+          base =
+              invoiceNumber.isNotEmpty
+                  ? 'تحصيل من فاتورة #$invoiceNumber'
+                  : 'تحصيل دفعة';
           break;
         case 'cancellation':
           base = 'إلغاء فاتورة';
@@ -589,13 +654,22 @@ class ClientStatementPdfService {
           base = 'Add Debt';
           break;
         case 'sales_invoice':
-          base = invoiceNumber.isNotEmpty ? 'Invoice #$invoiceNumber' : 'Sales Invoice';
+          base =
+              invoiceNumber.isNotEmpty
+                  ? 'Invoice #$invoiceNumber'
+                  : 'Sales Invoice';
           break;
         case 'sales_return':
-          base = invoiceNumber.isNotEmpty ? 'Return #$invoiceNumber' : 'Sales Return';
+          base =
+              invoiceNumber.isNotEmpty
+                  ? 'Return #$invoiceNumber'
+                  : 'Sales Return';
           break;
         case 'payment':
-          base = invoiceNumber.isNotEmpty ? 'Payment for #$invoiceNumber' : 'Payment';
+          base =
+              invoiceNumber.isNotEmpty
+                  ? 'Payment for #$invoiceNumber'
+                  : 'Payment';
           break;
         case 'cancellation':
           base = 'Invoice Cancellation';
@@ -646,12 +720,14 @@ class ClientStatementPdfService {
     required BuildContext context,
     required Map<String, dynamic> invoiceData,
     String locale = 'ar',
+    VoidCallback? onReady,
   }) async {
     final pdfBytes = await generateSalesInvoicePdf(
       invoiceData: invoiceData,
       locale: locale,
     );
     if (!context.mounted) return;
+    onReady?.call();
     await InvoiceActionDialog.show(
       context: context,
       invoiceData: invoiceData,
@@ -712,7 +788,11 @@ class ClientStatementPdfService {
               const SizedBox(height: 16),
               Row(
                 children: [
-                  const Icon(Icons.picture_as_pdf_rounded, color: AppTheme.primaryColor, size: 28),
+                  const Icon(
+                    Icons.picture_as_pdf_rounded,
+                    color: AppTheme.primaryColor,
+                    size: 28,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -720,7 +800,10 @@ class ClientStatementPdfService {
                       children: [
                         Text(
                           'كشف حساب العميل: $clientName',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
                         const SizedBox(height: 2),
                         const Text(
@@ -749,7 +832,10 @@ class ClientStatementPdfService {
                 ),
                 onTap: () async {
                   Navigator.of(bContext).pop();
-                  final cleanName = clientName.replaceAll(RegExp(r'[^\w\s-]'), '_');
+                  final cleanName = clientName.replaceAll(
+                    RegExp(r'[^\w\s-]'),
+                    '_',
+                  );
                   final filename = 'Statement_$cleanName.pdf';
 
                   try {
@@ -786,12 +872,17 @@ class ClientStatementPdfService {
                 subtitle: const Text('معاينة المستند أو تنزيله على الجهاز'),
                 onTap: () async {
                   Navigator.of(bContext).pop();
-                  final cleanName = clientName.replaceAll(RegExp(r'[^\w\s-]'), '_');
+                  final cleanName = clientName.replaceAll(
+                    RegExp(r'[^\w\s-]'),
+                    '_',
+                  );
                   final filename = 'Statement_$cleanName.pdf';
 
                   try {
                     Directory? downloadsDir;
-                    try { downloadsDir = await getDownloadsDirectory(); } catch (_) {}
+                    try {
+                      downloadsDir = await getDownloadsDirectory();
+                    } catch (_) {}
                     downloadsDir ??= await getTemporaryDirectory();
                     final pdfFile = File('${downloadsDir.path}/$filename');
                     await pdfFile.writeAsBytes(pdfBytes);

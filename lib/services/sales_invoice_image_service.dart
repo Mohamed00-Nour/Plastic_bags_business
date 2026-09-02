@@ -135,10 +135,14 @@ class InvoiceReceiptCard extends StatelessWidget {
         (invoiceData['remainingAmount'] ?? (totalAmount - paidAmount))
             .toDouble();
     final prevBalance =
-        (invoiceData['previousBalance'] ?? invoiceData['prevBalance'] ?? 0.0)
+        (invoiceData['previousBalance'] ??
+                invoiceData['clientPreviousBalance'] ??
+                invoiceData['prevBalance'] ??
+                0.0)
             .toDouble();
     final totalDueBalance =
-        (invoiceData['clientBalance'] ??
+        (invoiceData['balanceAfter'] ??
+                invoiceData['clientBalance'] ??
                 invoiceData['currentBalance'] ??
                 (prevBalance + remainingAmount))
             .toDouble();
@@ -292,7 +296,10 @@ class InvoiceReceiptCard extends StatelessWidget {
           ...pageItems.map((item) {
             final name = item['productName'] ?? item['name'] ?? 'منتج';
             final rawQty = item['quantity'] ?? 1;
-            final numQty = rawQty is num ? rawQty : double.tryParse(rawQty.toString()) ?? 1.0;
+            final numQty =
+                rawQty is num
+                    ? rawQty
+                    : double.tryParse(rawQty.toString()) ?? 1.0;
             final price = (item['price'] ?? 0.0).toDouble();
             final itemTotal = price * numQty;
             final qtyStr = formatQuantity(numQty);
@@ -371,15 +378,14 @@ class InvoiceReceiptCard extends StatelessWidget {
               '\$${remainingAmount.toStringAsFixed(2)}',
               color: const Color(0xFFF87171),
             ),
-            if (prevBalance > 0)
-              _buildSummaryRow(
-                'الرصيد السابق:',
-                '\$${prevBalance.toStringAsFixed(2)}',
-                color: const Color(0xFFFBBF24),
-              ),
+            _buildSummaryRow(
+              isSalesInvoice ? 'رصيد العميل السابق:' : 'رصيد المورد السابق:',
+              '\$${prevBalance.toStringAsFixed(2)}',
+              color: const Color(0xFFFBBF24),
+            ),
             _buildSummaryRow(
               isSalesInvoice
-                  ? 'المتبقي عليكم (الرصيد الكلي):'
+                  ? 'رصيد العميل بعد الفاتورة:'
                   : 'الرصيد الحالي للمورد:',
               '\$${totalDueBalance.toStringAsFixed(2)}',
               isBold: true,
