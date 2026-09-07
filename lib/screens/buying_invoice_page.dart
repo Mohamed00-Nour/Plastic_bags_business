@@ -14,9 +14,11 @@ class BuyingInvoicePage extends StatefulWidget {
   State<BuyingInvoicePage> createState() => _BuyingInvoicePageState();
 }
 
-class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTickerProviderStateMixin {
+class _BuyingInvoicePageState extends State<BuyingInvoicePage>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final SupplierInvoiceBalanceSyncService _syncService = SupplierInvoiceBalanceSyncService();
+  final SupplierInvoiceBalanceSyncService _syncService =
+      SupplierInvoiceBalanceSyncService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // New Invoice State
@@ -33,12 +35,18 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
   String _notes = '';
   bool _isSubmitting = false;
 
-  final TextEditingController _supplierSearchController = TextEditingController();
+  final TextEditingController _supplierSearchController =
+      TextEditingController();
   final FocusNode _supplierSearchFocusNode = FocusNode();
-  final TextEditingController _discountController = TextEditingController(text: '0.0');
-  final TextEditingController _paidController = TextEditingController(text: '0.0');
+  final TextEditingController _discountController = TextEditingController(
+    text: '0.0',
+  );
+  final TextEditingController _paidController = TextEditingController(
+    text: '0.0',
+  );
   final TextEditingController _notesController = TextEditingController();
-  final TextEditingController _productSearchController = TextEditingController();
+  final TextEditingController _productSearchController =
+      TextEditingController();
   String _productSearchQuery = '';
 
   int _selectedHistoryYear = DateTime.now().year;
@@ -52,7 +60,8 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
   }
 
   void _generateInvoiceNumber() {
-    _invoiceNumber = 'PUR-${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
+    _invoiceNumber =
+        'PUR-${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
   }
 
   @override
@@ -87,14 +96,17 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
 
   void _addLineItem(Map<String, dynamic> product) {
     setState(() {
-      final existingIndex = _lineItems.indexWhere((i) => i['productId'] == product['id']);
+      final existingIndex = _lineItems.indexWhere(
+        (i) => i['productId'] == product['id'],
+      );
       final cost = (product['costPrice'] ?? product['price'] ?? 0.0).toDouble();
 
       if (existingIndex >= 0) {
         _lineItems[existingIndex]['quantity'] =
             ((_lineItems[existingIndex]['quantity'] as num).toDouble()) + 1.0;
         _lineItems[existingIndex]['total'] =
-            _lineItems[existingIndex]['quantity'] * _lineItems[existingIndex]['costPrice'];
+            _lineItems[existingIndex]['quantity'] *
+            _lineItems[existingIndex]['costPrice'];
       } else {
         _lineItems.add({
           'productId': product['id'],
@@ -112,7 +124,11 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
     if (_selectedSupplierId == null || _selectedSupplierId!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(isArabic ? 'برجاء اختيار المورد أولاً' : 'Please select a supplier first'),
+          content: Text(
+            isArabic
+                ? 'برجاء اختيار المورد أولاً'
+                : 'Please select a supplier first',
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -122,7 +138,11 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
     if (_lineItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(isArabic ? 'برجاء إضافة منتج واحد على الأقل' : 'Please add at least one product line item'),
+          content: Text(
+            isArabic
+                ? 'برجاء إضافة منتج واحد على الأقل'
+                : 'Please add at least one product line item',
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -183,7 +203,11 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(isArabic ? 'تم حفظ فاتورة الشراء وزيادة المخزون وتحديث رصيد المورد بنجاح' : 'Buying invoice saved & stock updated!'),
+          content: Text(
+            isArabic
+                ? 'تم حفظ فاتورة الشراء وزيادة المخزون وتحديث رصيد المورد بنجاح'
+                : 'Buying invoice saved & stock updated!',
+          ),
           backgroundColor: AppTheme.successColor,
         ),
       );
@@ -198,13 +222,19 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
       if (!mounted) return;
       setState(() => _isSubmitting = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error saving invoice: $e'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text('Error saving invoice: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
 
   void _showPurchaseReturnDialog(BuildContext context, bool isArabic) {
-    final returnNumController = TextEditingController(text: 'PRET-${DateTime.now().millisecondsSinceEpoch.toString().substring(6)}');
+    final returnNumController = TextEditingController(
+      text:
+          'PRET-${DateTime.now().millisecondsSinceEpoch.toString().substring(6)}',
+    );
     final origInvoiceController = TextEditingController();
     final reasonController = TextEditingController();
     final returnAmountController = TextEditingController();
@@ -220,13 +250,21 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return Directionality(
-              textDirection: isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
+              textDirection:
+                  isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
               child: AlertDialog(
                 title: Row(
                   children: [
-                    const Icon(Icons.assignment_return_rounded, color: AppTheme.warningColor),
+                    const Icon(
+                      Icons.assignment_return_rounded,
+                      color: AppTheme.warningColor,
+                    ),
                     const SizedBox(width: 8),
-                    Text(isArabic ? 'إنشاء مرتجع مشتريات' : 'Create Purchase Return'),
+                    Text(
+                      isArabic
+                          ? 'إنشاء مرتجع مشتريات'
+                          : 'Create Purchase Return',
+                    ),
                   ],
                 ),
                 content: SingleChildScrollView(
@@ -239,12 +277,17 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
                           final suppliers = snapshot.data ?? [];
                           return RawAutocomplete<Map<String, dynamic>>(
                             displayStringForOption: (s) => s['name'] ?? '',
-                            optionsBuilder: (TextEditingValue textEditingValue) {
-                              if (textEditingValue.text.isEmpty) return suppliers;
+                            optionsBuilder: (
+                              TextEditingValue textEditingValue,
+                            ) {
+                              if (textEditingValue.text.isEmpty)
+                                return suppliers;
                               final q = textEditingValue.text.toLowerCase();
                               return suppliers.where((s) {
-                                final name = (s['name'] ?? '').toString().toLowerCase();
-                                final phone = (s['phone'] ?? '').toString().toLowerCase();
+                                final name =
+                                    (s['name'] ?? '').toString().toLowerCase();
+                                final phone =
+                                    (s['phone'] ?? '').toString().toLowerCase();
                                 return name.contains(q) || phone.contains(q);
                               });
                             },
@@ -254,12 +297,20 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
                                 returnSupplierName = s['name'];
                               });
                             },
-                            fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+                            fieldViewBuilder: (
+                              context,
+                              controller,
+                              focusNode,
+                              onFieldSubmitted,
+                            ) {
                               return TextFormField(
                                 controller: controller,
                                 focusNode: focusNode,
                                 decoration: InputDecoration(
-                                  labelText: isArabic ? 'ابحث عن المورد *' : 'Search & Select Supplier *',
+                                  labelText:
+                                      isArabic
+                                          ? 'ابحث عن المورد *'
+                                          : 'Search & Select Supplier *',
                                   prefixIcon: const Icon(Icons.business),
                                 ),
                               );
@@ -271,7 +322,9 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
                                   elevation: 8,
                                   child: Container(
                                     width: 320,
-                                    constraints: const BoxConstraints(maxHeight: 200),
+                                    constraints: const BoxConstraints(
+                                      maxHeight: 200,
+                                    ),
                                     color: Theme.of(context).cardColor,
                                     child: ListView.builder(
                                       shrinkWrap: true,
@@ -296,16 +349,24 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
                       TextField(
                         controller: origInvoiceController,
                         decoration: InputDecoration(
-                          labelText: isArabic ? 'رقم فاتورة الشراء الأصلية' : 'Original Purchase Invoice #',
+                          labelText:
+                              isArabic
+                                  ? 'رقم فاتورة الشراء الأصلية'
+                                  : 'Original Purchase Invoice #',
                           prefixIcon: const Icon(Icons.receipt),
                         ),
                       ),
                       const SizedBox(height: 12),
                       TextField(
                         controller: returnAmountController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                         decoration: InputDecoration(
-                          labelText: isArabic ? 'إجمالي قيمة المرتجع (\$)' : 'Return Total Amount (\$)',
+                          labelText:
+                              isArabic
+                                  ? 'إجمالي قيمة المرتجع (\$)'
+                                  : 'Return Total Amount (\$)',
                           prefixIcon: const Icon(Icons.attach_money),
                         ),
                       ),
@@ -313,7 +374,8 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
                       TextField(
                         controller: reasonController,
                         decoration: InputDecoration(
-                          labelText: isArabic ? 'سبب الإرجاع للمورد' : 'Return Reason',
+                          labelText:
+                              isArabic ? 'سبب الإرجاع للمورد' : 'Return Reason',
                           prefixIcon: const Icon(Icons.notes),
                         ),
                       ),
@@ -326,50 +388,73 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
                     child: Text(isArabic ? 'إلغاء' : 'Cancel'),
                   ),
                   ElevatedButton(
-                    onPressed: isSaving
-                        ? null
-                        : () async {
-                            if (returnSupplierId == null || returnAmountController.text.isEmpty) return;
+                    onPressed:
+                        isSaving
+                            ? null
+                            : () async {
+                              if (returnSupplierId == null ||
+                                  returnAmountController.text.isEmpty)
+                                return;
 
-                            setDialogState(() => isSaving = true);
-                            try {
-                              final amount = double.tryParse(returnAmountController.text.trim()) ?? 0.0;
+                              setDialogState(() => isSaving = true);
+                              try {
+                                final amount =
+                                    double.tryParse(
+                                      returnAmountController.text.trim(),
+                                    ) ??
+                                    0.0;
 
-                              await _syncService.processPurchaseReturn(
-                                supplierId: returnSupplierId!,
-                                supplierName: returnSupplierName ?? '',
-                                originalInvoiceId: '',
-                                originalInvoiceNumber: origInvoiceController.text.trim(),
-                                returnNumber: returnNumController.text.trim(),
-                                returnedItems: returnItems,
-                                returnTotalAmount: amount,
-                                reason: reasonController.text.trim(),
-                              );
+                                await _syncService.processPurchaseReturn(
+                                  supplierId: returnSupplierId!,
+                                  supplierName: returnSupplierName ?? '',
+                                  originalInvoiceId: '',
+                                  originalInvoiceNumber:
+                                      origInvoiceController.text.trim(),
+                                  returnNumber: returnNumController.text.trim(),
+                                  returnedItems: returnItems,
+                                  returnTotalAmount: amount,
+                                  reason: reasonController.text.trim(),
+                                );
 
-                              if (!dialogContext.mounted) return;
-                              Navigator.pop(dialogContext);
+                                if (!dialogContext.mounted) return;
+                                Navigator.pop(dialogContext);
 
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    isArabic
-                                        ? 'تم خصم المرتجع من المخزون وتخفيض دائنية المورد بنجاح'
-                                        : 'Purchase return processed & supplier credit updated!',
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      isArabic
+                                          ? 'تم خصم المرتجع من المخزون وتخفيض دائنية المورد بنجاح'
+                                          : 'Purchase return processed & supplier credit updated!',
+                                    ),
+                                    backgroundColor: AppTheme.successColor,
                                   ),
-                                  backgroundColor: AppTheme.successColor,
-                                ),
-                              );
-                            } catch (e) {
-                              setDialogState(() => isSaving = false);
-                              if (!dialogContext.mounted) return;
-                              ScaffoldMessenger.of(dialogContext).showSnackBar(
-                                SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-                              );
-                            }
-                          },
-                    child: isSaving
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : Text(isArabic ? 'معالجة المرتجع' : 'Process Return'),
+                                );
+                              } catch (e) {
+                                setDialogState(() => isSaving = false);
+                                if (!dialogContext.mounted) return;
+                                ScaffoldMessenger.of(
+                                  dialogContext,
+                                ).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Error: $e'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            },
+                    child:
+                        isSaving
+                            ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                            : Text(
+                              isArabic ? 'معالجة المرتجع' : 'Process Return',
+                            ),
                   ),
                 ],
               ),
@@ -392,9 +477,19 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
           bottom: TabBar(
             controller: _tabController,
             tabs: [
-              Tab(icon: const Icon(Icons.add_business), text: isArabic ? 'فاتورة شراء جديدة' : 'New Buying Invoice'),
-              Tab(icon: const Icon(Icons.assignment_return), text: isArabic ? 'إرجاع مشتريات' : 'Purchase Return'),
-              Tab(icon: const Icon(Icons.receipt_long), text: isArabic ? 'سجل فواتير الشراء' : 'Buying Invoices History'),
+              Tab(
+                icon: const Icon(Icons.add_business),
+                text: isArabic ? 'فاتورة شراء جديدة' : 'New Buying Invoice',
+              ),
+              Tab(
+                icon: const Icon(Icons.assignment_return),
+                text: isArabic ? 'إرجاع مشتريات' : 'Purchase Return',
+              ),
+              Tab(
+                icon: const Icon(Icons.receipt_long),
+                text:
+                    isArabic ? 'سجل فواتير الشراء' : 'Buying Invoices History',
+              ),
             ],
           ),
         ),
@@ -433,12 +528,17 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
                       children: [
                         Text(
                           '${isArabic ? "رقم فاتورة الشراء: " : "Buying Invoice #: "}$_invoiceNumber',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
                         const Spacer(),
                         TextButton.icon(
                           icon: const Icon(Icons.calendar_today),
-                          label: Text(DateFormat('yyyy/MM/dd').format(_selectedDate)),
+                          label: Text(
+                            DateFormat('yyyy/MM/dd').format(_selectedDate),
+                          ),
                           onPressed: () async {
                             final d = await showDatePicker(
                               context: context,
@@ -463,21 +563,38 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
                               final suppliers = snapshot.data ?? [];
 
                               return RawAutocomplete<Map<String, dynamic>>(
-                                textEditingController: _supplierSearchController,
+                                textEditingController:
+                                    _supplierSearchController,
                                 focusNode: _supplierSearchFocusNode,
                                 displayStringForOption: (s) {
-                                  final bal = ((s['totalBalance'] ?? s['balance'] ?? 0.0) as num).toDouble();
+                                  final bal =
+                                      ((s['totalBalance'] ??
+                                                  s['balance'] ??
+                                                  0.0)
+                                              as num)
+                                          .toDouble();
                                   final balStr = bal.toStringAsFixed(2);
-                                  final prefixLabel = isArabic ? 'دائنية: ' : 'Credit: ';
+                                  final prefixLabel =
+                                      isArabic ? 'دائنية: ' : 'Credit: ';
                                   return '${s['name']} ($prefixLabel\$$balStr)';
                                 },
-                                optionsBuilder: (TextEditingValue textEditingValue) {
-                                  if (textEditingValue.text.isEmpty) return suppliers;
+                                optionsBuilder: (
+                                  TextEditingValue textEditingValue,
+                                ) {
+                                  if (textEditingValue.text.isEmpty)
+                                    return suppliers;
                                   final q = textEditingValue.text.toLowerCase();
                                   return suppliers.where((s) {
-                                    final name = (s['name'] ?? '').toString().toLowerCase();
-                                    final phone = (s['phone'] ?? '').toString().toLowerCase();
-                                    return name.contains(q) || phone.contains(q);
+                                    final name =
+                                        (s['name'] ?? '')
+                                            .toString()
+                                            .toLowerCase();
+                                    final phone =
+                                        (s['phone'] ?? '')
+                                            .toString()
+                                            .toLowerCase();
+                                    return name.contains(q) ||
+                                        phone.contains(q);
                                   });
                                 },
                                 onSelected: (Map<String, dynamic> s) {
@@ -487,30 +604,51 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
                                     _selectedSupplierPhone = s['phone'];
                                   });
                                 },
-                                fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+                                fieldViewBuilder: (
+                                  context,
+                                  controller,
+                                  focusNode,
+                                  onFieldSubmitted,
+                                ) {
                                   return TextFormField(
                                     controller: controller,
                                     focusNode: focusNode,
                                     decoration: InputDecoration(
-                                      labelText: isArabic ? 'ابحث عن المورد واختاره *' : 'Search & Select Supplier *',
-                                      prefixIcon: const Icon(Icons.business_center_rounded),
-                                      suffixIcon: _selectedSupplierId != null || controller.text.isNotEmpty
-                                          ? IconButton(
-                                              icon: const Icon(Icons.clear, color: Colors.grey),
-                                              onPressed: () {
-                                                controller.clear();
-                                                setState(() {
-                                                  _selectedSupplierId = null;
-                                                  _selectedSupplierName = null;
-                                                  _selectedSupplierPhone = null;
-                                                });
-                                              },
-                                            )
-                                          : null,
+                                      labelText:
+                                          isArabic
+                                              ? 'ابحث عن المورد واختاره *'
+                                              : 'Search & Select Supplier *',
+                                      prefixIcon: const Icon(
+                                        Icons.business_center_rounded,
+                                      ),
+                                      suffixIcon:
+                                          _selectedSupplierId != null ||
+                                                  controller.text.isNotEmpty
+                                              ? IconButton(
+                                                icon: const Icon(
+                                                  Icons.clear,
+                                                  color: Colors.grey,
+                                                ),
+                                                onPressed: () {
+                                                  controller.clear();
+                                                  setState(() {
+                                                    _selectedSupplierId = null;
+                                                    _selectedSupplierName =
+                                                        null;
+                                                    _selectedSupplierPhone =
+                                                        null;
+                                                  });
+                                                },
+                                              )
+                                              : null,
                                     ),
                                   );
                                 },
-                                optionsViewBuilder: (context, onSelected, options) {
+                                optionsViewBuilder: (
+                                  context,
+                                  onSelected,
+                                  options,
+                                ) {
                                   return Align(
                                     alignment: AlignmentDirectional.topStart,
                                     child: Material(
@@ -518,25 +656,54 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
                                       borderRadius: BorderRadius.circular(12),
                                       child: Container(
                                         width: 380,
-                                        constraints: const BoxConstraints(maxHeight: 240),
+                                        constraints: const BoxConstraints(
+                                          maxHeight: 240,
+                                        ),
                                         decoration: BoxDecoration(
                                           color: Theme.of(context).cardColor,
-                                          borderRadius: BorderRadius.circular(12),
-                                          border: Border.all(color: Theme.of(context).dividerColor),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          border: Border.all(
+                                            color:
+                                                Theme.of(context).dividerColor,
+                                          ),
                                         ),
                                         child: ListView.builder(
                                           padding: EdgeInsets.zero,
                                           shrinkWrap: true,
                                           itemCount: options.length,
                                           itemBuilder: (context, index) {
-                                            final option = options.elementAt(index);
-                                            final bal = ((option['totalBalance'] ?? option['balance'] ?? 0.0) as num).toDouble();
-                                            final balStr = bal.toStringAsFixed(2);
-                                            final prefixLabel = isArabic ? 'الدائنية: ' : 'Credit: ';
+                                            final option = options.elementAt(
+                                              index,
+                                            );
+                                            final bal =
+                                                ((option['totalBalance'] ??
+                                                            option['balance'] ??
+                                                            0.0)
+                                                        as num)
+                                                    .toDouble();
+                                            final balStr = bal.toStringAsFixed(
+                                              2,
+                                            );
+                                            final prefixLabel =
+                                                isArabic
+                                                    ? 'الدائنية: '
+                                                    : 'Credit: ';
                                             return ListTile(
-                                              leading: const Icon(Icons.business, color: AppTheme.accentColor),
-                                              title: Text(option['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
-                                              subtitle: Text('${option['phone'] ?? ''} • $prefixLabel\$$balStr'),
+                                              leading: const Icon(
+                                                Icons.business,
+                                                color: AppTheme.accentColor,
+                                              ),
+                                              title: Text(
+                                                option['name'] ?? '',
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                              subtitle: Text(
+                                                '${option['phone'] ?? ''} • $prefixLabel\$$balStr',
+                                              ),
                                               onTap: () => onSelected(option),
                                             );
                                           },
@@ -552,11 +719,16 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
                         const SizedBox(width: 12),
                         DropdownButton<String>(
                           value: _paymentMethod,
-                          items: ['Cash', 'Credit', 'Card', 'Check'].map((m) {
-                            return DropdownMenuItem(value: m, child: Text(m));
-                          }).toList(),
+                          items:
+                              ['Cash', 'Credit', 'Card', 'Check'].map((m) {
+                                return DropdownMenuItem(
+                                  value: m,
+                                  child: Text(m),
+                                );
+                              }).toList(),
                           onChanged: (val) {
-                            if (val != null) setState(() => _paymentMethod = val);
+                            if (val != null)
+                              setState(() => _paymentMethod = val);
                           },
                         ),
                       ],
@@ -578,10 +750,20 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(isArabic ? 'إضافة منتجات مستلمة للمخزن' : 'Add Received Products to Stock', style: Theme.of(context).textTheme.titleMedium),
                         Text(
-                          isArabic ? 'اكتب اسم المنتج أو اضغط عليه للإضافة' : 'Type product name or tap chip to add',
-                          style: const TextStyle(fontSize: 11, color: Colors.grey),
+                          isArabic
+                              ? 'إضافة منتجات مستلمة للمخزن'
+                              : 'Add Received Products to Stock',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        Text(
+                          isArabic
+                              ? 'اكتب اسم المنتج أو اضغط عليه للإضافة'
+                              : 'Type product name or tap chip to add',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey,
+                          ),
                         ),
                       ],
                     ),
@@ -590,19 +772,27 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
                     // Search Input for Products
                     TextField(
                       controller: _productSearchController,
-                      onChanged: (val) => setState(() => _productSearchQuery = val.trim().toLowerCase()),
+                      onChanged:
+                          (val) => setState(
+                            () =>
+                                _productSearchQuery = val.trim().toLowerCase(),
+                          ),
                       decoration: InputDecoration(
-                        hintText: isArabic ? 'بحث سريع عن منتج بالاسم أو المقاس...' : 'Quick search product by name or size...',
+                        hintText:
+                            isArabic
+                                ? 'بحث سريع عن منتج بالاسم أو المقاس...'
+                                : 'Quick search product by name or size...',
                         prefixIcon: const Icon(Icons.search),
-                        suffixIcon: _productSearchQuery.isNotEmpty
-                            ? IconButton(
-                                icon: const Icon(Icons.clear),
-                                onPressed: () {
-                                  _productSearchController.clear();
-                                  setState(() => _productSearchQuery = '');
-                                },
-                              )
-                            : null,
+                        suffixIcon:
+                            _productSearchQuery.isNotEmpty
+                                ? IconButton(
+                                  icon: const Icon(Icons.clear),
+                                  onPressed: () {
+                                    _productSearchController.clear();
+                                    setState(() => _productSearchQuery = '');
+                                  },
+                                )
+                                : null,
                       ),
                     ),
 
@@ -612,22 +802,37 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
                     StreamBuilder<QuerySnapshot>(
                       stream: _firestore.collection('products').snapshots(),
                       builder: (context, snapshot) {
-                        if (!snapshot.hasData) return const CircularProgressIndicator();
+                        if (!snapshot.hasData)
+                          return const CircularProgressIndicator();
                         final docs = snapshot.data!.docs;
 
-                        final filteredDocs = docs.where((doc) {
-                          final data = doc.data() as Map<String, dynamic>;
-                          if (_productSearchQuery.isEmpty) return true;
-                          final name = (data['name'] ?? '').toString().toLowerCase();
-                          final size = (data['size'] ?? '').toString().toLowerCase();
-                          return name.contains(_productSearchQuery) || size.contains(_productSearchQuery);
-                        }).take(10).toList();
+                        final filteredDocs =
+                            docs
+                                .where((doc) {
+                                  final data =
+                                      doc.data() as Map<String, dynamic>;
+                                  if (_productSearchQuery.isEmpty) return true;
+                                  final name =
+                                      (data['name'] ?? '')
+                                          .toString()
+                                          .toLowerCase();
+                                  final size =
+                                      (data['size'] ?? '')
+                                          .toString()
+                                          .toLowerCase();
+                                  return name.contains(_productSearchQuery) ||
+                                      size.contains(_productSearchQuery);
+                                })
+                                .take(10)
+                                .toList();
 
                         if (filteredDocs.isEmpty) {
                           return Padding(
                             padding: const EdgeInsets.all(12.0),
                             child: Text(
-                              isArabic ? 'لا توجد منتجات مطابقة لنتيجة البحث' : 'No matching products found',
+                              isArabic
+                                  ? 'لا توجد منتجات مطابقة لنتيجة البحث'
+                                  : 'No matching products found',
                               style: const TextStyle(color: Colors.grey),
                             ),
                           );
@@ -636,18 +841,23 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
                         return Wrap(
                           spacing: 8,
                           runSpacing: 8,
-                          children: filteredDocs.map((doc) {
-                            final data = doc.data() as Map<String, dynamic>;
-                            data['id'] = doc.id;
-                            final stock = data['stockQuantity'] ?? 0;
-                            final cost = (data['costPrice'] ?? data['price'] ?? 0.0).toDouble();
+                          children:
+                              filteredDocs.map((doc) {
+                                final data = doc.data() as Map<String, dynamic>;
+                                data['id'] = doc.id;
+                                final stock = data['stockQuantity'] ?? 0;
+                                final cost =
+                                    (data['costPrice'] ?? data['price'] ?? 0.0)
+                                        .toDouble();
 
-                            return ActionChip(
-                              avatar: const Icon(Icons.add, size: 16),
-                              label: Text('${data['name']} (Cost: \$$cost) [Stock: $stock]'),
-                              onPressed: () => _addLineItem(data),
-                            );
-                          }).toList(),
+                                return ActionChip(
+                                  avatar: const Icon(Icons.add, size: 16),
+                                  label: Text(
+                                    '${data['name']} (Cost: \$$cost) [Stock: $stock]',
+                                  ),
+                                  onPressed: () => _addLineItem(data),
+                                );
+                              }).toList(),
                         );
                       },
                     ),
@@ -665,46 +875,64 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(isArabic ? 'بنود الشراء المستلمة' : 'Purchase Received Items', style: Theme.of(context).textTheme.titleMedium),
+                    Text(
+                      isArabic
+                          ? 'بنود الشراء المستلمة'
+                          : 'Purchase Received Items',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
                     const SizedBox(height: 8),
                     _lineItems.isEmpty
                         ? Padding(
-                            padding: const EdgeInsets.all(24.0),
-                            child: Center(child: Text(isArabic ? 'لم يتم إضافة أصناف للشراء بعد' : 'No purchase items added yet')),
-                          )
-                        : ListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: _lineItems.length,
-                            itemBuilder: (context, index) {
-                              final item = _lineItems[index];
-                              return _BuyingInvoiceItemTile(
-                                key: ValueKey(item['productId'] ?? index),
-                                item: item,
-                                onRemove: () {
-                                  setState(() => _lineItems.removeAt(index));
-                                },
-                                onIncrement: () {
-                                  setState(() {
-                                    item['quantity'] = (item['quantity'] as num).toDouble() + 1.0;
-                                    item['total'] = item['quantity'] * item['costPrice'];
-                                  });
-                                },
-                                onDecrement: () {
-                                  setState(() {
-                                    item['quantity'] = (item['quantity'] as num).toDouble() - 1.0;
-                                    item['total'] = item['quantity'] * item['costPrice'];
-                                  });
-                                },
-                                onQuantityChanged: (newQty) {
-                                  setState(() {
-                                    item['quantity'] = newQty;
-                                    item['total'] = item['quantity'] * item['costPrice'];
-                                  });
-                                },
-                              );
-                            },
+                          padding: const EdgeInsets.all(24.0),
+                          child: Center(
+                            child: Text(
+                              isArabic
+                                  ? 'لم يتم إضافة أصناف للشراء بعد'
+                                  : 'No purchase items added yet',
+                            ),
                           ),
+                        )
+                        : ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: _lineItems.length,
+                          itemBuilder: (context, index) {
+                            final item = _lineItems[index];
+                            return _BuyingInvoiceItemTile(
+                              key: ValueKey(item['productId'] ?? index),
+                              item: item,
+                              onRemove: () {
+                                setState(() => _lineItems.removeAt(index));
+                              },
+                              onIncrement: () {
+                                setState(() {
+                                  item['quantity'] =
+                                      (item['quantity'] as num).toDouble() +
+                                      1.0;
+                                  item['total'] =
+                                      item['quantity'] * item['costPrice'];
+                                });
+                              },
+                              onDecrement: () {
+                                setState(() {
+                                  item['quantity'] =
+                                      (item['quantity'] as num).toDouble() -
+                                      1.0;
+                                  item['total'] =
+                                      item['quantity'] * item['costPrice'];
+                                });
+                              },
+                              onQuantityChanged: (newQty) {
+                                setState(() {
+                                  item['quantity'] = newQty;
+                                  item['total'] =
+                                      item['quantity'] * item['costPrice'];
+                                });
+                              },
+                            );
+                          },
+                        ),
                   ],
                 ),
               ),
@@ -718,16 +946,25 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(isArabic ? 'ملخص فاتورة الشراء' : 'Buying Summary', style: Theme.of(context).textTheme.titleLarge),
+                Text(
+                  isArabic ? 'ملخص فاتورة الشراء' : 'Buying Summary',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
                 const Divider(),
                 const SizedBox(height: 12),
-                _buildCalcRow(isArabic ? 'المجموع الفرعي' : 'Subtotal', '\$${_subtotal.toStringAsFixed(2)}'),
+                _buildCalcRow(
+                  isArabic ? 'المجموع الفرعي' : 'Subtotal',
+                  '\$${_subtotal.toStringAsFixed(2)}',
+                ),
                 const SizedBox(height: 8),
                 TextField(
                   controller: _discountController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   decoration: InputDecoration(
-                    labelText: isArabic ? 'خصم المورد (\$)' : 'Supplier Discount (\$)',
+                    labelText:
+                        isArabic ? 'خصم المورد (\$)' : 'Supplier Discount (\$)',
                     prefixIcon: const Icon(Icons.discount),
                   ),
                   onChanged: (val) {
@@ -744,9 +981,14 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
                 const SizedBox(height: 12),
                 TextField(
                   controller: _paidController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   decoration: InputDecoration(
-                    labelText: isArabic ? 'المبلغ المدفوع للمورد (\$)' : 'Paid Amount (\$)',
+                    labelText:
+                        isArabic
+                            ? 'المبلغ المدفوع للمورد (\$)'
+                            : 'Paid Amount (\$)',
                     prefixIcon: const Icon(Icons.money),
                   ),
                   onChanged: (val) {
@@ -755,10 +997,15 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
                 ),
                 const SizedBox(height: 12),
                 _buildCalcRow(
-                  isArabic ? 'المتبقي للمورد (يزيد دائنية المورد)' : 'Remaining Due to Supplier',
+                  isArabic
+                      ? 'المتبقي للمورد (يزيد دائنية المورد)'
+                      : 'Remaining Due to Supplier',
                   '\$${_remainingAmount.toStringAsFixed(2)}',
                   isBold: true,
-                  color: _remainingAmount > 0 ? AppTheme.warningColor : AppTheme.successColor,
+                  color:
+                      _remainingAmount > 0
+                          ? AppTheme.warningColor
+                          : AppTheme.successColor,
                 ),
                 const SizedBox(height: 16),
                 TextField(
@@ -775,8 +1022,13 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
                   height: 50,
                   child: ElevatedButton.icon(
                     icon: const Icon(Icons.inventory_rounded),
-                    label: Text(isArabic ? 'تأكيد الشراء وإدخال للمخزن (PDF)' : 'Confirm Buying & Restock (PDF)'),
-                    onPressed: _isSubmitting ? null : () => _submitInvoice(isArabic),
+                    label: Text(
+                      isArabic
+                          ? 'تأكيد الشراء وإدخال للمخزن (PDF)'
+                          : 'Confirm Buying & Restock (PDF)',
+                    ),
+                    onPressed:
+                        _isSubmitting ? null : () => _submitInvoice(isArabic),
                   ),
                 ),
               ],
@@ -786,23 +1038,24 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
 
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16),
-          child: isDesktop
-              ? Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(flex: 3, child: itemsSection),
-                    const SizedBox(width: 16),
-                    Expanded(flex: 2, child: summarySection),
-                  ],
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    itemsSection,
-                    const SizedBox(height: 16),
-                    summarySection,
-                  ],
-                ),
+          child:
+              isDesktop
+                  ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(flex: 3, child: itemsSection),
+                      const SizedBox(width: 16),
+                      Expanded(flex: 2, child: summarySection),
+                    ],
+                  )
+                  : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      itemsSection,
+                      const SizedBox(height: 16),
+                      summarySection,
+                    ],
+                  ),
         );
       },
     );
@@ -815,23 +1068,37 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.assignment_return_rounded, size: 72, color: AppTheme.warningColor),
+            const Icon(
+              Icons.assignment_return_rounded,
+              size: 72,
+              color: AppTheme.warningColor,
+            ),
             const SizedBox(height: 16),
             Text(
-              isArabic ? 'إدارة مرتجعات المشتريات للموردين' : 'Purchase Returns Management',
+              isArabic
+                  ? 'إدارة مرتجعات المشتريات للموردين'
+                  : 'Purchase Returns Management',
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 8),
             Text(
-              isArabic ? 'إعادة البضاعة للمورد، خصم الكمية من المخزن، وتخفيض دائنية المورد' : 'Return goods to supplier, deduct from inventory & update supplier balance',
+              isArabic
+                  ? 'إعادة البضاعة للمورد، خصم الكمية من المخزن، وتخفيض دائنية المورد'
+                  : 'Return goods to supplier, deduct from inventory & update supplier balance',
               textAlign: TextAlign.center,
               style: const TextStyle(color: Colors.grey),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
               icon: const Icon(Icons.add),
-              label: Text(isArabic ? 'إنشاء إرجاع مشتريات جديد' : 'New Purchase Return Request'),
-              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.warningColor),
+              label: Text(
+                isArabic
+                    ? 'إنشاء إرجاع مشتريات جديد'
+                    : 'New Purchase Return Request',
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.warningColor,
+              ),
               onPressed: () => _showPurchaseReturnDialog(context, isArabic),
             ),
           ],
@@ -870,14 +1137,19 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Row(
               children: [
-                const Icon(Icons.filter_alt_rounded, color: AppTheme.accentColor),
+                const Icon(
+                  Icons.filter_alt_rounded,
+                  color: AppTheme.accentColor,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        isArabic ? 'تصفية فواتير الشراء بالفترة' : 'Buying Invoice Date Filter',
+                        isArabic
+                            ? 'تصفية فواتير الشراء بالفترة'
+                            : 'Buying Invoice Date Filter',
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ],
@@ -886,7 +1158,10 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
                 // Month Selector Dropdown
                 DropdownButton<int>(
                   value: _selectedHistoryMonth,
-                  style: TextStyle(fontSize: 13, color: Theme.of(context).textTheme.bodyMedium?.color),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Theme.of(context).textTheme.bodyMedium?.color,
+                  ),
                   items: [
                     DropdownMenuItem(
                       value: 0,
@@ -894,12 +1169,15 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
                     ),
                     ...List.generate(12, (index) {
                       final m = index + 1;
-                      final monthName = DateFormat.MMMM(isArabic ? 'ar' : 'en').format(DateTime(2026, m));
+                      final monthName = DateFormat.MMMM(
+                        isArabic ? 'ar' : 'en',
+                      ).format(DateTime(2026, m));
                       return DropdownMenuItem(value: m, child: Text(monthName));
                     }),
                   ],
                   onChanged: (val) {
-                    if (val != null) setState(() => _selectedHistoryMonth = val);
+                    if (val != null)
+                      setState(() => _selectedHistoryMonth = val);
                   },
                 ),
                 const SizedBox(width: 12),
@@ -907,7 +1185,10 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
                 // Year Selector Dropdown
                 DropdownButton<int>(
                   value: _selectedHistoryYear,
-                  style: TextStyle(fontSize: 13, color: Theme.of(context).textTheme.bodyMedium?.color),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Theme.of(context).textTheme.bodyMedium?.color,
+                  ),
                   items: [
                     DropdownMenuItem(
                       value: 0,
@@ -942,11 +1223,20 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.receipt_long_outlined, size: 54, color: Colors.grey),
+                      const Icon(
+                        Icons.receipt_long_outlined,
+                        size: 54,
+                        color: Colors.grey,
+                      ),
                       const SizedBox(height: 12),
                       Text(
-                        isArabic ? 'لا توجد فواتير شراء في هذه الفترة المحددة' : 'No buying invoices recorded for this selected period',
-                        style: const TextStyle(color: Colors.grey, fontSize: 15),
+                        isArabic
+                            ? 'لا توجد فواتير شراء في هذه الفترة المحددة'
+                            : 'No buying invoices recorded for this selected period',
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 15,
+                        ),
                       ),
                     ],
                   ),
@@ -963,11 +1253,129 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
                   final total = (data['totalAmount'] ?? 0.0).toDouble();
                   final paid = (data['paidAmount'] ?? 0.0).toDouble();
                   final remaining = (data['remainingAmount'] ?? 0.0).toDouble();
-                  final date = SupplierInvoiceBalanceSyncService.parseInvoiceDate(data['date'] ?? data['createdAt']);
+                  final date =
+                      SupplierInvoiceBalanceSyncService.parseInvoiceDate(
+                        data['date'] ?? data['createdAt'],
+                      );
 
                   final paidLabel = isArabic ? 'مدفوع: ' : 'Paid: ';
                   final remLabel = isArabic ? 'متبقي للمورد: ' : 'Due: ';
-                  final subText = '$paidLabel\$${paid.toStringAsFixed(2)} | $remLabel\$${remaining.toStringAsFixed(2)}';
+                  final subText =
+                      '$paidLabel\$${paid.toStringAsFixed(2)} | $remLabel\$${remaining.toStringAsFixed(2)}';
+
+                  if (MediaQuery.sizeOf(context).width < 600) {
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Row(
+                              children: [
+                                const CircleAvatar(
+                                  backgroundColor: AppTheme.accentColor,
+                                  child: Icon(
+                                    Icons.local_shipping,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '#$invNum - $supplier',
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        DateFormat(
+                                          'yyyy/MM/dd HH:mm',
+                                        ).format(date),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color:
+                                              Theme.of(
+                                                context,
+                                              ).colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '\$${total.toStringAsFixed(2)}',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      Text(
+                                        subText,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.print_rounded,
+                                    color: AppTheme.accentColor,
+                                  ),
+                                  onPressed: () {
+                                    SupplierStatementPdfService.showBuyingInvoiceActionDialog(
+                                      context: context,
+                                      invoiceData: data,
+                                      locale: isArabic ? 'ar' : 'en',
+                                    );
+                                  },
+                                ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.delete_forever_rounded,
+                                    color: Colors.red,
+                                  ),
+                                  onPressed: () async {
+                                    final invWithId = Map<String, dynamic>.from(
+                                      data,
+                                    );
+                                    invWithId['id'] = docs[index].id;
+                                    await SupplierInvoiceBalanceSyncService.deleteBuyingInvoice(
+                                      context: context,
+                                      invoiceData: invWithId,
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
 
                   return Card(
                     margin: const EdgeInsets.only(bottom: 12),
@@ -976,43 +1384,79 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
                         backgroundColor: AppTheme.accentColor,
                         child: Icon(Icons.local_shipping, color: Colors.white),
                       ),
-                      title: Text('#$invNum - $supplier', style: const TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: Text('${DateFormat('yyyy/MM/dd HH:mm').format(date)} • Payment: ${data['paymentMethod']}'),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text('\$${total.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                              Text(subText, style: const TextStyle(fontSize: 10, color: Colors.grey)),
-                            ],
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.print_rounded, color: AppTheme.accentColor),
-                            tooltip: isArabic ? 'طباعة الفاتورة' : 'Print Invoice',
-                            onPressed: () {
-                              SupplierStatementPdfService.showBuyingInvoiceActionDialog(
-                                context: context,
-                                invoiceData: data,
-                                locale: isArabic ? 'ar' : 'en',
-                              );
-                            },
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete_forever_rounded, color: Colors.red),
-                            tooltip: isArabic ? 'حذف فاتورة الشراء' : 'Delete Buying Invoice',
-                            onPressed: () async {
-                              final invWithId = Map<String, dynamic>.from(data);
-                              invWithId['id'] = docs[index].id;
-                              await SupplierInvoiceBalanceSyncService.deleteBuyingInvoice(
-                                context: context,
-                                invoiceData: invWithId,
-                              );
-                            },
-                          ),
-                        ],
+                      title: Text(
+                        '#$invNum - $supplier',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(
+                        '${DateFormat('yyyy/MM/dd HH:mm').format(date)} • Payment: ${data['paymentMethod']}',
+                      ),
+                      trailing: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 280),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Flexible(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    '\$${total.toStringAsFixed(2)}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  Text(
+                                    subText,
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.print_rounded,
+                                color: AppTheme.accentColor,
+                              ),
+                              tooltip:
+                                  isArabic ? 'طباعة الفاتورة' : 'Print Invoice',
+                              onPressed: () {
+                                SupplierStatementPdfService.showBuyingInvoiceActionDialog(
+                                  context: context,
+                                  invoiceData: data,
+                                  locale: isArabic ? 'ar' : 'en',
+                                );
+                              },
+                            ),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.delete_forever_rounded,
+                                color: Colors.red,
+                              ),
+                              tooltip:
+                                  isArabic
+                                      ? 'حذف فاتورة الشراء'
+                                      : 'Delete Buying Invoice',
+                              onPressed: () async {
+                                final invWithId = Map<String, dynamic>.from(
+                                  data,
+                                );
+                                invWithId['id'] = docs[index].id;
+                                await SupplierInvoiceBalanceSyncService.deleteBuyingInvoice(
+                                  context: context,
+                                  invoiceData: invWithId,
+                                );
+                              },
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   );
@@ -1025,11 +1469,21 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage> with SingleTicker
     );
   }
 
-  Widget _buildCalcRow(String label, String value, {bool isBold = false, Color? color}) {
+  Widget _buildCalcRow(
+    String label,
+    String value, {
+    bool isBold = false,
+    Color? color,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: TextStyle(fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
+        Text(
+          label,
+          style: TextStyle(
+            fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
         Text(
           value,
           style: TextStyle(
@@ -1128,11 +1582,18 @@ class _BuyingInvoiceItemTileState extends State<_BuyingInvoiceItemTile> {
             child: TextField(
               controller: _qtyController,
               focusNode: _qtyFocus,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               textAlign: TextAlign.center,
               decoration: InputDecoration(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 4,
+                  vertical: 4,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 isDense: true,
               ),
               onChanged: (val) {

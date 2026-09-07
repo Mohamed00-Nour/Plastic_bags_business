@@ -2410,6 +2410,171 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                       '$paidLabel\$${paid.toStringAsFixed(2)} | '
                       '$remLabel\$${remaining.toStringAsFixed(2)}';
 
+                  if (MediaQuery.sizeOf(context).width < 600) {
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Row(
+                              children: [
+                                const CircleAvatar(
+                                  backgroundColor: AppTheme.primaryColor,
+                                  child: Icon(
+                                    Icons.receipt,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '#$invNum - $client',
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        DateFormat(
+                                          'yyyy/MM/dd HH:mm',
+                                        ).format(date),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color:
+                                              Theme.of(
+                                                context,
+                                              ).colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '\$${total.toStringAsFixed(2)}',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      Text(
+                                        subText,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.print_rounded,
+                                    color: AppTheme.primaryColor,
+                                  ),
+                                  onPressed: () {
+                                    ClientStatementPdfService.showSalesInvoiceActionDialog(
+                                      context: context,
+                                      invoiceData: data,
+                                      locale: isArabic ? 'ar' : 'en',
+                                    );
+                                  },
+                                ),
+                                PopupMenuButton<String>(
+                                  icon: const Icon(
+                                    Icons.more_vert_rounded,
+                                    color: Colors.grey,
+                                  ),
+                                  onSelected: (value) async {
+                                    if (value == 'edit') {
+                                      final invoiceDataWithId =
+                                          Map<String, dynamic>.from(data);
+                                      invoiceDataWithId['id'] = invoiceDoc.id;
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder:
+                                              (context) => SalesInvoicePage(
+                                                initialInvoiceData:
+                                                    invoiceDataWithId,
+                                              ),
+                                        ),
+                                      );
+                                    } else if (value == 'delete') {
+                                      final invoiceDataWithId =
+                                          Map<String, dynamic>.from(data);
+                                      invoiceDataWithId['id'] = invoiceDoc.id;
+                                      await SalesInvoiceActionsService.deleteSalesInvoice(
+                                        context: context,
+                                        invoiceData: invoiceDataWithId,
+                                      );
+                                    }
+                                  },
+                                  itemBuilder:
+                                      (pCtx) => [
+                                        const PopupMenuItem<String>(
+                                          value: 'edit',
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.edit_rounded,
+                                                color: AppTheme.primaryColor,
+                                                size: 20,
+                                              ),
+                                              SizedBox(width: 8),
+                                              Text('Edit Invoice'),
+                                            ],
+                                          ),
+                                        ),
+                                        const PopupMenuItem<String>(
+                                          value: 'delete',
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.delete_forever_rounded,
+                                                color: Colors.red,
+                                                size: 20,
+                                              ),
+                                              SizedBox(width: 8),
+                                              Text(
+                                                'Delete Invoice',
+                                                style: TextStyle(
+                                                  color: Colors.red,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+
                   return Card(
                     margin: const EdgeInsets.only(bottom: 12),
                     child: ListTile(
@@ -2419,125 +2584,129 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                       ),
                       title: Text(
                         '#$invNum - $client',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                       subtitle: Text(
                         '${DateFormat('yyyy/MM/dd HH:mm').format(date)} • Payment: ${data['paymentMethod']}',
                       ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: AlignmentDirectional.centerEnd,
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  '\$${total.toStringAsFixed(2)}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                Text(
-                                  subText,
-                                  style: const TextStyle(
-                                    fontSize: 10,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          IconButton(
-                            icon: const Icon(
-                              Icons.print_rounded,
-                              color: AppTheme.primaryColor,
-                            ),
-                            onPressed: () {
-                              ClientStatementPdfService.showSalesInvoiceActionDialog(
-                                context: context,
-                                invoiceData: data,
-                                locale: isArabic ? 'ar' : 'en',
-                              );
-                            },
-                          ),
-                          PopupMenuButton<String>(
-                            icon: const Icon(
-                              Icons.more_vert_rounded,
-                              color: Colors.grey,
-                            ),
-                            onSelected: (value) async {
-                              if (value == 'edit') {
-                                final invoiceDataWithId =
-                                    Map<String, dynamic>.from(data);
-                                invoiceDataWithId['id'] = invoiceDoc.id;
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder:
-                                        (context) => SalesInvoicePage(
-                                          initialInvoiceData: invoiceDataWithId,
-                                        ),
-                                  ),
-                                );
-                              } else if (value == 'delete') {
-                                final invoiceDataWithId =
-                                    Map<String, dynamic>.from(data);
-                                invoiceDataWithId['id'] = invoiceDoc.id;
-                                await SalesInvoiceActionsService.deleteSalesInvoice(
-                                  context: context,
-                                  invoiceData: invoiceDataWithId,
-                                );
-                              }
-                            },
-                            itemBuilder:
-                                (pCtx) => [
-                                  PopupMenuItem<String>(
-                                    value: 'edit',
-                                    child: Row(
-                                      children: [
-                                        const Icon(
-                                          Icons.edit_rounded,
-                                          color: AppTheme.primaryColor,
-                                          size: 20,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          isArabic
-                                              ? 'تعديل الفاتورة'
-                                              : 'Edit Invoice',
-                                        ),
-                                      ],
+                      trailing: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 260),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Flexible(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    '\$${total.toStringAsFixed(2)}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
                                     ),
                                   ),
-                                  PopupMenuItem<String>(
-                                    value: 'delete',
-                                    child: Row(
-                                      children: [
-                                        const Icon(
-                                          Icons.delete_forever_rounded,
-                                          color: Colors.red,
-                                          size: 20,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          isArabic
-                                              ? 'حذف الفاتورة'
-                                              : 'Delete Invoice',
-                                          style: const TextStyle(
-                                            color: Colors.red,
-                                          ),
-                                        ),
-                                      ],
+                                  Text(
+                                    subText,
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.grey,
                                     ),
                                   ),
                                 ],
-                          ),
-                        ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.print_rounded,
+                                color: AppTheme.primaryColor,
+                              ),
+                              onPressed: () {
+                                ClientStatementPdfService.showSalesInvoiceActionDialog(
+                                  context: context,
+                                  invoiceData: data,
+                                  locale: isArabic ? 'ar' : 'en',
+                                );
+                              },
+                            ),
+                            PopupMenuButton<String>(
+                              icon: const Icon(
+                                Icons.more_vert_rounded,
+                                color: Colors.grey,
+                              ),
+                              onSelected: (value) async {
+                                if (value == 'edit') {
+                                  final invoiceDataWithId =
+                                      Map<String, dynamic>.from(data);
+                                  invoiceDataWithId['id'] = invoiceDoc.id;
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder:
+                                          (context) => SalesInvoicePage(
+                                            initialInvoiceData:
+                                                invoiceDataWithId,
+                                          ),
+                                    ),
+                                  );
+                                } else if (value == 'delete') {
+                                  final invoiceDataWithId =
+                                      Map<String, dynamic>.from(data);
+                                  invoiceDataWithId['id'] = invoiceDoc.id;
+                                  await SalesInvoiceActionsService.deleteSalesInvoice(
+                                    context: context,
+                                    invoiceData: invoiceDataWithId,
+                                  );
+                                }
+                              },
+                              itemBuilder:
+                                  (pCtx) => [
+                                    PopupMenuItem<String>(
+                                      value: 'edit',
+                                      child: Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.edit_rounded,
+                                            color: AppTheme.primaryColor,
+                                            size: 20,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            isArabic
+                                                ? 'تعديل الفاتورة'
+                                                : 'Edit Invoice',
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    PopupMenuItem<String>(
+                                      value: 'delete',
+                                      child: Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.delete_forever_rounded,
+                                            color: Colors.red,
+                                            size: 20,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            isArabic
+                                                ? 'حذف الفاتورة'
+                                                : 'Delete Invoice',
+                                            style: const TextStyle(
+                                              color: Colors.red,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   );

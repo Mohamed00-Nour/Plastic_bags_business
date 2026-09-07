@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../core/services/current_user_service.dart';
+
 class SalesInvoiceCreationResult {
   final String invoiceId;
   final double previousBalance;
@@ -215,10 +217,20 @@ class ClientInvoiceBalanceSyncService {
             : FieldValue.serverTimestamp();
 
     final clientRef = _firestore.collection('clients').doc(clientId);
+    final productRefs = _productRefsById(items);
 
     return _firestore.runTransaction((transaction) async {
       // Firestore requires every read to happen before the first write.
       final clientSnapshot = await transaction.get(clientRef);
+      final productSnapshots =
+          <String, DocumentSnapshot<Map<String, dynamic>>>{};
+      for (final entry in productRefs.entries) {
+        productSnapshots[entry.key] = await transaction.get(entry.value);
+      }
+      final runningProductStock = {
+        for (final entry in productSnapshots.entries)
+          entry.key: _stockFromSnapshot(entry.value),
+      };
       if (!clientSnapshot.exists) {
         throw StateError('Client $clientId no longer exists.');
       }
@@ -265,7 +277,10 @@ class ClientInvoiceBalanceSyncService {
                 : double.tryParse(rawQuantity.toString()) ?? 0.0;
 
         if (productId.isEmpty || quantity <= 0) continue;
-        final productRef = _firestore.collection('products').doc(productId);
+        final productRef = productRefs[productId]!;
+        final stockBefore = runningProductStock[productId] ?? 0.0;
+        final stockAfter = stockBefore - quantity;
+        runningProductStock[productId] = stockAfter;
         transaction.update(productRef, {
           'stockQuantity': FieldValue.increment(-quantity),
           'updatedAt': FieldValue.serverTimestamp(),
@@ -278,6 +293,17 @@ class ClientInvoiceBalanceSyncService {
           'invoiceNumber': invoiceNumber,
           'productName': item['productName'] ?? '',
         });
+        _setStockLog(
+          transaction,
+          productId: productId,
+          productName: item['productName']?.toString() ?? '',
+          type: 'outgoing',
+          quantity: quantity,
+          stockBefore: stockBefore,
+          stockAfter: stockAfter,
+          referenceId: invoiceId,
+          note: 'Sales invoice #$invoiceNumber',
+        );
       }
 
       transaction.update(clientRef, {
@@ -390,6 +416,9 @@ class ClientInvoiceBalanceSyncService {
 
       if (productId.isNotEmpty && qty > 0) {
         final productRef = _firestore.collection('products').doc(productId);
+        final productSnapshot = await productRef.get();
+        final stockBefore = _stockFromSnapshot(productSnapshot);
+        final stockAfter = stockBefore + qty;
         batch.update(productRef, {
           'stockQuantity': FieldValue.increment(qty),
           'updatedAt': FieldValue.serverTimestamp(),
@@ -404,6 +433,17 @@ class ClientInvoiceBalanceSyncService {
           'invoiceNumber': returnNumber,
           'productName': item['productName'] ?? '',
         });
+        _setStockLogInBatch(
+          batch,
+          productId: productId,
+          productName: item['productName']?.toString() ?? '',
+          type: 'incoming',
+          quantity: qty,
+          stockBefore: stockBefore,
+          stockAfter: stockAfter,
+          referenceId: returnId,
+          note: 'Sales return #$returnNumber',
+        );
       }
     }
 
@@ -653,6 +693,113 @@ class ClientInvoiceBalanceSyncService {
       'address': address,
       'updatedAt': FieldValue.serverTimestamp(),
     });
+  }
+
+  Map<String, DocumentReference<Map<String, dynamic>>> _productRefsById(
+    List<Map<String, dynamic>> items,
+  ) {
+    final refs = <String, DocumentReference<Map<String, dynamic>>>{};
+
+    for (final item in items) {
+      final productId = item['productId']?.toString() ?? '';
+      final rawQuantity = item['quantity'] ?? 0.0;
+      final quantity =
+          rawQuantity is num
+              ? rawQuantity.toDouble()
+              : double.tryParse(rawQuantity.toString()) ?? 0.0;
+      if (productId.isEmpty || quantity <= 0) continue;
+      refs[productId] = _firestore.collection('products').doc(productId);
+    }
+
+    return refs;
+  }
+
+  static double _stockFromSnapshot(
+    DocumentSnapshot<Map<String, dynamic>>? snapshot,
+  ) {
+    final data = snapshot?.data();
+    final rawStock = data?['stockQuantity'] ?? data?['quantity'] ?? 0;
+    return rawStock is num
+        ? rawStock.toDouble()
+        : double.tryParse(rawStock.toString()) ?? 0.0;
+  }
+
+  static void _setStockLog(
+    Transaction transaction, {
+    required String productId,
+    required String productName,
+    required String type,
+    required double quantity,
+    required double stockBefore,
+    required double stockAfter,
+    required String referenceId,
+    required String note,
+  }) {
+    final logRef = FirebaseFirestore.instance.collection('stock_logs').doc();
+    transaction.set(
+      logRef,
+      _stockLogData(
+        productId: productId,
+        productName: productName,
+        type: type,
+        quantity: quantity,
+        stockBefore: stockBefore,
+        stockAfter: stockAfter,
+        referenceId: referenceId,
+        note: note,
+      ),
+    );
+  }
+
+  static void _setStockLogInBatch(
+    WriteBatch batch, {
+    required String productId,
+    required String productName,
+    required String type,
+    required double quantity,
+    required double stockBefore,
+    required double stockAfter,
+    required String referenceId,
+    required String note,
+  }) {
+    final logRef = FirebaseFirestore.instance.collection('stock_logs').doc();
+    batch.set(
+      logRef,
+      _stockLogData(
+        productId: productId,
+        productName: productName,
+        type: type,
+        quantity: quantity,
+        stockBefore: stockBefore,
+        stockAfter: stockAfter,
+        referenceId: referenceId,
+        note: note,
+      ),
+    );
+  }
+
+  static Map<String, dynamic> _stockLogData({
+    required String productId,
+    required String productName,
+    required String type,
+    required double quantity,
+    required double stockBefore,
+    required double stockAfter,
+    required String referenceId,
+    required String note,
+  }) {
+    return {
+      'productId': productId,
+      'productName': productName,
+      'type': type,
+      'quantity': quantity,
+      'stockBefore': stockBefore,
+      'stockAfter': stockAfter,
+      'referenceId': referenceId,
+      'note': note,
+      'createdBy': CurrentUserService.instance.userName,
+      'createdAt': FieldValue.serverTimestamp(),
+    };
   }
 
   /// Delete Client and clean up client sub-collections

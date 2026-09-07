@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
+import '../core/services/current_user_service.dart';
+
 /// Service handling Sales Invoice Editing & Updating (Inventory Diffing, Client Debt Adjustments, Client Reassignments).
 class SalesInvoiceUpdateService {
   SalesInvoiceUpdateService._();
@@ -223,6 +225,7 @@ class SalesInvoiceUpdateService {
                   ? currentStock.toDouble()
                   : double.tryParse(currentStock.toString()) ?? 0.0;
           final updatedStock = currentStockValue - diff;
+          final isMoreSold = diff > 0;
 
           transaction.update(productRef, {
             'stockQuantity': updatedStock,
@@ -235,6 +238,20 @@ class SalesInvoiceUpdateService {
             'amount': diff.abs(),
             'type': diff > 0 ? 'decrease' : 'increase',
             'notes': 'تعديل فاتورة مبيعات #$invoiceNumber',
+          });
+
+          final stockLogRef = firestore.collection('stock_logs').doc();
+          transaction.set(stockLogRef, {
+            'productId': productRef.id,
+            'productName': productData?['name']?.toString() ?? '',
+            'type': isMoreSold ? 'outgoing' : 'incoming',
+            'quantity': diff.abs(),
+            'stockBefore': currentStockValue,
+            'stockAfter': updatedStock,
+            'referenceId': invoiceId,
+            'note': 'Sales invoice edit #$invoiceNumber',
+            'createdBy': CurrentUserService.instance.userName,
+            'createdAt': FieldValue.serverTimestamp(),
           });
         }
 

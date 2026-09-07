@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
+import '../core/services/current_user_service.dart';
+
 /// Service handling Sales Invoice Actions (Deletion, Confirmation, Inventory Restoration, Balance Reversal).
 class SalesInvoiceActionsService {
   SalesInvoiceActionsService._();
@@ -12,7 +14,10 @@ class SalesInvoiceActionsService {
     VoidCallback? onSuccess,
   }) async {
     final invoiceNumber = invoiceData['invoiceNumber']?.toString() ?? 'INV-000';
-    final invoiceId = invoiceData['id']?.toString() ?? invoiceData['invoiceId']?.toString() ?? '';
+    final invoiceId =
+        invoiceData['id']?.toString() ??
+        invoiceData['invoiceId']?.toString() ??
+        '';
 
     if (invoiceId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -26,7 +31,10 @@ class SalesInvoiceActionsService {
       context: context,
       builder: (dCtx) {
         return AlertDialog(
-          title: const Text('تأكيد حذف الفاتورة', style: TextStyle(fontWeight: FontWeight.bold)),
+          title: const Text(
+            'تأكيد حذف الفاتورة',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
           content: Text(
             'هل أنت تأكد من حذف هذه الفاتورة رقم (#$invoiceNumber)؟\n(سيتم استرجاع كميات المنتجات إلى المخزن وتعديل رصيد العميل تلقائياً)',
           ),
@@ -70,7 +78,10 @@ class SalesInvoiceActionsService {
                     SizedBox(width: 16),
                     Text(
                       'جاري حذف الفاتورة وتعديل الرصيد والمخزون...',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
@@ -94,10 +105,13 @@ class SalesInvoiceActionsService {
 
     try {
       final firestore = FirebaseFirestore.instance;
-      final items = (invoiceData['items'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+      final items =
+          (invoiceData['items'] as List?)?.cast<Map<String, dynamic>>() ?? [];
       final totalAmount = (invoiceData['totalAmount'] ?? 0.0).toDouble();
       final paidAmount = (invoiceData['paidAmount'] ?? 0.0).toDouble();
-      final remainingOwed = (invoiceData['remainingAmount'] ?? (totalAmount - paidAmount)).toDouble();
+      final remainingOwed =
+          (invoiceData['remainingAmount'] ?? (totalAmount - paidAmount))
+              .toDouble();
 
       String clientId = invoiceData['clientId']?.toString() ?? '';
       final clientName = invoiceData['clientName']?.toString() ?? '';
@@ -105,11 +119,12 @@ class SalesInvoiceActionsService {
       // If clientId is empty, query by clientName
       if (clientId.isEmpty && clientName.isNotEmpty) {
         try {
-          final clientQuery = await firestore
-              .collection('clients')
-              .where('name', isEqualTo: clientName)
-              .limit(1)
-              .get();
+          final clientQuery =
+              await firestore
+                  .collection('clients')
+                  .where('name', isEqualTo: clientName)
+                  .limit(1)
+                  .get();
           if (clientQuery.docs.isNotEmpty) {
             clientId = clientQuery.docs.first.id;
           }
@@ -120,9 +135,10 @@ class SalesInvoiceActionsService {
       final productRefs = <DocumentReference, double>{};
       for (final item in items) {
         final productId = item['productId']?.toString();
-        final soldQty = (item['quantity'] ?? 1.0) is num
-            ? (item['quantity'] as num).toDouble()
-            : double.tryParse(item['quantity'].toString()) ?? 1.0;
+        final soldQty =
+            (item['quantity'] ?? 1.0) is num
+                ? (item['quantity'] as num).toDouble()
+                : double.tryParse(item['quantity'].toString()) ?? 1.0;
 
         DocumentReference? productRef;
         if (productId != null && productId.isNotEmpty) {
@@ -130,11 +146,12 @@ class SalesInvoiceActionsService {
         } else {
           final pName = item['productName'] ?? item['name'];
           if (pName != null) {
-            final pQuery = await firestore
-                .collection('products')
-                .where('name', isEqualTo: pName)
-                .limit(1)
-                .get();
+            final pQuery =
+                await firestore
+                    .collection('products')
+                    .where('name', isEqualTo: pName)
+                    .limit(1)
+                    .get();
             if (pQuery.docs.isNotEmpty) {
               productRef = pQuery.docs.first.reference;
             }
@@ -142,11 +159,18 @@ class SalesInvoiceActionsService {
         }
 
         if (productRef != null) {
-          productRefs[productRef] = soldQty;
+          productRefs.update(
+            productRef,
+            (currentQuantity) => currentQuantity + soldQty,
+            ifAbsent: () => soldQty,
+          );
         }
       }
 
-      final clientRef = clientId.isNotEmpty ? firestore.collection('clients').doc(clientId) : null;
+      final clientRef =
+          clientId.isNotEmpty
+              ? firestore.collection('clients').doc(clientId)
+              : null;
 
       // Execute Atomic Transaction: ALL READS FIRST, THEN ALL WRITES
       await firestore.runTransaction((transaction) async {
@@ -169,9 +193,14 @@ class SalesInvoiceActionsService {
           final pSnap = productSnapshots[pRef];
 
           if (pSnap != null && pSnap.exists) {
-            final currentStock = (pSnap.data() as Map<String, dynamic>?)?['stockQuantity'] ??
-                (pSnap.data() as Map<String, dynamic>?)?['quantity'] ?? 0;
-            final curDouble = currentStock is num ? currentStock.toDouble() : double.tryParse(currentStock.toString()) ?? 0.0;
+            final currentStock =
+                (pSnap.data() as Map<String, dynamic>?)?['stockQuantity'] ??
+                (pSnap.data() as Map<String, dynamic>?)?['quantity'] ??
+                0;
+            final curDouble =
+                currentStock is num
+                    ? currentStock.toDouble()
+                    : double.tryParse(currentStock.toString()) ?? 0.0;
             final newStock = curDouble + soldQty;
 
             transaction.update(pRef, {
@@ -187,11 +216,31 @@ class SalesInvoiceActionsService {
               'type': 'increase',
               'notes': 'إلغاء فاتورة مبيعات #$invoiceNumber',
             });
+
+            final stockLogRef = firestore.collection('stock_logs').doc();
+            transaction.set(stockLogRef, {
+              'productId': pRef.id,
+              'productName':
+                  (pSnap.data() as Map<String, dynamic>?)?['name']
+                      ?.toString() ??
+                  '',
+              'type': 'incoming',
+              'quantity': soldQty,
+              'stockBefore': curDouble,
+              'stockAfter': newStock,
+              'referenceId': invoiceId,
+              'note': 'Sales invoice deletion #$invoiceNumber',
+              'createdBy': CurrentUserService.instance.userName,
+              'createdAt': FieldValue.serverTimestamp(),
+            });
           }
         }
 
         // B. Reverse Client Balance
-        if (clientRef != null && cSnap != null && cSnap.exists && remainingOwed > 0) {
+        if (clientRef != null &&
+            cSnap != null &&
+            cSnap.exists &&
+            remainingOwed > 0) {
           final data = cSnap.data() as Map<String, dynamic>;
           final currentBal = (data['balance'] ?? 0.0).toDouble();
           final newBal = currentBal - remainingOwed;
@@ -213,7 +262,9 @@ class SalesInvoiceActionsService {
         }
 
         // C. Delete Root Invoice Document
-        final rootInvoiceRef = firestore.collection('sales_invoices').doc(invoiceId);
+        final rootInvoiceRef = firestore
+            .collection('sales_invoices')
+            .doc(invoiceId);
         transaction.delete(rootInvoiceRef);
 
         // D. Delete Client Sub-document Invoice (if exists)
@@ -230,12 +281,13 @@ class SalesInvoiceActionsService {
       // Cleanup balance history docs matching this invoice number
       if (clientId.isNotEmpty) {
         try {
-          final bhQuery = await firestore
-              .collection('clients')
-              .doc(clientId)
-              .collection('balanceHistory')
-              .where('invoiceNumber', isEqualTo: invoiceNumber)
-              .get();
+          final bhQuery =
+              await firestore
+                  .collection('clients')
+                  .doc(clientId)
+                  .collection('balanceHistory')
+                  .where('invoiceNumber', isEqualTo: invoiceNumber)
+                  .get();
           final cleanupBatch = firestore.batch();
           for (final doc in bhQuery.docs) {
             cleanupBatch.delete(doc.reference);
@@ -249,7 +301,11 @@ class SalesInvoiceActionsService {
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تم حذف الفاتورة رقم (#$invoiceNumber) واسترجاع المخزون ورصيد العميل بنجاح')),
+          SnackBar(
+            content: Text(
+              'تم حذف الفاتورة رقم (#$invoiceNumber) واسترجاع المخزون ورصيد العميل بنجاح',
+            ),
+          ),
         );
       }
 
