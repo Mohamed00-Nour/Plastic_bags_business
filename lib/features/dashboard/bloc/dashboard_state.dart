@@ -20,6 +20,7 @@ class DashboardLoaded extends DashboardState {
   final double totalClientsDebt;
   final double totalSuppliersDebt;
   final double totalInventoryCostValue;
+  final double totalManufacturingExpenses;
   final double totalProfit;
   final int activeProductsCount;
   final int lowStockCount;
@@ -41,6 +42,7 @@ class DashboardLoaded extends DashboardState {
     required this.totalClientsDebt,
     required this.totalSuppliersDebt,
     required this.totalInventoryCostValue,
+    this.totalManufacturingExpenses = 0.0,
     required this.totalProfit,
     required this.activeProductsCount,
     required this.lowStockCount,
@@ -64,6 +66,7 @@ class DashboardLoaded extends DashboardState {
         totalClientsDebt,
         totalSuppliersDebt,
         totalInventoryCostValue,
+        totalManufacturingExpenses,
         totalProfit,
         activeProductsCount,
         lowStockCount,

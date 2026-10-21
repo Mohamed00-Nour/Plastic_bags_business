@@ -28,6 +28,7 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
     on<ProductStockIncreased>(_onStockIncrease);
     on<ProductStockDecreased>(_onStockDecrease);
     on<ProductSearchRequested>(_onSearch);
+    on<ProductReorderRequested>(_onReorder);
   }
 
   Future<void> _onLoad(
@@ -195,6 +196,21 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
       ));
       emit(const ProductOperationSuccess(
           message: 'Stock decreased successfully'));
+    } catch (e) {
+      emit(ProductError(message: e.toString()));
+    }
+  }
+
+  Future<void> _onReorder(
+    ProductReorderRequested event,
+    Emitter<ProductState> emit,
+  ) async {
+    try {
+      _allProducts = List<ProductModel>.from(event.reorderedProducts);
+      add(const ProductSearchRequested(query: ''));
+      await _productRepository.reorderProducts(event.reorderedProducts);
+      emit(const ProductOperationSuccess(
+          message: 'تم حفظ ترتيب المنتجات بنجاح'));
     } catch (e) {
       emit(ProductError(message: e.toString()));
     }

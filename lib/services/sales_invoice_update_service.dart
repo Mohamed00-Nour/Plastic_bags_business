@@ -442,6 +442,9 @@ class SalesInvoiceUpdateService {
           'items': newInvoice['items'],
           'subtotal': newInvoice['subtotal'],
           'discount': newInvoice['discount'],
+          'additionalFees': newInvoice['additionalFees'] ?? [],
+          'additionalFeeAmount':
+              (newInvoice['additionalFeeAmount'] ?? 0.0).toDouble(),
           'totalAmount': newTotal,
           'paidAmount': newPaid,
           'remainingAmount': newNetDebt,

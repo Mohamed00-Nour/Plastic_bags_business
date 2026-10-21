@@ -29,6 +29,8 @@ class _UsersScreenState extends State<UsersScreen> {
         return l10n.roleAdmin;
       case UserRole.employee:
         return l10n.roleEmployee;
+      case UserRole.accountant:
+        return l10n.roleAccountant;
       case UserRole.viewer:
         return l10n.roleViewer;
     }
@@ -149,9 +151,19 @@ class _UsersScreenState extends State<UsersScreen> {
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.edit_outlined,
+                                  size: 20,
+                                  color: AppTheme.primaryColor,
+                                ),
+                                tooltip: l10n.edit,
+                                onPressed:
+                                    () => _showEditUserDialog(context, user),
+                              ),
                               PopupMenuButton<UserRole>(
                                 icon: const Icon(
-                                  Icons.admin_panel_settings,
+                                  Icons.admin_panel_settings_outlined,
                                   size: 20,
                                   color: AppTheme.primaryColor,
                                 ),
@@ -237,6 +249,33 @@ class _UsersScreenState extends State<UsersScreen> {
                                   }
                                 },
                               ),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.delete_outline,
+                                  size: 20,
+                                  color: AppTheme.dangerColor,
+                                ),
+                                tooltip: l10n.delete,
+                                onPressed: () async {
+                                  final confirmed =
+                                      await ConfirmationDialog.show(
+                                        context,
+                                        title: l10n.deleteUser,
+                                        message: l10n.areYouSureDelete(
+                                          user.name,
+                                        ),
+                                        confirmLabel: l10n.delete,
+                                        confirmColor: AppTheme.dangerColor,
+                                      );
+                                  if (confirmed == true && mounted) {
+                                    context.read<UserManagementBloc>().add(
+                                      UserManagementDeleteRequested(
+                                        userId: user.id,
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
                             ],
                           ),
                         ),
@@ -260,6 +299,9 @@ class _UsersScreenState extends State<UsersScreen> {
         break;
       case UserRole.employee:
         color = AppTheme.primaryColor;
+        break;
+      case UserRole.accountant:
+        color = const Color(0xFF0EA5E9);
         break;
       case UserRole.viewer:
         color = AppTheme.textSecondary;
@@ -316,9 +358,12 @@ class _UsersScreenState extends State<UsersScreen> {
                               ),
                               keyboardType: TextInputType.emailAddress,
                               validator: (v) {
-                                if (v?.trim().isEmpty == true)
+                                if (v?.trim().isEmpty == true) {
                                   return l10n.required_field;
-                                if (!v!.contains('@')) return l10n.invalidEmail;
+                                }
+                                if (!v!.contains('@')) {
+                                  return l10n.invalidEmail;
+                                }
                                 return null;
                               },
                             ),
@@ -330,9 +375,12 @@ class _UsersScreenState extends State<UsersScreen> {
                               ),
                               obscureText: true,
                               validator: (v) {
-                                if (v?.isEmpty == true)
+                                if (v?.isEmpty == true) {
                                   return l10n.required_field;
-                                if (v!.length < 6) return l10n.minSixChars;
+                                }
+                                if (v!.length < 6) {
+                                  return l10n.minSixChars;
+                                }
                                 return null;
                               },
                             ),
@@ -354,7 +402,8 @@ class _UsersScreenState extends State<UsersScreen> {
                                 if (role != null) {
                                   setDialogState(() {
                                     selectedRole = role;
-                                    if (role == UserRole.admin) {
+                                    if (role == UserRole.admin ||
+                                        role == UserRole.accountant) {
                                       selectedShopId = null;
                                       selectedShopName = null;
                                     }
@@ -362,7 +411,8 @@ class _UsersScreenState extends State<UsersScreen> {
                                 }
                               },
                             ),
-                            if (selectedRole != UserRole.admin) ...[
+                            if (selectedRole != UserRole.admin &&
+                                selectedRole != UserRole.accountant) ...[
                               const SizedBox(height: 12),
                               StreamBuilder<QuerySnapshot>(
                                 stream:
@@ -381,7 +431,9 @@ class _UsersScreenState extends State<UsersScreen> {
                                     ),
                                     validator:
                                         (v) =>
-                                            selectedRole != UserRole.admin &&
+                                            (selectedRole != UserRole.admin &&
+                                                    selectedRole !=
+                                                        UserRole.accountant) &&
                                                     (v == null || v.isEmpty)
                                                 ? l10n.pleaseSelectShop
                                                 : null,
@@ -439,6 +491,172 @@ class _UsersScreenState extends State<UsersScreen> {
                         }
                       },
                       child: Text(l10n.create),
+                    ),
+                  ],
+                ),
+          ),
+    );
+  }
+
+  void _showEditUserDialog(BuildContext context, UserModel user) {
+    final l10n = AppLocalizations.of(context)!;
+    final nameCtrl = TextEditingController(text: user.name);
+    UserRole selectedRole = user.role;
+    String? selectedShopId = user.shopId;
+    String? selectedShopName = user.shopName;
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder:
+          (ctx) => StatefulBuilder(
+            builder:
+                (ctx, setDialogState) => AlertDialog(
+                  insetPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 24,
+                  ),
+                  title: Text(l10n.editUser),
+                  content: SizedBox(
+                    width: 450,
+                    child: Form(
+                      key: formKey,
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            TextFormField(
+                              initialValue: user.email,
+                              decoration: InputDecoration(
+                                labelText: l10n.email,
+                                enabled: false,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: nameCtrl,
+                              decoration: InputDecoration(
+                                labelText: l10n.fullName,
+                              ),
+                              validator:
+                                  (v) =>
+                                      v?.trim().isEmpty == true
+                                          ? l10n.required_field
+                                          : null,
+                            ),
+                            const SizedBox(height: 12),
+                            DropdownButtonFormField<UserRole>(
+                              value: selectedRole,
+                              isExpanded: true,
+                              decoration: InputDecoration(labelText: l10n.role),
+                              items:
+                                  UserRole.values
+                                      .map(
+                                        (r) => DropdownMenuItem(
+                                          value: r,
+                                          child: Text(_localizedRole(l10n, r)),
+                                        ),
+                                      )
+                                      .toList(),
+                              onChanged: (role) {
+                                if (role != null) {
+                                  setDialogState(() {
+                                    selectedRole = role;
+                                    if (role == UserRole.admin ||
+                                        role == UserRole.accountant) {
+                                      selectedShopId = null;
+                                      selectedShopName = null;
+                                    }
+                                  });
+                                }
+                              },
+                            ),
+                            if (selectedRole != UserRole.admin &&
+                                selectedRole != UserRole.accountant) ...[
+                              const SizedBox(height: 12),
+                              StreamBuilder<QuerySnapshot>(
+                                stream:
+                                    FirebaseFirestore.instance
+                                        .collection('shops')
+                                        .where('isActive', isEqualTo: true)
+                                        .orderBy('name')
+                                        .snapshots(),
+                                builder: (context, snapshot) {
+                                  final shops = snapshot.data?.docs ?? [];
+                                  final validShopId =
+                                      selectedShopId != null &&
+                                              shops.any(
+                                                (d) => d.id == selectedShopId,
+                                              )
+                                          ? selectedShopId
+                                          : null;
+                                  return DropdownButtonFormField<String>(
+                                    value: validShopId,
+                                    isExpanded: true,
+                                    decoration: InputDecoration(
+                                      labelText: l10n.assignToShop,
+                                    ),
+                                    validator:
+                                        (v) =>
+                                            (selectedRole != UserRole.admin &&
+                                                    selectedRole !=
+                                                        UserRole.accountant) &&
+                                                    (v == null || v.isEmpty)
+                                                ? l10n.pleaseSelectShop
+                                                : null,
+                                    items:
+                                        shops.map((doc) {
+                                          final data =
+                                              doc.data()
+                                                  as Map<String, dynamic>;
+                                          return DropdownMenuItem(
+                                            value: doc.id,
+                                            child: Text(data['name'] ?? ''),
+                                          );
+                                        }).toList(),
+                                    onChanged: (id) {
+                                      if (id != null) {
+                                        final doc = shops.firstWhere(
+                                          (d) => d.id == id,
+                                        );
+                                        final data =
+                                            doc.data() as Map<String, dynamic>;
+                                        setDialogState(() {
+                                          selectedShopId = id;
+                                          selectedShopName = data['name'] ?? '';
+                                        });
+                                      }
+                                    },
+                                  );
+                                },
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: Text(l10n.cancel),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        if (formKey.currentState!.validate()) {
+                          context.read<UserManagementBloc>().add(
+                            UserManagementUpdateUserRequested(
+                              userId: user.id,
+                              name: nameCtrl.text.trim(),
+                              role: selectedRole,
+                              shopId: selectedShopId,
+                              shopName: selectedShopName,
+                            ),
+                          );
+                          Navigator.pop(ctx);
+                        }
+                      },
+                      child: Text(l10n.save),
                     ),
                   ],
                 ),

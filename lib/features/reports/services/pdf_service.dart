@@ -120,7 +120,13 @@ class PdfService {
     final snapshot =
         await FirebaseFirestore.instance.collection('products').get();
     final products =
-        snapshot.docs.map((d) => ProductModel.fromFirestore(d)).toList();
+        snapshot.docs.map((d) => ProductModel.fromFirestore(d)).toList()
+          ..sort((a, b) {
+            if (a.sortOrder != b.sortOrder) {
+              return a.sortOrder.compareTo(b.sortOrder);
+            }
+            return a.name.compareTo(b.name);
+          });
 
     final pdf = pw.Document();
 
@@ -408,7 +414,13 @@ class PdfService {
     final snapshot =
         await FirebaseFirestore.instance.collection('products').get();
     final products =
-        snapshot.docs.map((d) => ProductModel.fromFirestore(d)).toList();
+        snapshot.docs.map((d) => ProductModel.fromFirestore(d)).toList()
+          ..sort((a, b) {
+            if (a.sortOrder != b.sortOrder) {
+              return a.sortOrder.compareTo(b.sortOrder);
+            }
+            return a.name.compareTo(b.name);
+          });
     final pdf = pw.Document();
     pdf.addPage(
       pw.MultiPage(

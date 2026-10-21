@@ -385,8 +385,9 @@ class _ClientsPageState extends State<ClientsPage> {
                                   context,
                                   rootNavigator: true,
                                 ).pop();
-                                if (dialogContext.mounted)
+                                if (dialogContext.mounted) {
                                   Navigator.pop(dialogContext);
+                                }
 
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
@@ -713,44 +714,74 @@ class _ClientsPageState extends State<ClientsPage> {
                       children: [
                         // KPI Summary Card
                         Card(
-                          margin: const EdgeInsets.only(bottom: 16),
+                          margin: const EdgeInsets.only(bottom: 12),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 14,
+                              horizontal: 16,
+                              vertical: 12,
                             ),
                             child: Row(
                               children: [
-                                const Icon(
-                                  Icons.account_balance_wallet,
-                                  color: AppTheme.primaryColor,
-                                  size: 28,
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primaryColor.withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: const Icon(
+                                    Icons.account_balance_wallet_rounded,
+                                    color: AppTheme.primaryColor,
+                                    size: 24,
+                                  ),
                                 ),
                                 const SizedBox(width: 12),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      isArabic
-                                          ? 'إجمالي مستحقات الديون (العملاء)'
-                                          : 'Total Outstanding Client Debts',
-                                      style:
-                                          Theme.of(
-                                            context,
-                                          ).textTheme.titleSmall,
-                                    ),
-                                    Text(
-                                      '\$${totalDebt.toStringAsFixed(2)}',
-                                      style: const TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppTheme.dangerColor,
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        isArabic
+                                            ? 'إجمالي مستحقات الديون (العملاء)'
+                                            : 'Total Outstanding Client Debts',
+                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                          color: Colors.grey,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                    ),
-                                  ],
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        '\$${totalDebt.toStringAsFixed(2)}',
+                                        style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppTheme.dangerColor,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                                const Spacer(),
-                                Chip(label: Text(clientCountLabel)),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).cardColor,
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: AppTheme.primaryColor.withValues(alpha: 0.3),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    clientCountLabel,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppTheme.primaryColor,
+                                    ),
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -777,12 +808,32 @@ class _ClientsPageState extends State<ClientsPage> {
                                       final client = filteredClients[index];
                                       final balance =
                                           (client['balance'] ?? 0.0).toDouble();
+                                      final initial = (client['name'] ?? 'C')
+                                          .toString()
+                                          .trim()
+                                          .isNotEmpty
+                                          ? (client['name'] ?? 'C')
+                                              .toString()
+                                              .trim()
+                                              .substring(0, 1)
+                                              .toUpperCase()
+                                          : 'C';
 
                                       return Card(
                                         margin: const EdgeInsets.only(
                                           bottom: 10,
                                         ),
-                                        child: ListTile(
+                                        elevation: 0,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(14),
+                                          side: BorderSide(
+                                            color: Theme.of(context)
+                                                .dividerColor
+                                                .withValues(alpha: 0.1),
+                                          ),
+                                        ),
+                                        child: InkWell(
+                                          borderRadius: BorderRadius.circular(14),
                                           onTap: () {
                                             Navigator.push(
                                               context,
@@ -795,102 +846,357 @@ class _ClientsPageState extends State<ClientsPage> {
                                               ),
                                             );
                                           },
-                                          leading: CircleAvatar(
-                                            backgroundColor: AppTheme
-                                                .primaryColor
-                                                .withValues(alpha: 0.15),
-                                            child: Text(
-                                              (client['name'] ?? 'C')
-                                                  .toString()
-                                                  .substring(0, 1)
-                                                  .toUpperCase(),
-                                              style: const TextStyle(
-                                                color: AppTheme.primaryColor,
-                                                fontWeight: FontWeight.bold,
-                                              ),
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(12),
+                                            child: LayoutBuilder(
+                                              builder: (context, cardConstraints) {
+                                                final isNarrow =
+                                                    cardConstraints.maxWidth < 450;
+
+                                                if (isNarrow) {
+                                                  // Mobile / Narrow View: Top Row (Avatar + Name/Info + Balance Badge), Bottom Row (Details link + Actions)
+                                                  return Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment.start,
+                                                    children: [
+                                                      Row(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment.center,
+                                                        children: [
+                                                          CircleAvatar(
+                                                            radius: 20,
+                                                            backgroundColor: AppTheme
+                                                                .primaryColor
+                                                                .withValues(alpha: 0.15),
+                                                            child: Text(
+                                                              initial,
+                                                              style: const TextStyle(
+                                                                color: AppTheme
+                                                                    .primaryColor,
+                                                                fontWeight:
+                                                                    FontWeight.bold,
+                                                                fontSize: 16,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                          const SizedBox(width: 10),
+                                                          Expanded(
+                                                            child: Column(
+                                                              crossAxisAlignment:
+                                                                  CrossAxisAlignment.start,
+                                                              children: [
+                                                                Text(
+                                                                  client['name'] ?? '',
+                                                                  style: const TextStyle(
+                                                                    fontWeight:
+                                                                        FontWeight.bold,
+                                                                    fontSize: 15,
+                                                                  ),
+                                                                  maxLines: 1,
+                                                                  overflow:
+                                                                      TextOverflow.ellipsis,
+                                                                ),
+                                                                if ((client['phone'] ?? '')
+                                                                        .toString()
+                                                                        .isNotEmpty ||
+                                                                    (client['address'] ?? '')
+                                                                        .toString()
+                                                                        .isNotEmpty) ...[
+                                                                  const SizedBox(height: 2),
+                                                                  Text(
+                                                                    '${client['phone'] ?? ''} ${client['address'] != null && client['address'].toString().trim().isNotEmpty ? "• ${client['address']}" : ""}',
+                                                                    style: TextStyle(
+                                                                      fontSize: 12,
+                                                                      color: Theme.of(context)
+                                                                              .textTheme
+                                                                              .bodySmall
+                                                                              ?.color ??
+                                                                          Colors.grey,
+                                                                    ),
+                                                                    maxLines: 1,
+                                                                    overflow:
+                                                                        TextOverflow.ellipsis,
+                                                                  ),
+                                                                ],
+                                                              ],
+                                                            ),
+                                                          ),
+                                                          const SizedBox(width: 8),
+                                                          Container(
+                                                            padding: const EdgeInsets.symmetric(
+                                                                horizontal: 8,
+                                                                vertical: 4),
+                                                            decoration: BoxDecoration(
+                                                              color: (balance > 0
+                                                                      ? AppTheme.dangerColor
+                                                                      : AppTheme.successColor)
+                                                                  .withValues(alpha: 0.12),
+                                                              borderRadius:
+                                                                  BorderRadius.circular(8),
+                                                            ),
+                                                            child: Column(
+                                                              crossAxisAlignment:
+                                                                  CrossAxisAlignment.end,
+                                                              children: [
+                                                                Text(
+                                                                  isArabic
+                                                                      ? 'الرصيد'
+                                                                      : 'Balance',
+                                                                  style: TextStyle(
+                                                                    fontSize: 9,
+                                                                    color: balance > 0
+                                                                        ? AppTheme.dangerColor
+                                                                        : AppTheme.successColor,
+                                                                  ),
+                                                                ),
+                                                                Text(
+                                                                  '\$${balance.toStringAsFixed(2)}',
+                                                                  style: TextStyle(
+                                                                    fontSize: 13,
+                                                                    fontWeight:
+                                                                        FontWeight.bold,
+                                                                    color: balance > 0
+                                                                        ? AppTheme.dangerColor
+                                                                        : AppTheme.successColor,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      const SizedBox(height: 8),
+                                                      Divider(
+                                                        height: 1,
+                                                        thickness: 0.5,
+                                                        color: Theme.of(context)
+                                                            .dividerColor
+                                                            .withValues(alpha: 0.08),
+                                                      ),
+                                                      const SizedBox(height: 4),
+                                                      Row(
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment.spaceBetween,
+                                                        children: [
+                                                          TextButton.icon(
+                                                            style: TextButton.styleFrom(
+                                                              padding: const EdgeInsets.symmetric(
+                                                                  horizontal: 6,
+                                                                  vertical: 4),
+                                                              minimumSize: Size.zero,
+                                                              tapTargetSize:
+                                                                  MaterialTapTargetSize.shrinkWrap,
+                                                            ),
+                                                            onPressed: () {
+                                                              Navigator.push(
+                                                                context,
+                                                                MaterialPageRoute(
+                                                                  builder:
+                                                                      (context) =>
+                                                                          ClientDetailsPage(
+                                                                            clientData: client,
+                                                                          ),
+                                                                ),
+                                                              );
+                                                            },
+                                                            icon: const Icon(
+                                                                Icons.visibility_outlined,
+                                                                size: 16),
+                                                            label: Text(
+                                                              isArabic
+                                                                  ? 'تفاصيل الحساب'
+                                                                  : 'Account Details',
+                                                              style: const TextStyle(
+                                                                  fontSize: 12),
+                                                            ),
+                                                          ),
+                                                          Row(
+                                                            mainAxisSize:
+                                                                MainAxisSize.min,
+                                                            children: [
+                                                              IconButton(
+                                                                constraints:
+                                                                    const BoxConstraints(),
+                                                                padding:
+                                                                    const EdgeInsets.all(6),
+                                                                icon: const Icon(
+                                                                  Icons.edit_rounded,
+                                                                  color: AppTheme
+                                                                      .primaryColor,
+                                                                  size: 18,
+                                                                ),
+                                                                tooltip: isArabic
+                                                                    ? 'تعديل بيانات العميل'
+                                                                    : 'Edit Client Info',
+                                                                onPressed: () =>
+                                                                    _showEditClientDialog(
+                                                                  context,
+                                                                  client,
+                                                                  isArabic,
+                                                                ),
+                                                              ),
+                                                              const SizedBox(width: 4),
+                                                              IconButton(
+                                                                constraints:
+                                                                    const BoxConstraints(),
+                                                                padding:
+                                                                    const EdgeInsets.all(6),
+                                                                icon: const Icon(
+                                                                  Icons
+                                                                      .delete_forever_rounded,
+                                                                  color: Colors.red,
+                                                                  size: 18,
+                                                                ),
+                                                                tooltip: isArabic
+                                                                    ? 'حذف العميل'
+                                                                    : 'Delete Client',
+                                                                onPressed: () =>
+                                                                    _confirmDeleteClient(
+                                                                  context,
+                                                                  client,
+                                                                  isArabic,
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ],
+                                                  );
+                                                }
+
+                                                // Desktop / Tablet Layout: Wide Row
+                                                return Row(
+                                                  children: [
+                                                    CircleAvatar(
+                                                      radius: 22,
+                                                      backgroundColor: AppTheme
+                                                          .primaryColor
+                                                          .withValues(alpha: 0.15),
+                                                      child: Text(
+                                                        initial,
+                                                        style: const TextStyle(
+                                                          color:
+                                                              AppTheme.primaryColor,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          fontSize: 16,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 14),
+                                                    Expanded(
+                                                      child: Column(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment.start,
+                                                        children: [
+                                                          Text(
+                                                            client['name'] ?? '',
+                                                            style: const TextStyle(
+                                                              fontWeight:
+                                                                  FontWeight.bold,
+                                                              fontSize: 16,
+                                                            ),
+                                                            maxLines: 1,
+                                                            overflow:
+                                                                TextOverflow.ellipsis,
+                                                          ),
+                                                          const SizedBox(height: 3),
+                                                          Text(
+                                                            '${client['phone'] ?? ''} ${client['address'] != null && client['address'].toString().trim().isNotEmpty ? "• ${client['address']}" : ""}',
+                                                            style: TextStyle(
+                                                              fontSize: 13,
+                                                              color: Theme.of(context)
+                                                                      .textTheme
+                                                                      .bodySmall
+                                                                      ?.color ??
+                                                                  Colors.grey,
+                                                            ),
+                                                            maxLines: 1,
+                                                            overflow:
+                                                                TextOverflow.ellipsis,
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 12),
+                                                    Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment.end,
+                                                      children: [
+                                                        Text(
+                                                          isArabic
+                                                              ? 'الرصيد المستحق'
+                                                              : 'Due Balance',
+                                                          style: const TextStyle(
+                                                              fontSize: 11,
+                                                              color: Colors.grey),
+                                                        ),
+                                                        Text(
+                                                          '\$${balance.toStringAsFixed(2)}',
+                                                          style: TextStyle(
+                                                            fontSize: 15,
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                            color: balance > 0
+                                                                ? AppTheme
+                                                                    .dangerColor
+                                                                : AppTheme
+                                                                    .successColor,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    const SizedBox(width: 12),
+                                                    IconButton(
+                                                      icon: const Icon(
+                                                        Icons.history_rounded,
+                                                        color: AppTheme.primaryColor,
+                                                      ),
+                                                      tooltip: isArabic
+                                                          ? 'كشف حساب وتاريخ الرصيد'
+                                                          : 'Balance History & Statement',
+                                                      onPressed: () =>
+                                                          _showBalanceHistoryDialog(
+                                                        context,
+                                                        client,
+                                                        isArabic,
+                                                      ),
+                                                    ),
+                                                    IconButton(
+                                                      icon: const Icon(
+                                                        Icons.edit_rounded,
+                                                        color: AppTheme.primaryColor,
+                                                      ),
+                                                      tooltip: isArabic
+                                                          ? 'تعديل بيانات العميل'
+                                                          : 'Edit Client Info',
+                                                      onPressed: () =>
+                                                          _showEditClientDialog(
+                                                        context,
+                                                        client,
+                                                        isArabic,
+                                                      ),
+                                                    ),
+                                                    IconButton(
+                                                      icon: const Icon(
+                                                        Icons.delete_forever_rounded,
+                                                        color: Colors.red,
+                                                      ),
+                                                      tooltip: isArabic
+                                                          ? 'حذف العميل'
+                                                          : 'Delete Client',
+                                                      onPressed: () =>
+                                                          _confirmDeleteClient(
+                                                        context,
+                                                        client,
+                                                        isArabic,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                );
+                                              },
                                             ),
-                                          ),
-                                          title: Text(
-                                            client['name'] ?? '',
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          subtitle: Text(
-                                            '${client['phone'] ?? ''} ${client['address'] != null && client['address'].isNotEmpty ? "• ${client['address']}" : ""}',
-                                          ),
-                                          trailing: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Column(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.end,
-                                                children: [
-                                                  Text(
-                                                    isArabic
-                                                        ? 'الرصيد المستحق'
-                                                        : 'Due Balance',
-                                                    style: const TextStyle(
-                                                      fontSize: 10,
-                                                      color: Colors.grey,
-                                                    ),
-                                                  ),
-                                                  Text(
-                                                    '\$${balance.toStringAsFixed(2)}',
-                                                    style: TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      color:
-                                                          balance > 0
-                                                              ? AppTheme
-                                                                  .dangerColor
-                                                              : AppTheme
-                                                                  .successColor,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                              const SizedBox(width: 8),
-                                              /*IconButton(
-                                              icon: const Icon(Icons.history_rounded, color: AppTheme.primaryColor),
-                                              tooltip: isArabic ? 'كشف حساب وتاريخ الرصيد' : 'Balance History & Statement',
-                                              onPressed: () => _showBalanceHistoryDialog(context, client, isArabic),
-                                            ),*/
-                                              IconButton(
-                                                icon: const Icon(
-                                                  Icons.edit_rounded,
-                                                  color: AppTheme.primaryColor,
-                                                ),
-                                                tooltip:
-                                                    isArabic
-                                                        ? 'تعديل بيانات العميل'
-                                                        : 'Edit Client Info',
-                                                onPressed:
-                                                    () => _showEditClientDialog(
-                                                      context,
-                                                      client,
-                                                      isArabic,
-                                                    ),
-                                              ),
-                                              IconButton(
-                                                icon: const Icon(
-                                                  Icons.delete_forever_rounded,
-                                                  color: Colors.red,
-                                                ),
-                                                tooltip:
-                                                    isArabic
-                                                        ? 'حذف العميل'
-                                                        : 'Delete Client',
-                                                onPressed:
-                                                    () => _confirmDeleteClient(
-                                                      context,
-                                                      client,
-                                                      isArabic,
-                                                    ),
-                                              ),
-                                            ],
                                           ),
                                         ),
                                       );

@@ -449,6 +449,12 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
     final notes = invoice['notes']?.toString().trim() ?? '';
     final items =
         (invoice['items'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    final rawFees =
+        invoice['additionalFees'] ??
+        invoice['additionalExpenses'] ??
+        invoice['additionalCosts'];
+    final additionalFeeAmount =
+        (invoice['additionalFeeAmount'] ?? 0.0).toDouble();
     final paymentMethod = invoice['paymentMethod']?.toString() ?? 'نقدي';
 
     final rawDate = invoice['createdAt'] ?? invoice['date'];
@@ -609,6 +615,70 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
                   ),
                 ),
                 const SizedBox(height: 12),
+                if (rawFees is List && rawFees.isNotEmpty) ...[
+                  ...rawFees
+                      .where(
+                        (f) =>
+                            f is Map &&
+                            (((f['amount'] ?? f['value'] ?? 0.0) as num) > 0 ||
+                                (f['name'] ?? f['label'] ?? '')
+                                    .toString()
+                                    .isNotEmpty),
+                      )
+                      .map((f) {
+                        final name =
+                            (f['name'] ?? f['label'] ?? 'مصروف إضافي')
+                                .toString();
+                        final amount =
+                            ((f['amount'] ?? f['value'] ?? 0.0) as num)
+                                .toDouble();
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                name,
+                                style: const TextStyle(
+                                  color: Colors.orange,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              Text(
+                                '+\$${amount.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  color: Colors.orange,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                ] else if (additionalFeeAmount > 0) ...[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'مصاريف إضافية',
+                        style: TextStyle(
+                          color: Colors.orange,
+                          fontSize: 13,
+                        ),
+                      ),
+                      Text(
+                        '+\$${additionalFeeAmount.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          color: Colors.orange,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                ],
                 if (discount > 0) ...[
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,

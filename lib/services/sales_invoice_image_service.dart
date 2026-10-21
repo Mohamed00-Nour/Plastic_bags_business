@@ -129,7 +129,19 @@ class InvoiceReceiptCard extends StatelessWidget {
         invoiceData['supplierName']?.toString() ??
         'عميل نقدي';
 
+    final allItems =
+        (invoiceData['items'] as List?)?.cast<Map<String, dynamic>>() ??
+        pageItems;
+    final totalQuantity = allItems.fold<double>(0.0, (acc, item) {
+      final rawQty = item['quantity'] ?? 1;
+      final numQty =
+          rawQty is num
+              ? rawQty.toDouble()
+              : double.tryParse(rawQty.toString()) ?? 1.0;
+      return acc + numQty;
+    });
     final totalAmount = (invoiceData['totalAmount'] ?? 0.0).toDouble();
+    final subtotal = (invoiceData['subtotal'] ?? totalAmount).toDouble();
     final paidAmount = (invoiceData['paidAmount'] ?? 0.0).toDouble();
     final remainingAmount =
         (invoiceData['remainingAmount'] ?? (totalAmount - paidAmount))
@@ -358,11 +370,65 @@ class InvoiceReceiptCard extends StatelessWidget {
             );
           }),
 
+          // Total Quantity Row under the column 'الكمية'
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            decoration: BoxDecoration(
+              color: const Color(0xFF334155).withValues(alpha: 0.6),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Row(
+              children: [
+                const Expanded(
+                  flex: 4,
+                  child: Text(
+                    'إجمالي الكمية',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    formatQuantity(totalQuantity),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Color(0xFF38BDF8),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+                const Expanded(flex: 2, child: SizedBox()),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    '\$${subtotal.toStringAsFixed(2)}',
+                    textAlign: TextAlign.left,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
           // Show Summary Footer on the last page
           if (currentPage == totalPages) ...[
             const SizedBox(height: 16),
             const Divider(color: Color(0xFF475569)),
             const SizedBox(height: 8),
+            _buildSummaryRow(
+              'إجمالي الكمية:',
+              formatQuantity(totalQuantity),
+              color: const Color(0xFF38BDF8),
+            ),
             _buildSummaryRow(
               'إجمالي الفاتورة:',
               '\$${totalAmount.toStringAsFixed(2)}',

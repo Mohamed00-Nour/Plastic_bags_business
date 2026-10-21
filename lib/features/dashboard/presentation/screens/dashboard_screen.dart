@@ -6,6 +6,9 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/stats_card.dart';
 import '../../../../core/widgets/common_widgets.dart';
+import '../../../../data/models/user_model.dart';
+import '../../../auth/bloc/auth_bloc.dart';
+import '../../../auth/bloc/auth_state.dart';
 import '../../bloc/dashboard_bloc.dart';
 import '../../bloc/dashboard_event.dart';
 import '../../bloc/dashboard_state.dart';
@@ -105,6 +108,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildDashboard(BuildContext context, DashboardLoaded state) {
     final l10n = AppLocalizations.of(context)!;
     final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+    final authState = context.watch<AuthBloc>().state;
+    final currentUser = authState is AuthAuthenticated ? authState.user : null;
+    final canSeeNetProfit = currentUser?.role.canSeeNetProfit ?? true;
     final currencyFormat = NumberFormat.currency(
       symbol: '\$',
       decimalDigits: 2,
@@ -238,12 +244,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       icon: Icons.assignment_return_rounded,
                       color: Colors.orange,
                     ),
-                    StatsCard(
-                      title: isArabic ? 'صافي الأرباح التجاريه' : 'Net Profit',
-                      value: currencyFormat.format(state.totalProfit),
-                      icon: Icons.attach_money_rounded,
-                      color: AppTheme.primaryColor,
-                    ),
+                    if (canSeeNetProfit)
+                      StatsCard(
+                        title:
+                            isArabic ? 'صافي الأرباح التجاريه' : 'Net Profit',
+                        value: currencyFormat.format(state.totalProfit),
+                        icon: Icons.attach_money_rounded,
+                        color: AppTheme.primaryColor,
+                      ),
                     StatsCard(
                       title:
                           isArabic ? 'ديون العملاء المستحقة' : 'Clients Debt',

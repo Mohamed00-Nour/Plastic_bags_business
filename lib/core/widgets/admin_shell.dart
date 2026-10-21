@@ -20,6 +20,7 @@ import '../../features/users/presentation/screens/users_screen.dart';
 import '../../features/stock_logs/presentation/screens/stock_logs_screen.dart';
 import '../../features/manufacturing/presentation/screens/manufacturing_shell.dart';
 import '../../features/announcements/presentation/screens/announcements_screen.dart';
+import '../../features/tithe/presentation/screens/tithe_screen.dart';
 import '../../screens/sales_invoice_page.dart';
 import '../../screens/buying_invoice_page.dart';
 import '../../screens/clients_page.dart';
@@ -99,6 +100,12 @@ class _AdminShellState extends State<AdminShell> {
         label: l10n.reports,
         screen: const ReportsScreen(),
       ),
+      if (role.canSeeNetProfit)
+        _NavItem(
+          icon: Icons.volunteer_activism_rounded,
+          label: isArabic ? 'خانة العشور (10%)' : 'Tithe (10%)',
+          screen: const TitheScreen(),
+        ),
       if (role.canManageUsers)
         _NavItem(
           icon: Icons.people_rounded,

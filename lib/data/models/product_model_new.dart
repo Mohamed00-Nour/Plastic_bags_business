@@ -14,6 +14,7 @@ class ProductModel extends Equatable {
   final String? supplierId;
   final String? supplierName;
   final double lowStockThreshold;
+  final int sortOrder;
   final bool isActive;
   final String createdBy;
   final String modifiedBy;
@@ -33,6 +34,7 @@ class ProductModel extends Equatable {
     this.supplierId,
     this.supplierName,
     this.lowStockThreshold = 10.0,
+    this.sortOrder = 0,
     this.isActive = true,
     this.createdBy = '',
     this.modifiedBy = '',
@@ -43,30 +45,47 @@ class ProductModel extends Equatable {
   bool get isLowStock => stockQuantity <= lowStockThreshold;
   double get profit => price - costPrice;
 
+  static double _toDouble(dynamic val, [double defaultVal = 0.0]) {
+    if (val == null) return defaultVal;
+    if (val is num) return val.toDouble();
+    if (val is String) return double.tryParse(val) ?? defaultVal;
+    return defaultVal;
+  }
+
+  static double? _toNullableDouble(dynamic val) {
+    if (val == null) return null;
+    if (val is num) return val.toDouble();
+    if (val is String) return double.tryParse(val);
+    return null;
+  }
+
+  static int _toInt(dynamic val, [int defaultVal = 0]) {
+    if (val == null) return defaultVal;
+    if (val is num) return val.toInt();
+    if (val is String) return int.tryParse(val) ?? defaultVal;
+    return defaultVal;
+  }
+
   factory ProductModel.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
-    final double defaultPrice = (data['price'] ?? 0).toDouble();
+    final data = (doc.data() as Map<String, dynamic>?) ?? {};
+    final double defaultPrice = _toDouble(data['price']);
     return ProductModel(
       id: doc.id,
-      name: data['name'] ?? '',
-      size: data['size'] ?? '',
+      name: data['name']?.toString() ?? '',
+      size: data['size']?.toString() ?? '',
       price: defaultPrice,
-      costPrice: (data['costPrice'] ?? 0).toDouble(),
-      price1:
-          data['price1'] != null
-              ? (data['price1'] as num).toDouble()
-              : defaultPrice,
-      price2:
-          data['price2'] != null ? (data['price2'] as num).toDouble() : null,
-      price3:
-          data['price3'] != null ? (data['price3'] as num).toDouble() : null,
-      stockQuantity: (data['stockQuantity'] ?? 0).toDouble(),
-      supplierId: data['supplierId'],
-      supplierName: data['supplierName'],
-      lowStockThreshold: (data['lowStockThreshold'] ?? 10).toDouble(),
-      isActive: data['isActive'] ?? true,
-      createdBy: data['createdBy'] ?? '',
-      modifiedBy: data['modifiedBy'] ?? '',
+      costPrice: _toDouble(data['costPrice']),
+      price1: data['price1'] != null ? _toDouble(data['price1'], defaultPrice) : defaultPrice,
+      price2: _toNullableDouble(data['price2']),
+      price3: _toNullableDouble(data['price3']),
+      stockQuantity: _toDouble(data['stockQuantity']),
+      supplierId: data['supplierId']?.toString(),
+      supplierName: data['supplierName']?.toString(),
+      lowStockThreshold: _toDouble(data['lowStockThreshold'], 10.0),
+      sortOrder: _toInt(data['sortOrder'] ?? data['order'], 0),
+      isActive: data['isActive'] as bool? ?? true,
+      createdBy: data['createdBy']?.toString() ?? '',
+      modifiedBy: data['modifiedBy']?.toString() ?? '',
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
@@ -84,6 +103,7 @@ class ProductModel extends Equatable {
     'supplierId': supplierId,
     'supplierName': supplierName,
     'lowStockThreshold': lowStockThreshold,
+    'sortOrder': sortOrder,
     'isActive': isActive,
     'createdBy': createdBy,
     'modifiedBy': modifiedBy,
@@ -104,6 +124,7 @@ class ProductModel extends Equatable {
     String? supplierId,
     String? supplierName,
     double? lowStockThreshold,
+    int? sortOrder,
     bool? isActive,
     String? createdBy,
     String? modifiedBy,
@@ -123,6 +144,7 @@ class ProductModel extends Equatable {
       supplierId: supplierId ?? this.supplierId,
       supplierName: supplierName ?? this.supplierName,
       lowStockThreshold: lowStockThreshold ?? this.lowStockThreshold,
+      sortOrder: sortOrder ?? this.sortOrder,
       isActive: isActive ?? this.isActive,
       createdBy: createdBy ?? this.createdBy,
       modifiedBy: modifiedBy ?? this.modifiedBy,
@@ -144,6 +166,7 @@ class ProductModel extends Equatable {
     stockQuantity,
     supplierId,
     lowStockThreshold,
+    sortOrder,
     isActive,
   ];
 }

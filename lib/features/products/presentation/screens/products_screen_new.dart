@@ -67,6 +67,406 @@ class _ProductsScreenState extends State<ProductsScreen> {
     );
   }
 
+  void _showReorderDialog(BuildContext context, List<ProductModel> products) {
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+    final tempList = List<ProductModel>.from(products);
+    var isSaving = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogCtx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Dialog(
+              backgroundColor: const Color(0xFF1E293B),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(
+                  color: Colors.white.withValues(alpha: 0.1),
+                ),
+              ),
+              child: Container(
+                width: 680,
+                height: 720,
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Title & Description
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF6366F1).withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(
+                            Icons.swap_vert_rounded,
+                            color: Color(0xFF818CF8),
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                isArabic
+                                    ? 'ترتيب ظهور المنتجات'
+                                    : 'Reorder Products Order',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                isArabic
+                                    ? 'اسحب المنتجات أو استخدم الأسهم لضبط ترتيب ظهورها في الفواتير والقوائم'
+                                    : 'Drag items or use arrow buttons to set display order in invoices and lists',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Color(0xFF94A3B8),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.grey),
+                          onPressed: isSaving ? null : () => Navigator.pop(dialogCtx),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Quick Sorting helper buttons
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 6,
+                      alignment: WrapAlignment.end,
+                      children: [
+                        OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFFCBD5E1),
+                            side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
+                            visualDensity: VisualDensity.compact,
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          ),
+                          icon: const Icon(Icons.sort_by_alpha_rounded, size: 16),
+                          label: Text(
+                            isArabic ? 'ترتيب أبجدي (أ-ي)' : 'Alphabetical (A-Z)',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          onPressed: isSaving
+                              ? null
+                              : () {
+                                  setDialogState(() {
+                                    tempList.sort((a, b) => a.name.compareTo(b.name));
+                                  });
+                                },
+                        ),
+                        OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFFCBD5E1),
+                            side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
+                            visualDensity: VisualDensity.compact,
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          ),
+                          icon: const Icon(Icons.inventory_2_outlined, size: 16),
+                          label: Text(
+                            isArabic ? 'الأعلى مخزوناً' : 'Highest Stock',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          onPressed: isSaving
+                              ? null
+                              : () {
+                                  setDialogState(() {
+                                    tempList.sort((a, b) => b.stockQuantity.compareTo(a.stockQuantity));
+                                  });
+                                },
+                        ),
+                        OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFFCBD5E1),
+                            side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
+                            visualDensity: VisualDensity.compact,
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          ),
+                          icon: const Icon(Icons.attach_money_rounded, size: 16),
+                          label: Text(
+                            isArabic ? 'الأعلى سعراً' : 'Highest Price',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          onPressed: isSaving
+                              ? null
+                              : () {
+                                  setDialogState(() {
+                                    tempList.sort((a, b) => b.price.compareTo(a.price));
+                                  });
+                                },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    const Divider(color: Color(0xFF334155), height: 1),
+                    const SizedBox(height: 8),
+
+                    // Reorderable list
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Theme(
+                          data: Theme.of(context).copyWith(
+                            canvasColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                          ),
+                          child: ReorderableListView.builder(
+                            buildDefaultDragHandles: false,
+                            itemCount: tempList.length,
+                            onReorder: (oldIndex, newIndex) {
+                              setDialogState(() {
+                                if (newIndex > oldIndex) {
+                                  newIndex -= 1;
+                                }
+                                final item = tempList.removeAt(oldIndex);
+                                tempList.insert(newIndex, item);
+                              });
+                            },
+                            itemBuilder: (context, index) {
+                              final p = tempList[index];
+                              return Card(
+                                key: ValueKey('reorder_${p.id}'),
+                                margin: const EdgeInsets.symmetric(vertical: 4),
+                                color: const Color(0xFF0F172A),
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  side: BorderSide(
+                                    color: const Color(0xFF334155),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 8,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      // Drag Handle
+                                      ReorderableDragStartListener(
+                                        index: index,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white.withValues(alpha: 0.05),
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: const Icon(
+                                            Icons.drag_indicator_rounded,
+                                            color: Color(0xFF94A3B8),
+                                            size: 20,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+
+                                      // Index Number Badge
+                                      Container(
+                                        width: 32,
+                                        height: 32,
+                                        alignment: Alignment.center,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF6366F1).withValues(alpha: 0.2),
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: const Color(0xFF6366F1).withValues(alpha: 0.5),
+                                          ),
+                                        ),
+                                        child: Text(
+                                          '${index + 1}',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                            color: Color(0xFFA5B4FC),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+
+                                      // Product Info
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              p.name,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 14,
+                                                color: Colors.white,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              '${p.size.isNotEmpty ? "${p.size} • " : ""}\$${p.price.toStringAsFixed(2)} • ${isArabic ? "المخزون" : "Stock"}: ${formatQuantity(p.stockQuantity)}',
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                color: Color(0xFF94A3B8),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+
+                                      // Quick Move Buttons
+                                      IconButton(
+                                        visualDensity: VisualDensity.compact,
+                                        icon: const Icon(
+                                          Icons.vertical_align_top_rounded,
+                                          size: 18,
+                                          color: Color(0xFF94A3B8),
+                                        ),
+                                        tooltip: isArabic ? 'نقل للأعلى تماماً' : 'Move to top',
+                                        onPressed: index > 0 && !isSaving
+                                            ? () {
+                                                setDialogState(() {
+                                                  final item = tempList.removeAt(index);
+                                                  tempList.insert(0, item);
+                                                });
+                                              }
+                                            : null,
+                                      ),
+                                      IconButton(
+                                        visualDensity: VisualDensity.compact,
+                                        icon: const Icon(
+                                          Icons.arrow_upward_rounded,
+                                          size: 18,
+                                          color: Color(0xFF94A3B8),
+                                        ),
+                                        tooltip: isArabic ? 'تحريك للأعلى' : 'Move up',
+                                        onPressed: index > 0 && !isSaving
+                                            ? () {
+                                                setDialogState(() {
+                                                  final item = tempList.removeAt(index);
+                                                  tempList.insert(index - 1, item);
+                                                });
+                                              }
+                                            : null,
+                                      ),
+                                      IconButton(
+                                        visualDensity: VisualDensity.compact,
+                                        icon: const Icon(
+                                          Icons.arrow_downward_rounded,
+                                          size: 18,
+                                          color: Color(0xFF94A3B8),
+                                        ),
+                                        tooltip: isArabic ? 'تحريك للأسفل' : 'Move down',
+                                        onPressed: index < tempList.length - 1 && !isSaving
+                                            ? () {
+                                                setDialogState(() {
+                                                  final item = tempList.removeAt(index);
+                                                  tempList.insert(index + 1, item);
+                                                });
+                                              }
+                                            : null,
+                                      ),
+                                      IconButton(
+                                        visualDensity: VisualDensity.compact,
+                                        icon: const Icon(
+                                          Icons.vertical_align_bottom_rounded,
+                                          size: 18,
+                                          color: Color(0xFF94A3B8),
+                                        ),
+                                        tooltip: isArabic ? 'نقل للأسفل تماماً' : 'Move to bottom',
+                                        onPressed: index < tempList.length - 1 && !isSaving
+                                            ? () {
+                                                setDialogState(() {
+                                                  final item = tempList.removeAt(index);
+                                                  tempList.add(item);
+                                                });
+                                              }
+                                            : null,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 14),
+                    const Divider(color: Color(0xFF334155), height: 1),
+                    const SizedBox(height: 12),
+
+                    // Dialog Actions
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: isSaving ? null : () => Navigator.pop(dialogCtx),
+                          child: Text(isArabic ? 'إلغاء' : 'Cancel'),
+                        ),
+                        const SizedBox(width: 12),
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF6366F1),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 12,
+                            ),
+                          ),
+                          onPressed: isSaving
+                              ? null
+                              : () {
+                                  setDialogState(() => isSaving = true);
+                                  context.read<ProductBloc>().add(
+                                    ProductReorderRequested(
+                                      reorderedProducts: tempList,
+                                    ),
+                                  );
+                                  Navigator.pop(dialogCtx);
+                                },
+                          icon: isSaving
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Icon(Icons.check_circle_outline, size: 18),
+                          label: Text(
+                            isSaving
+                                ? (isArabic ? 'جاري الحفظ...' : 'Saving...')
+                                : (isArabic ? 'حفظ الترتيب' : 'Save Order'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -99,7 +499,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
               // Header
               LayoutBuilder(
                 builder: (context, constraints) {
-                  final isMobile = constraints.maxWidth < 600;
+                  final isMobile = constraints.maxWidth < 650;
                   if (isMobile) {
                     return Column(
                       children: [
@@ -111,32 +511,50 @@ class _ProductsScreenState extends State<ProductsScreen> {
                               ),
                         ),
                         const SizedBox(height: 10),
-                        Row(
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
                           children: [
-                            Expanded(
-                              child: ElevatedButton.icon(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF10B981),
-                                  foregroundColor: Colors.white,
-                                ),
-                                onPressed:
-                                    () => _exportInventoryAudit(context, state),
-                                icon: const Icon(
-                                  Icons.inventory_rounded,
-                                  size: 18,
-                                ),
-                                label: Text(
-                                  isArabic ? 'جرد المنتجات' : 'Stock Audit',
-                                ),
+                            ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF10B981),
+                                foregroundColor: Colors.white,
+                              ),
+                              onPressed:
+                                  () => _exportInventoryAudit(context, state),
+                              icon: const Icon(
+                                Icons.inventory_rounded,
+                                size: 18,
+                              ),
+                              label: Text(
+                                isArabic ? 'جرد المنتجات' : 'Stock Audit',
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: ElevatedButton.icon(
-                                onPressed: () => _showProductForm(context),
-                                icon: const Icon(Icons.add, size: 18),
-                                label: Text(l10n.addProduct),
+                            ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF6366F1),
+                                foregroundColor: Colors.white,
                               ),
+                              onPressed:
+                                  state is ProductLoaded &&
+                                          state.products.isNotEmpty
+                                      ? () => _showReorderDialog(
+                                        context,
+                                        state.products,
+                                      )
+                                      : null,
+                              icon: const Icon(
+                                Icons.swap_vert_rounded,
+                                size: 18,
+                              ),
+                              label: Text(
+                                isArabic ? 'ترتيب المنتجات' : 'Reorder',
+                              ),
+                            ),
+                            ElevatedButton.icon(
+                              onPressed: () => _showProductForm(context),
+                              icon: const Icon(Icons.add, size: 18),
+                              label: Text(l10n.addProduct),
                             ),
                           ],
                         ),
@@ -154,7 +572,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                               ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 10),
                       ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF10B981),
@@ -164,7 +582,25 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         icon: const Icon(Icons.inventory_rounded, size: 18),
                         label: Text(isArabic ? 'جرد المنتجات' : 'Stock Audit'),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 10),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF6366F1),
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed:
+                            state is ProductLoaded && state.products.isNotEmpty
+                                ? () => _showReorderDialog(
+                                  context,
+                                  state.products,
+                                )
+                                : null,
+                        icon: const Icon(Icons.swap_vert_rounded, size: 18),
+                        label: Text(
+                          isArabic ? 'ترتيب المنتجات' : 'Reorder Products',
+                        ),
+                      ),
+                      const SizedBox(width: 10),
                       ElevatedButton.icon(
                         onPressed: () => _showProductForm(context),
                         icon: const Icon(Icons.add, size: 18),
@@ -186,6 +622,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
   Widget _buildContent(BuildContext context, ProductState state) {
     final l10n = AppLocalizations.of(context)!;
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
     if (state is ProductLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -210,6 +647,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
           child: SingleChildScrollView(
             child: DataTable(
               columns: [
+                DataColumn(label: Text(isArabic ? '#' : '#'), numeric: true),
                 DataColumn(label: Text(l10n.name)),
                 DataColumn(label: Text(l10n.size)),
                 DataColumn(label: Text(l10n.cost), numeric: true),
@@ -221,9 +659,33 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 DataColumn(label: Text(l10n.actions)),
               ],
               rows:
-                  state.filteredProducts.map((product) {
+                  state.filteredProducts.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final product = entry.value;
                     return DataRow(
                       cells: [
+                        DataCell(
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(
+                                0xFF6366F1,
+                              ).withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              '#${index + 1}',
+                              style: const TextStyle(
+                                color: Color(0xFF818CF8),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ),
                         DataCell(
                           Text(
                             product.name,

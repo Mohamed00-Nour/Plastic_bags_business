@@ -44,4 +44,25 @@ class UserRepository {
       'updatedAt': FieldValue.serverTimestamp(),
     });
   }
+
+  Future<void> updateUserDetails({
+    required String userId,
+    required String name,
+    required UserRole role,
+    String? shopId,
+    String? shopName,
+  }) async {
+    await _collection.doc(userId).update({
+      'name': name,
+      'role': role.name,
+      'shopId': shopId,
+      'shopName': shopName,
+      'modifiedBy': CurrentUserService.instance.userName,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> deleteUser(String userId) async {
+    await _collection.doc(userId).delete();
+  }
 }

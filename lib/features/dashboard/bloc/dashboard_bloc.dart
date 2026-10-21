@@ -60,6 +60,13 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     await _onLoad(DashboardLoadRequested(), emit);
   }
 
+  static double _toDouble(dynamic val, [double defaultVal = 0.0]) {
+    if (val == null) return defaultVal;
+    if (val is num) return val.toDouble();
+    if (val is String) return double.tryParse(val) ?? defaultVal;
+    return defaultVal;
+  }
+
   static DateTime _parseDate(dynamic value) {
     if (value is Timestamp) return value.toDate();
     if (value is DateTime) return value;
@@ -75,7 +82,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     try {
       final startDate = _getStartDate();
 
-      // Parallel fetch of Commercial ERP collections
+      // Parallel fetch of Commercial ERP collections & Manufacturing Expenses
       final results = await Future.wait([
         _firestore.collection('sales_invoices').get(), // 0
         _firestore.collection('buying_invoices').get(), // 1
@@ -84,6 +91,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
         _firestore.collection('products').where('isActive', isEqualTo: true).get(), // 4
         _firestore.collection('return_invoices').get(), // 5
         _firestore.collectionGroup('balanceHistory').get(), // 6
+        _firestore.collection('manufacturing_expenses').get(), // 7
       ]);
 
       final salesSnap = results[0];
@@ -93,11 +101,13 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
       final productsSnap = results[4];
       final returnsSnap = results[5];
       final balanceHistorySnap = results[6];
+      final mfgExpensesSnap = results[7];
 
       double totalSalesRevenue = 0.0;
       double totalCashCollected = 0.0;
       double totalPurchasesAmount = 0.0;
       double totalReturnsAmount = 0.0;
+      double totalManufacturingExpenses = 0.0;
       double totalProfit = 0.0;
       final monthlySalesRevenue = <String, double>{};
       final monthlyPurchases = <String, double>{};
@@ -126,19 +136,20 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
           continue;
         }
 
-        final total = (data['totalAmount'] ?? 0).toDouble();
-        final paid = (data['paidAmount'] ?? 0).toDouble();
+        final total = _toDouble(data['totalAmount']);
+        final paid = _toDouble(data['paidAmount']);
 
         totalSalesRevenue += total;
         totalCashCollected += paid;
 
         // Calculate line item profit
-        final items = data['items'] as List<dynamic>? ?? [];
+        final dynamic itemsRaw = data['items'];
+        final items = itemsRaw is List ? itemsRaw : [];
         for (final item in items) {
-          if (item is Map<String, dynamic>) {
-            final qty = (item['quantity'] ?? 1).toDouble();
-            final price = (item['unitPrice'] ?? item['price'] ?? 0).toDouble();
-            final cost = (item['costPrice'] ?? productCostMap[item['productId']] ?? 0).toDouble();
+          if (item is Map) {
+            final qty = _toDouble(item['quantity'], 1.0);
+            final price = _toDouble(item['unitPrice'] ?? item['price']);
+            final cost = _toDouble(item['costPrice'] ?? productCostMap[item['productId']?.toString()]);
             totalProfit += qty * (price - cost);
           }
         }
@@ -149,11 +160,11 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
 
         recentSalesInvoices.add({
           'id': doc.id,
-          'invoiceNumber': data['invoiceNumber'] ?? 'INV-000',
-          'clientName': data['clientName'] ?? 'عميل نقدي',
+          'invoiceNumber': data['invoiceNumber']?.toString() ?? 'INV-000',
+          'clientName': data['clientName']?.toString() ?? 'عميل نقدي',
           'totalAmount': total,
           'paidAmount': paid,
-          'remainingAmount': (data['remainingAmount'] ?? (total - paid)).toDouble(),
+          'remainingAmount': _toDouble(data['remainingAmount'], total - paid),
           'date': dt,
         });
       }
@@ -182,10 +193,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
           continue;
         }
 
-        final amountVal = data['amount'];
-        final amt = amountVal is num
-            ? amountVal.toDouble()
-            : (double.tryParse(amountVal?.toString() ?? '0') ?? 0.0);
+        final amt = _toDouble(data['amount']);
         totalCashCollected += amt;
       }
 
@@ -201,7 +209,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
           continue;
         }
 
-        final total = (data['totalAmount'] ?? 0).toDouble();
+        final total = _toDouble(data['totalAmount']);
         totalPurchasesAmount += total;
 
         final monthKey = '${dt.year}-${dt.month.toString().padLeft(2, '0')}';
@@ -220,15 +228,33 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
           continue;
         }
 
-        final total = (data['totalAmount'] ?? data['netTotal'] ?? 0).toDouble();
+        final total = _toDouble(data['totalAmount'] ?? data['netTotal']);
         totalReturnsAmount += total;
+      }
+
+      // Process Manufacturing Expenses (التصنيع -> المصاريف)
+      for (final doc in mfgExpensesSnap.docs) {
+        final data = doc.data();
+        final dt = _parseDate(
+          data['date'] ?? data['createdAt'] ?? data['timestamp'],
+        );
+
+        if (startDate != null && dt.isBefore(startDate)) continue;
+        if (_currentRange == DashboardDateRange.custom &&
+            _customEnd != null &&
+            dt.isAfter(_customEnd!)) {
+          continue;
+        }
+
+        final amount = _toDouble(data['amount']);
+        totalManufacturingExpenses += amount;
       }
 
       // Process Clients Debt
       double totalClientsDebt = 0.0;
       for (final doc in clientsSnap.docs) {
         final data = doc.data();
-        final bal = (data['balance'] ?? 0).toDouble();
+        final bal = _toDouble(data['balance'] ?? data['totalBalance']);
         if (bal > 0) {
           totalClientsDebt += bal;
         }
@@ -238,7 +264,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
       double totalSuppliersDebt = 0.0;
       for (final doc in suppliersSnap.docs) {
         final data = doc.data();
-        final bal = (data['balance'] ?? 0).toDouble();
+        final bal = _toDouble(data['balance'] ?? data['totalBalance']);
         if (bal > 0) {
           totalSuppliersDebt += bal;
         }
@@ -266,7 +292,9 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
           totalClientsDebt: totalClientsDebt,
           totalSuppliersDebt: totalSuppliersDebt,
           totalInventoryCostValue: totalInventoryCostValue,
-          totalProfit: totalProfit - totalReturnsAmount,
+          totalManufacturingExpenses: totalManufacturingExpenses,
+          totalProfit:
+              totalProfit - totalReturnsAmount - totalManufacturingExpenses,
           activeProductsCount: productList.length,
           lowStockCount: lowStockCount,
           totalClientsCount: clientsSnap.size,

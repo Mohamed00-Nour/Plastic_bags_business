@@ -152,6 +152,15 @@ class WhatsappInvoiceShareService {
         })
         .join('\n');
 
+    final totalQuantity = items.fold<double>(0.0, (acc, item) {
+      final rawQty = item['quantity'] ?? 1;
+      final numQty =
+          rawQty is num
+              ? rawQty.toDouble()
+              : double.tryParse(rawQty.toString()) ?? 1.0;
+      return acc + numQty;
+    });
+
     final invoiceHeader =
         isSalesInvoice
             ? "🧾 *فاتورة رقم #$invoiceNumber*"
@@ -170,15 +179,44 @@ class WhatsappInvoiceShareService {
             ? "💰 *رصيد العميل بعد الفاتورة:* \$${totalDueBalance.toStringAsFixed(2)}"
             : "💰 *الرصيد الحالي للمورد:* \$${totalDueBalance.toStringAsFixed(2)}";
 
+    final rawFees =
+        invoiceData['additionalFees'] ??
+        invoiceData['additionalExpenses'] ??
+        invoiceData['additionalCosts'];
+    final additionalFeeAmount =
+        (invoiceData['additionalFeeAmount'] ?? 0.0).toDouble();
+
+    String feesSummary = '';
+    if (rawFees is List && rawFees.isNotEmpty) {
+      feesSummary = rawFees
+          .where(
+            (f) =>
+                f is Map &&
+                (((f['amount'] ?? f['value'] ?? 0.0) as num) > 0 ||
+                    (f['name'] ?? f['label'] ?? '').toString().isNotEmpty),
+          )
+          .map((f) {
+            final name = (f['name'] ?? f['label'] ?? 'مصروف إضافي').toString();
+            final amount =
+                ((f['amount'] ?? f['value'] ?? 0.0) as num).toDouble();
+            return "🚚 *$name:* +\$${amount.toStringAsFixed(2)}";
+          })
+          .join('\n');
+    } else if (additionalFeeAmount > 0) {
+      feesSummary = "🚚 *مصاريف إضافية:* +\$${additionalFeeAmount.toStringAsFixed(2)}";
+    }
+
     return "$invoiceHeader\n"
         "$partyHeader\n"
         "📅 *التاريخ:* $dateStr\n"
         "----------------------------------\n"
         "📦 *تفاصيل الأصناف:*\n"
         "${itemsSummary.isEmpty ? '• لا يوجد أصناف' : itemsSummary}\n"
+        "🔢 *إجمالي الكمية:* ${formatQuantity(totalQuantity)}\n"
         "----------------------------------\n"
         "$previousBalanceLine\n"
         "💵 *إجمالي الفاتورة:* \$${totalAmount.toStringAsFixed(2)}\n"
+        "${feesSummary.isNotEmpty ? '$feesSummary\n' : ''}"
         "${discount > 0 ? '🏷️ *الخصم:* \$${discount.toStringAsFixed(2)}\n' : ''}"
         "💳 *المدفوع:* \$${paidAmount.toStringAsFixed(2)}\n"
         "📌 *المتبقي من الفاتورة:* \$${remainingAmount.toStringAsFixed(2)}\n"

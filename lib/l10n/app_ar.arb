@@ -326,6 +326,7 @@
 
   "roleAdmin": "مشرف",
   "roleEmployee": "موظف",
+  "roleAccountant": "محاسب",
   "roleViewer": "مشاهد",
 
   "refresh": "تحديث",
@@ -462,10 +463,14 @@
   "deactivateUser": "إلغاء تنشيط المستخدم",
   "activateUser": "تنشيط المستخدم",
   "createUser": "إنشاء مستخدم",
+  "editUser": "تعديل مستخدم",
+  "deleteUser": "حذف مستخدم",
   "fullName": "الاسم الكامل",
   "assignToShop": "تعيين في محل",
   "pleaseSelectShop": "الرجاء اختيار محل",
   "create": "إنشاء",
+  "userUpdatedSuccess": "تم تحديث بيانات المستخدم بنجاح",
+  "userDeletedSuccess": "تم حذف المستخدم بنجاح",
 
   "searchTransactions": "ابحث في المعاملات...",
   "shopSupplier": "المحل/المورد",

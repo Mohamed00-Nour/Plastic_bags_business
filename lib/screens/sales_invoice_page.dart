@@ -64,16 +64,24 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
   String _productSearchQuery = '';
 
   void _addAdditionalFeeField({String name = '', double amount = 0.0}) {
-    setState(() {
+    void add() {
       _additionalFees.add({
         'name': name,
         'amount': amount,
         'nameController': TextEditingController(text: name),
         'amountController': TextEditingController(
-          text: amount > 0 ? amount.toString() : '',
+          text: amount > 0
+              ? (amount % 1 == 0 ? amount.toInt().toString() : amount.toString())
+              : '',
         ),
       });
-    });
+    }
+
+    if (mounted) {
+      setState(add);
+    } else {
+      add();
+    }
   }
 
   void _removeAdditionalFeeField(int index) {
@@ -188,6 +196,24 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
       _lineItems.add(Map<String, dynamic>.from(item));
     }
 
+    _clearAdditionalFees();
+    final rawFees = inv['additionalFees'] ?? inv['additionalExpenses'] ?? inv['additionalCosts'];
+    if (rawFees is List && rawFees.isNotEmpty) {
+      for (final fee in rawFees) {
+        if (fee is Map) {
+          final name = (fee['name'] ?? fee['label'] ?? fee['title'] ?? '').toString();
+          final amount = _asDouble(fee['amount'] ?? fee['value']);
+          if (amount > 0 || name.isNotEmpty) {
+            _addAdditionalFeeField(name: name, amount: amount);
+          }
+        }
+      }
+    } else if (inv['additionalFeeAmount'] != null && _asDouble(inv['additionalFeeAmount']) > 0) {
+      final name = (inv['additionalFeeName'] ?? inv['feeName'] ?? '').toString();
+      final amount = _asDouble(inv['additionalFeeAmount']);
+      _addAdditionalFeeField(name: name, amount: amount);
+    }
+
     final clientId = _selectedClientId;
     if (clientId != null && clientId.isNotEmpty) {
       _refreshSelectedClientBalance(clientId);
@@ -293,6 +319,17 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
           'total': p1,
         });
       }
+    });
+  }
+
+  double get _totalQuantity {
+    return _lineItems.fold(0.0, (acc, item) {
+      final rawQty = item['quantity'] ?? 0;
+      final qty =
+          rawQty is num
+              ? rawQty.toDouble()
+              : double.tryParse(rawQty.toString()) ?? 0.0;
+      return acc + qty;
     });
   }
 
@@ -416,6 +453,20 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
     await WidgetsBinding.instance.endOfFrame;
     if (!mounted) return;
 
+    final List<Map<String, dynamic>> activeFees =
+        _additionalFees
+            .where((f) => ((f['amount'] ?? 0.0) as num) > 0 || (f['name'] as String? ?? '').trim().isNotEmpty)
+            .map(
+              (f) => {
+                'name':
+                    (f['name'] as String? ?? '').trim().isEmpty
+                        ? (isArabic ? 'مصروف إضافي' : 'Additional Fee')
+                        : (f['name'] as String).trim(),
+                'amount': ((f['amount'] ?? 0.0) as num).toDouble(),
+              },
+            )
+            .toList();
+
     if (_isEditMode) {
       final newInvoiceData = {
         'id':
@@ -430,6 +481,8 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
         'items': List<Map<String, dynamic>>.from(_lineItems),
         'subtotal': _subtotal,
         'discount': _discount,
+        'additionalFees': activeFees,
+        'additionalFeeAmount': _totalAdditionalFees,
         'totalAmount': _totalAmount,
         'paidAmount': _paidAmount,
         'remainingAmount': _remainingAmount,
@@ -458,20 +511,6 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
 
     var invoiceWasSaved = false;
     try {
-      final List<Map<String, dynamic>> activeFees =
-          _additionalFees
-              .where((f) => ((f['amount'] ?? 0.0) as num) > 0)
-              .map(
-                (f) => {
-                  'name':
-                      (f['name'] as String? ?? '').trim().isEmpty
-                          ? (isArabic ? 'مصروف إضافي' : 'Additional Fee')
-                          : (f['name'] as String).trim(),
-                  'amount': (f['amount'] as num).toDouble(),
-                },
-              )
-              .toList();
-
       final creationResult = await _syncService.createSalesInvoice(
         clientId: _selectedClientId!,
         clientName: _selectedClientName ?? '',
@@ -1090,9 +1129,21 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                           return const CircularProgressIndicator();
                         }
                         final docs = snapshot.data!.docs;
+                        final sortedDocs = List<QueryDocumentSnapshot>.from(docs)
+                          ..sort((a, b) {
+                            final dataA = a.data() as Map<String, dynamic>;
+                            final dataB = b.data() as Map<String, dynamic>;
+                            final orderA = (dataA['sortOrder'] ?? dataA['order'] ?? 0) as num;
+                            final orderB = (dataB['sortOrder'] ?? dataB['order'] ?? 0) as num;
+                            final cmp = orderA.compareTo(orderB);
+                            if (cmp != 0) return cmp;
+                            return (dataA['name'] ?? '')
+                                .toString()
+                                .compareTo((dataB['name'] ?? '').toString());
+                          });
 
                         final filteredDocs =
-                            docs
+                            sortedDocs
                                 .where((doc) {
                                   final data =
                                       doc.data() as Map<String, dynamic>;
@@ -1181,9 +1232,35 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      isArabic ? 'بنود الفاتورة' : 'Invoice Items',
-                      style: Theme.of(context).textTheme.titleMedium,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          isArabic ? 'بنود الفاتورة' : 'Invoice Items',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        if (_lineItems.isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryColor.withValues(
+                                alpha: 0.1,
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '${isArabic ? "إجمالي الكمية" : "Total Qty"}: ${formatQuantity(_totalQuantity)}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.primaryColor,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 8),
                     _lineItems.isEmpty
@@ -1281,6 +1358,11 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                 ),
                 const Divider(),
                 const SizedBox(height: 12),
+                _buildCalcRow(
+                  isArabic ? 'إجمالي الكمية' : 'Total Quantity',
+                  formatQuantity(_totalQuantity),
+                ),
+                const SizedBox(height: 8),
                 _buildCalcRow(
                   isArabic ? 'المجموع الفرعي' : 'Subtotal',
                   '\$${_subtotal.toStringAsFixed(2)}',

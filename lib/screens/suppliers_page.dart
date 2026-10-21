@@ -410,29 +410,60 @@ class _SuppliersPageState extends State<SuppliersPage> {
                       children: [
                         // KPI Summary Card
                         Card(
-                          margin: const EdgeInsets.only(bottom: 16),
+                          margin: const EdgeInsets.only(bottom: 12),
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                             child: Row(
                               children: [
-                                const Icon(Icons.account_balance, color: AppTheme.accentColor, size: 28),
-                                const SizedBox(width: 12),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      isArabic ? 'إجمالي الديون المستحقة للموردين' : 'Total Supplier Credit Payables',
-                                      style: Theme.of(context).textTheme.titleSmall,
-                                    ),
-                                    Text(
-                                      '\$${totalCredit.toStringAsFixed(2)}',
-                                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.warningColor),
-                                    ),
-                                  ],
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.accentColor.withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: const Icon(Icons.account_balance_rounded, color: AppTheme.accentColor, size: 24),
                                 ),
-                                const Spacer(),
-                                Chip(
-                                  label: Text(supplierCountLabel),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        isArabic ? 'إجمالي الديون المستحقة للموردين' : 'Total Supplier Credit Payables',
+                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                          color: Colors.grey,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        '\$${totalCredit.toStringAsFixed(2)}',
+                                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.warningColor),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).cardColor,
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: AppTheme.accentColor.withValues(alpha: 0.3),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    supplierCountLabel,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppTheme.accentColor,
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
@@ -453,56 +484,204 @@ class _SuppliersPageState extends State<SuppliersPage> {
                                   itemBuilder: (context, index) {
                                     final supplier = filteredSuppliers[index];
                                     final balance = ((supplier['totalBalance'] ?? supplier['balance'] ?? 0.0) as num).toDouble();
+                                    final initial = (supplier['name'] ?? 'S').toString().trim().isNotEmpty
+                                        ? (supplier['name'] ?? 'S').toString().trim().substring(0, 1).toUpperCase()
+                                        : 'S';
 
                                     return Card(
                                       margin: const EdgeInsets.only(bottom: 10),
-                                      child: ListTile(
-                                        leading: CircleAvatar(
-                                          backgroundColor: AppTheme.accentColor.withValues(alpha: 0.15),
-                                          child: Text(
-                                            (supplier['name'] ?? 'S').toString().substring(0, 1).toUpperCase(),
-                                            style: const TextStyle(color: AppTheme.accentColor, fontWeight: FontWeight.bold),
-                                          ),
+                                      elevation: 0,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                        side: BorderSide(
+                                          color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
                                         ),
-                                        title: Text(
-                                          supplier['name'] ?? '',
-                                          style: const TextStyle(fontWeight: FontWeight.bold),
-                                        ),
-                                        subtitle: Text(
-                                          '${supplier['phone'] ?? ''} ${supplier['address'] != null && supplier['address'].isNotEmpty ? "• ${supplier['address']}" : ""}',
-                                        ),
-                                        trailing: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Column(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              crossAxisAlignment: CrossAxisAlignment.end,
+                                      ),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(12),
+                                        child: LayoutBuilder(
+                                          builder: (context, cardConstraints) {
+                                            final isNarrow = cardConstraints.maxWidth < 450;
+
+                                            if (isNarrow) {
+                                              return Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Row(
+                                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                                    children: [
+                                                      CircleAvatar(
+                                                        radius: 20,
+                                                        backgroundColor: AppTheme.accentColor.withValues(alpha: 0.15),
+                                                        child: Text(
+                                                          initial,
+                                                          style: const TextStyle(color: AppTheme.accentColor, fontWeight: FontWeight.bold, fontSize: 16),
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 10),
+                                                      Expanded(
+                                                        child: Column(
+                                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                                          children: [
+                                                            Text(
+                                                              supplier['name'] ?? '',
+                                                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                                              maxLines: 1,
+                                                              overflow: TextOverflow.ellipsis,
+                                                            ),
+                                                            if ((supplier['phone'] ?? '').toString().isNotEmpty ||
+                                                                (supplier['address'] ?? '').toString().isNotEmpty) ...[
+                                                              const SizedBox(height: 2),
+                                                              Text(
+                                                                '${supplier['phone'] ?? ''} ${supplier['address'] != null && supplier['address'].toString().trim().isNotEmpty ? "• ${supplier['address']}" : ""}',
+                                                                style: TextStyle(
+                                                                  fontSize: 12,
+                                                                  color: Theme.of(context).textTheme.bodySmall?.color ?? Colors.grey,
+                                                                ),
+                                                                maxLines: 1,
+                                                                overflow: TextOverflow.ellipsis,
+                                                              ),
+                                                            ],
+                                                          ],
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 8),
+                                                      Container(
+                                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                        decoration: BoxDecoration(
+                                                          color: (balance > 0 ? AppTheme.warningColor : AppTheme.successColor).withValues(alpha: 0.12),
+                                                          borderRadius: BorderRadius.circular(8),
+                                                        ),
+                                                        child: Column(
+                                                          crossAxisAlignment: CrossAxisAlignment.end,
+                                                          children: [
+                                                            Text(
+                                                              isArabic ? 'مستحق للمورد' : 'Credit Due',
+                                                              style: TextStyle(
+                                                                fontSize: 9,
+                                                                color: balance > 0 ? AppTheme.warningColor : AppTheme.successColor,
+                                                              ),
+                                                            ),
+                                                            Text(
+                                                              '\$${balance.toStringAsFixed(2)}',
+                                                              style: TextStyle(
+                                                                fontSize: 13,
+                                                                fontWeight: FontWeight.bold,
+                                                                color: balance > 0 ? AppTheme.warningColor : AppTheme.successColor,
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  const SizedBox(height: 8),
+                                                  Divider(
+                                                    height: 1,
+                                                    thickness: 0.5,
+                                                    color: Theme.of(context).dividerColor.withValues(alpha: 0.08),
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  Row(
+                                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                    children: [
+                                                      TextButton.icon(
+                                                        style: TextButton.styleFrom(
+                                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                                                          minimumSize: Size.zero,
+                                                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                                        ),
+                                                        onPressed: () => _showBalanceHistoryDialog(context, supplier, isArabic),
+                                                        icon: const Icon(Icons.history_rounded, size: 16),
+                                                        label: Text(
+                                                          isArabic ? 'كشف الحساب' : 'Statement',
+                                                          style: const TextStyle(fontSize: 12),
+                                                        ),
+                                                      ),
+                                                      Row(
+                                                        mainAxisSize: MainAxisSize.min,
+                                                        children: [
+                                                          IconButton(
+                                                            constraints: const BoxConstraints(),
+                                                            padding: const EdgeInsets.all(6),
+                                                            icon: const Icon(Icons.delete_forever_rounded, color: Colors.red, size: 18),
+                                                            tooltip: isArabic ? 'حذف المورد' : 'Delete Supplier',
+                                                            onPressed: () => _confirmDeleteSupplier(context, supplier, isArabic),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ],
+                                              );
+                                            }
+
+                                            return Row(
                                               children: [
-                                                Text(
-                                                  isArabic ? 'مستحق للمورد' : 'Credit Due',
-                                                  style: const TextStyle(fontSize: 10, color: Colors.grey),
-                                                ),
-                                                Text(
-                                                  '\$${balance.toStringAsFixed(2)}',
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.bold,
-                                                    color: balance > 0 ? AppTheme.warningColor : AppTheme.successColor,
+                                                CircleAvatar(
+                                                  radius: 22,
+                                                  backgroundColor: AppTheme.accentColor.withValues(alpha: 0.15),
+                                                  child: Text(
+                                                    initial,
+                                                    style: const TextStyle(color: AppTheme.accentColor, fontWeight: FontWeight.bold, fontSize: 16),
                                                   ),
                                                 ),
+                                                const SizedBox(width: 14),
+                                                Expanded(
+                                                  child: Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      Text(
+                                                        supplier['name'] ?? '',
+                                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow.ellipsis,
+                                                      ),
+                                                      const SizedBox(height: 3),
+                                                      Text(
+                                                        '${supplier['phone'] ?? ''} ${supplier['address'] != null && supplier['address'].toString().trim().isNotEmpty ? "• ${supplier['address']}" : ""}',
+                                                        style: TextStyle(
+                                                          fontSize: 13,
+                                                          color: Theme.of(context).textTheme.bodySmall?.color ?? Colors.grey,
+                                                        ),
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow.ellipsis,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 12),
+                                                Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                                  children: [
+                                                    Text(
+                                                      isArabic ? 'مستحق للمورد' : 'Credit Due',
+                                                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                                    ),
+                                                    Text(
+                                                      '\$${balance.toStringAsFixed(2)}',
+                                                      style: TextStyle(
+                                                        fontSize: 15,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: balance > 0 ? AppTheme.warningColor : AppTheme.successColor,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                const SizedBox(width: 12),
+                                                IconButton(
+                                                  icon: const Icon(Icons.history_rounded, color: AppTheme.accentColor),
+                                                  tooltip: isArabic ? 'كشف حساب وتاريخ الرصيد' : 'Balance History & Statement',
+                                                  onPressed: () => _showBalanceHistoryDialog(context, supplier, isArabic),
+                                                ),
+                                                IconButton(
+                                                  icon: const Icon(Icons.delete_forever_rounded, color: Colors.red),
+                                                  tooltip: isArabic ? 'حذف المورد' : 'Delete Supplier',
+                                                  onPressed: () => _confirmDeleteSupplier(context, supplier, isArabic),
+                                                ),
                                               ],
-                                            ),
-                                            const SizedBox(width: 12),
-                                            IconButton(
-                                              icon: const Icon(Icons.history_rounded, color: AppTheme.accentColor),
-                                              tooltip: isArabic ? 'كشف حساب وتاريخ الرصيد' : 'Balance History & Statement',
-                                              onPressed: () => _showBalanceHistoryDialog(context, supplier, isArabic),
-                                            ),
-                                            IconButton(
-                                              icon: const Icon(Icons.delete_forever_rounded, color: Colors.red),
-                                              tooltip: isArabic ? 'حذف المورد' : 'Delete Supplier',
-                                              onPressed: () => _confirmDeleteSupplier(context, supplier, isArabic),
-                                            ),
-                                          ],
+                                            );
+                                          },
                                         ),
                                       ),
                                     );

@@ -71,3 +71,10 @@ class ProductSearchRequested extends ProductEvent {
   @override
   List<Object?> get props => [query];
 }
+
+class ProductReorderRequested extends ProductEvent {
+  final List<ProductModel> reorderedProducts;
+  const ProductReorderRequested({required this.reorderedProducts});
+  @override
+  List<Object?> get props => [reorderedProducts];
+}

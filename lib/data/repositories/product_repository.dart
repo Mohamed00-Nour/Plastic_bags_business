@@ -12,11 +12,31 @@ class ProductRepository {
   Stream<List<ProductModel>> getProducts() {
     return _collection
         .where('isActive', isEqualTo: true)
-        .orderBy('name')
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => ProductModel.fromFirestore(doc))
-            .toList());
+        .map((snapshot) {
+          final list = snapshot.docs
+              .map((doc) => ProductModel.fromFirestore(doc))
+              .toList();
+          list.sort((a, b) {
+            if (a.sortOrder != b.sortOrder) {
+              return a.sortOrder.compareTo(b.sortOrder);
+            }
+            return a.name.compareTo(b.name);
+          });
+          return list;
+        });
+  }
+
+  Future<void> reorderProducts(List<ProductModel> products) async {
+    final batch = _firestore.batch();
+    for (int i = 0; i < products.length; i++) {
+      final docRef = _collection.doc(products[i].id);
+      batch.update(docRef, {
+        'sortOrder': i,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    }
+    await batch.commit();
   }
 
   Future<ProductModel> getProduct(String id) async {

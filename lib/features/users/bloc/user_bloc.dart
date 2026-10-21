@@ -20,6 +20,8 @@ class UserManagementBloc
     on<UserManagementCreateRequested>(_onCreate);
     on<UserManagementUpdateRoleRequested>(_onUpdateRole);
     on<UserManagementToggleActiveRequested>(_onToggleActive);
+    on<UserManagementUpdateUserRequested>(_onUpdateUser);
+    on<UserManagementDeleteRequested>(_onDelete);
   }
 
   Future<void> _onLoad(
@@ -91,6 +93,40 @@ class UserManagementBloc
       await _userRepository.toggleActive(event.userId, event.isActive);
       emit(UserManagementOperationSuccess(
           message: event.isActive ? 'User activated' : 'User deactivated'));
+    } catch (e) {
+      emit(UserManagementError(message: e.toString()));
+    }
+  }
+
+  Future<void> _onUpdateUser(
+    UserManagementUpdateUserRequested event,
+    Emitter<UserManagementState> emit,
+  ) async {
+    try {
+      await _userRepository.updateUserDetails(
+        userId: event.userId,
+        name: event.name,
+        role: event.role,
+        shopId: event.shopId,
+        shopName: event.shopName,
+      );
+      emit(const UserManagementOperationSuccess(
+          message: 'User updated successfully'));
+      add(UserManagementLoadRequested());
+    } catch (e) {
+      emit(UserManagementError(message: e.toString()));
+    }
+  }
+
+  Future<void> _onDelete(
+    UserManagementDeleteRequested event,
+    Emitter<UserManagementState> emit,
+  ) async {
+    try {
+      await _userRepository.deleteUser(event.userId);
+      emit(const UserManagementOperationSuccess(
+          message: 'User deleted successfully'));
+      add(UserManagementLoadRequested());
     } catch (e) {
       emit(UserManagementError(message: e.toString()));
     }

@@ -27,6 +27,15 @@ class ProductInventoryPdfService {
     String locale = 'ar',
     bool quantitiesOnly = false,
   }) async {
+    // Ensure products are always sorted according to custom sortOrder
+    final sortedProducts = List<ProductModel>.from(products)
+      ..sort((a, b) {
+        if (a.sortOrder != b.sortOrder) {
+          return a.sortOrder.compareTo(b.sortOrder);
+        }
+        return a.name.compareTo(b.name);
+      });
+
     // Load Amiri static TTF font for complete Arabic Presentation Forms support.
     final regularData = await rootBundle.load('assets/fonts/Amiri-Regular.ttf');
     final boldData = await rootBundle.load('assets/fonts/Amiri-Bold.ttf');
@@ -39,16 +48,16 @@ class ProductInventoryPdfService {
     final isArabic = locale == 'ar';
     final dateFmt = DateFormat('yyyy/MM/dd HH:mm');
 
-    final int totalTypes = products.length;
-    final double totalUnits = products.fold(
+    final int totalTypes = sortedProducts.length;
+    final double totalUnits = sortedProducts.fold(
       0.0,
       (acc, p) => acc + p.stockQuantity,
     );
-    final double totalCostValue = products.fold(
+    final double totalCostValue = sortedProducts.fold(
       0.0,
       (acc, p) => acc + (p.stockQuantity * p.costPrice),
     );
-    final double totalRetailValue = products.fold(
+    final double totalRetailValue = sortedProducts.fold(
       0.0,
       (acc, p) => acc + (p.stockQuantity * p.price),
     );
@@ -256,7 +265,7 @@ class ProductInventoryPdfService {
 
               // Build headers and rows
               _buildInventoryTable(
-                products: products,
+                products: sortedProducts,
                 isArabic: isArabic,
                 quantitiesOnly: quantitiesOnly,
                 bodyFont: bodyFont,

@@ -48,6 +48,8 @@ import 'package:store_manager/features/manufacturing/bloc/production_run_bloc.da
 import 'package:store_manager/features/manufacturing/bloc/waste_processing_bloc.dart';
 import 'package:store_manager/features/manufacturing/bloc/manufacturing_expense_bloc.dart';
 import 'package:store_manager/features/manufacturing/bloc/material_supplier_bloc.dart';
+import 'package:store_manager/data/repositories/tithe_repository.dart';
+import 'package:store_manager/features/tithe/bloc/tithe_bloc.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:store_manager/core/services/firebase_desktop_init.dart';
 import 'package:store_manager/core/services/notification_service.dart';
@@ -94,6 +96,7 @@ class MyApp extends StatelessWidget {
     final materialSupplierRepository = MaterialSupplierRepository();
     final materialStockLogRepository = MaterialStockLogRepository();
     final damagedInventoryRepository = DamagedInventoryRepository();
+    final titheRepository = TitheRepository();
 
     return MultiRepositoryProvider(
       providers: [
@@ -114,6 +117,7 @@ class MyApp extends StatelessWidget {
         RepositoryProvider.value(value: materialSupplierRepository),
         RepositoryProvider.value(value: materialStockLogRepository),
         RepositoryProvider.value(value: damagedInventoryRepository),
+        RepositoryProvider.value(value: titheRepository),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -219,6 +223,12 @@ class MyApp extends StatelessWidget {
                   repository: manufacturingExpenseRepository,
                 ),
           ),
+          BlocProvider<TitheBloc>(
+            create:
+                (_) => TitheBloc(
+                  titheRepository: titheRepository,
+                ),
+          ),
         ],
         child: BlocBuilder<LocaleCubit, Locale>(
           builder: (context, locale) {
@@ -242,7 +252,8 @@ class MyApp extends StatelessWidget {
                     builder: (context, state) {
                       if (state is AuthAuthenticated) {
                         // Route based on role
-                        if (state.user.role == UserRole.admin) {
+                        if (state.user.role == UserRole.admin ||
+                            state.user.role == UserRole.accountant) {
                           return const AdminShell();
                         } else {
                           return const ShopAppShell();

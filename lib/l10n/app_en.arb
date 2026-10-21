@@ -326,6 +326,7 @@
 
   "roleAdmin": "Admin",
   "roleEmployee": "Employee",
+  "roleAccountant": "Accountant",
   "roleViewer": "Viewer",
 
   "refresh": "Refresh",
@@ -462,10 +463,14 @@
   "deactivateUser": "Deactivate User",
   "activateUser": "Activate User",
   "createUser": "Create User",
+  "editUser": "Edit User",
+  "deleteUser": "Delete User",
   "fullName": "Full Name",
   "assignToShop": "Assign to Shop",
   "pleaseSelectShop": "Please select a shop",
   "create": "Create",
+  "userUpdatedSuccess": "User updated successfully",
+  "userDeletedSuccess": "User deleted successfully",
 
   "searchTransactions": "Search transactions...",
   "shopSupplier": "Shop/Supplier",

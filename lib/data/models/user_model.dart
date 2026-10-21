@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
 
-enum UserRole { admin, employee, viewer }
+enum UserRole { admin, employee, accountant, viewer }
 
 extension UserRoleX on UserRole {
   String get label {
@@ -10,6 +10,8 @@ extension UserRoleX on UserRole {
         return 'Admin';
       case UserRole.employee:
         return 'Employee';
+      case UserRole.accountant:
+        return 'Accountant';
       case UserRole.viewer:
         return 'Viewer';
     }
@@ -17,16 +19,27 @@ extension UserRoleX on UserRole {
 
   bool get canManageUsers => this == UserRole.admin;
   bool get canApproveOrders =>
-      this == UserRole.admin || this == UserRole.employee;
+      this == UserRole.admin ||
+      this == UserRole.employee ||
+      this == UserRole.accountant;
   bool get canEditInventory =>
-      this == UserRole.admin || this == UserRole.employee;
+      this == UserRole.admin ||
+      this == UserRole.employee ||
+      this == UserRole.accountant;
   bool get canViewReports => true;
   bool get canCreateOrders =>
-      this == UserRole.admin || this == UserRole.employee;
+      this == UserRole.admin ||
+      this == UserRole.employee ||
+      this == UserRole.accountant;
   bool get canManageShops =>
-      this == UserRole.admin || this == UserRole.employee;
+      this == UserRole.admin ||
+      this == UserRole.employee ||
+      this == UserRole.accountant;
   bool get canManageSuppliers =>
-      this == UserRole.admin || this == UserRole.employee;
+      this == UserRole.admin ||
+      this == UserRole.employee ||
+      this == UserRole.accountant;
+  bool get canSeeNetProfit => this != UserRole.accountant;
 }
 
 class UserModel extends Equatable {

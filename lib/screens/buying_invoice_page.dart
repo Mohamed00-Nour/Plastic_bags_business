@@ -805,9 +805,21 @@ class _BuyingInvoicePageState extends State<BuyingInvoicePage>
                         if (!snapshot.hasData)
                           return const CircularProgressIndicator();
                         final docs = snapshot.data!.docs;
+                        final sortedDocs = List<QueryDocumentSnapshot>.from(docs)
+                          ..sort((a, b) {
+                            final dataA = a.data() as Map<String, dynamic>;
+                            final dataB = b.data() as Map<String, dynamic>;
+                            final orderA = (dataA['sortOrder'] ?? dataA['order'] ?? 0) as num;
+                            final orderB = (dataB['sortOrder'] ?? dataB['order'] ?? 0) as num;
+                            final cmp = orderA.compareTo(orderB);
+                            if (cmp != 0) return cmp;
+                            return (dataA['name'] ?? '')
+                                .toString()
+                                .compareTo((dataB['name'] ?? '').toString());
+                          });
 
                         final filteredDocs =
-                            docs
+                            sortedDocs
                                 .where((doc) {
                                   final data =
                                       doc.data() as Map<String, dynamic>;

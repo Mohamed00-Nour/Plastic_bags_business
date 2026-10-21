@@ -304,6 +304,15 @@ class ClientStatementPdfService {
     final items =
         (invoiceData['items'] as List?)?.cast<Map<String, dynamic>>() ?? [];
 
+    final totalQuantity = items.fold<double>(0.0, (acc, item) {
+      final rawQty = item['quantity'] ?? 0;
+      final numQty =
+          rawQty is num
+              ? rawQty.toDouble()
+              : double.tryParse(rawQty.toString()) ?? 0.0;
+      return acc + numQty;
+    });
+
     final subtotal = (invoiceData['subtotal'] ?? 0.0).toDouble();
     final discount = (invoiceData['discount'] ?? 0.0).toDouble();
     final rawFees = invoiceData['additionalFees'] as List?;
@@ -440,28 +449,35 @@ class ClientStatementPdfService {
                 vertical: 6,
               ),
               headers: ['المنتج', 'الكمية', 'سعر الوحدة', 'الإجمالي'],
-              data:
-                  items.map((item) {
-                    final name = item['productName'] ?? '';
-                    final qty = item['quantity'] ?? 0;
-                    final price = (item['price'] ?? 0.0).toDouble();
-                    final total =
-                        (item['total'] ??
-                                ((qty is num
-                                        ? qty
-                                        : double.tryParse(qty.toString()) ??
-                                            0.0) *
-                                    price))
-                            .toDouble();
-                    return [
-                      name,
-                      formatQuantity(
-                        qty is num ? qty : double.tryParse(qty.toString()),
-                      ),
-                      '\$${price.toStringAsFixed(2)}',
-                      '\$${total.toStringAsFixed(2)}',
-                    ];
-                  }).toList(),
+              data: [
+                ...items.map((item) {
+                  final name = item['productName'] ?? '';
+                  final qty = item['quantity'] ?? 0;
+                  final price = (item['price'] ?? 0.0).toDouble();
+                  final total =
+                      (item['total'] ??
+                              ((qty is num
+                                      ? qty
+                                      : double.tryParse(qty.toString()) ??
+                                          0.0) *
+                                  price))
+                          .toDouble();
+                  return [
+                    name,
+                    formatQuantity(
+                      qty is num ? qty : double.tryParse(qty.toString()),
+                    ),
+                    '\$${price.toStringAsFixed(2)}',
+                    '\$${total.toStringAsFixed(2)}',
+                  ];
+                }),
+                [
+                  'إجمالي الكمية',
+                  formatQuantity(totalQuantity),
+                  '',
+                  '\$${subtotal.toStringAsFixed(2)}',
+                ],
+              ],
             ),
 
             pw.SizedBox(height: 14),
@@ -479,6 +495,11 @@ class ClientStatementPdfService {
                 ),
                 child: pw.Column(
                   children: [
+                    _buildSummaryRow(
+                      'إجمالي الكمية',
+                      formatQuantity(totalQuantity),
+                      bodyFont,
+                    ),
                     _buildSummaryRow('المجموع الفرعي', subtotal, bodyFont),
                     for (final fee in additionalFees)
                       if (((fee['amount'] ?? 0.0) as num) > 0)
@@ -572,11 +593,16 @@ class ClientStatementPdfService {
 
   static pw.Widget _buildSummaryRow(
     String label,
-    double amount,
+    dynamic amount,
     pw.Font font, {
     bool isPrimary = false,
     String? colorHex,
   }) {
+    final String displayVal =
+        amount is num
+            ? '\$${amount.toDouble().toStringAsFixed(2)}'
+            : amount.toString();
+
     return pw.Padding(
       padding: const pw.EdgeInsets.symmetric(vertical: 2),
       child: pw.Row(
@@ -587,7 +613,7 @@ class ClientStatementPdfService {
             style: pw.TextStyle(font: font, fontSize: isPrimary ? 10 : 9),
           ),
           pw.Text(
-            '\$${amount.toStringAsFixed(2)}',
+            displayVal,
             style: pw.TextStyle(
               font: font,
               fontSize: isPrimary ? 11 : 9,
