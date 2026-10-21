@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 import 'package:printing/printing.dart';
 import '../core/theme/app_theme.dart';
+import '../core/utils/client_balance.dart';
 import '../core/utils/quantity_formatter.dart';
 import '../services/client_invoice_balance_sync_service.dart';
 import '../services/client_statement_pdf_service.dart';
@@ -145,7 +146,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
       balanceTitle = 'مديونية مستحقة على العميل';
     } else if (balance < 0) {
       balanceColor = Colors.blue;
-      balanceTitle = 'رصيد دائن للمحل';
+      balanceTitle = 'رصيد دائن للعميل';
     } else {
       balanceColor = AppTheme.successColor;
       balanceTitle = 'لا يوجد مديونية';
@@ -254,7 +255,8 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
           ),
           const SizedBox(height: 2),
           Text(
-            '\$${balance.abs().toStringAsFixed(2)}',
+            '\$${balance.toStringAsFixed(2)}',
+            textDirection: TextDirection.ltr,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -713,10 +715,12 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
                       ),
                     ),
                     Text(
-                      'المتبقي: \$${remainingAmount.toStringAsFixed(2)}',
-                      style: const TextStyle(
+                      '${ClientBalance.invoiceChangeLabel(remainingAmount, isArabic: true)}: \$${remainingAmount.abs().toStringAsFixed(2)}',
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.dangerColor,
+                        color: remainingAmount < 0
+                            ? AppTheme.successColor
+                            : AppTheme.dangerColor,
                         fontSize: 13,
                       ),
                     ),
@@ -867,16 +871,9 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
           itemCount: records.length,
           itemBuilder: (context, index) {
             final rec = records[index];
-            final isReduction =
-                rec.type == 'payment' ||
-                rec.type == 'sales_return' ||
-                rec.type == 'cancellation' ||
-                rec.type == 'discount' ||
-                rec.type == 'decrease';
-            final isIncrease =
-                rec.type == 'sales_invoice' ||
-                rec.type == 'manual_debt' ||
-                rec.type == 'debt';
+            final signedAmount = ClientInvoiceBalanceSyncService.signedAmount(rec);
+            final isReduction = signedAmount < 0;
+            final isIncrease = signedAmount > 0;
 
             Color amountColor = Colors.grey;
             IconData icon = Icons.swap_horiz_rounded;

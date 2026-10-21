@@ -8,6 +8,7 @@ import 'package:printing/printing.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/theme/app_theme.dart';
 import '../core/utils/quantity_formatter.dart';
+import '../core/utils/client_balance.dart';
 import 'sales_invoice_image_service.dart';
 import 'whatsapp_share_channel.dart';
 
@@ -176,7 +177,7 @@ class WhatsappInvoiceShareService {
 
     final balanceFooter =
         isSalesInvoice
-            ? "💰 *رصيد العميل بعد الفاتورة:* \$${totalDueBalance.toStringAsFixed(2)}"
+            ? "💰 *${totalDueBalance < 0 ? ClientBalance.label(totalDueBalance, isArabic: true) : 'رصيد العميل بعد الفاتورة'}:* \$${totalDueBalance.toStringAsFixed(2)}"
             : "💰 *الرصيد الحالي للمورد:* \$${totalDueBalance.toStringAsFixed(2)}";
 
     final rawFees =
@@ -219,7 +220,7 @@ class WhatsappInvoiceShareService {
         "${feesSummary.isNotEmpty ? '$feesSummary\n' : ''}"
         "${discount > 0 ? '🏷️ *الخصم:* \$${discount.toStringAsFixed(2)}\n' : ''}"
         "💳 *المدفوع:* \$${paidAmount.toStringAsFixed(2)}\n"
-        "📌 *المتبقي من الفاتورة:* \$${remainingAmount.toStringAsFixed(2)}\n"
+        "📌 *${isSalesInvoice ? ClientBalance.invoiceChangeLabel(remainingAmount, isArabic: true) : 'المتبقي من الفاتورة'}:* \$${remainingAmount.abs().toStringAsFixed(2)}\n"
         "----------------------------------\n"
         "$balanceFooter\n\n"
         "شكراً لتعاملكم معنا! ✨\n\n"

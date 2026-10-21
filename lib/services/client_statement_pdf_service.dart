@@ -8,6 +8,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../core/theme/app_theme.dart';
 import '../core/utils/quantity_formatter.dart';
+import '../core/utils/client_balance.dart';
 import '../widgets/invoice_action_dialog.dart';
 import 'client_invoice_balance_sync_service.dart';
 import 'whatsapp_invoice_share_service.dart';
@@ -135,7 +136,7 @@ class ClientStatementPdfService {
                     child: pw.Column(
                       children: [
                         pw.Text(
-                          'الرصيد المستحق الحالي',
+                          ClientBalance.label(currentBalance, isArabic: isArabic),
                           style: pw.TextStyle(
                             font: bodyFont,
                             fontSize: 9,
@@ -339,7 +340,7 @@ class ClientStatementPdfService {
                 : []);
     final totalAmount = (invoiceData['totalAmount'] ?? 0.0).toDouble();
     final paidAmount = (invoiceData['paidAmount'] ?? 0.0).toDouble();
-    final remainingAmount = (invoiceData['remainingAmount'] ?? 0.0).toDouble();
+    final remainingAmount = ClientBalance.recordedInvoiceChange(invoiceData);
     final previousBalance =
         (invoiceData['previousBalance'] ??
                 invoiceData['clientPreviousBalance'] ??
@@ -521,10 +522,10 @@ class ClientStatementPdfService {
                     ),
                     _buildSummaryRow('المبلغ المدفوع', paidAmount, bodyFont),
                     _buildSummaryRow(
-                      'المتبقي',
-                      remainingAmount,
+                      ClientBalance.invoiceChangeLabel(remainingAmount, isArabic: true),
+                      remainingAmount.abs(),
                       boldFont,
-                      colorHex: '#DC2626',
+                      colorHex: remainingAmount < 0 ? '#059669' : '#DC2626',
                     ),
                     pw.Divider(color: PdfColors.grey300),
                     _buildSummaryRow(
@@ -534,7 +535,9 @@ class ClientStatementPdfService {
                       colorHex: '#D97706',
                     ),
                     _buildSummaryRow(
-                      'رصيد العميل بعد الفاتورة',
+                      balanceAfter < 0
+                          ? ClientBalance.label(balanceAfter, isArabic: true)
+                          : 'رصيد العميل بعد الفاتورة',
                       balanceAfter,
                       boldFont,
                       colorHex: '#4338CA',

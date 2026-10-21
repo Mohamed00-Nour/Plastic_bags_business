@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:printing/printing.dart';
 import '../core/theme/app_theme.dart';
+import '../core/utils/client_balance.dart';
 import '../features/reports/presentation/widgets/report_preview_dialog.dart';
 import '../services/whatsapp_invoice_share_service.dart';
 
@@ -165,14 +166,14 @@ class InvoiceActionDialog extends StatelessWidget {
                               color: AppTheme.successColor,
                             ),
                           ),
-                          if (remainingAmount > 0)
+                          if (remainingAmount > 0 || (isSalesInvoice && remainingAmount < 0))
                             Text(
-                              isArabic
-                                  ? 'المتبقي: \$${remainingAmount.toStringAsFixed(2)}'
-                                  : 'Remaining: \$${remainingAmount.toStringAsFixed(2)}',
-                              style: const TextStyle(
+                              '${isSalesInvoice ? ClientBalance.invoiceChangeLabel(remainingAmount, isArabic: isArabic) : (isArabic ? 'المتبقي' : 'Remaining')}: \$${remainingAmount.abs().toStringAsFixed(2)}',
+                              style: TextStyle(
                                 fontSize: 11,
-                                color: AppTheme.dangerColor,
+                                color: remainingAmount < 0
+                                    ? AppTheme.successColor
+                                    : AppTheme.dangerColor,
                               ),
                             ),
                         ],

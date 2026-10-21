@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../core/services/current_user_service.dart';
+import '../core/utils/client_balance.dart';
 
 /// Service handling Sales Invoice Editing & Updating (Inventory Diffing, Client Debt Adjustments, Client Reassignments).
 class SalesInvoiceUpdateService {
@@ -12,6 +13,7 @@ class SalesInvoiceUpdateService {
     required BuildContext context,
     required Map<String, dynamic> oldInvoice,
     required Map<String, dynamic> newInvoice,
+    FirebaseFirestore? database,
     VoidCallback? onSuccess,
   }) async {
     final invoiceId =
@@ -62,22 +64,19 @@ class SalesInvoiceUpdateService {
     );
 
     try {
-      final firestore = FirebaseFirestore.instance;
+      final firestore = database ?? FirebaseFirestore.instance;
 
       final oldItems =
           (oldInvoice['items'] as List?)?.cast<Map<String, dynamic>>() ?? [];
       final newItems =
           (newInvoice['items'] as List?)?.cast<Map<String, dynamic>>() ?? [];
 
-      final oldTotal = (oldInvoice['totalAmount'] ?? 0.0).toDouble();
-      final oldPaid = (oldInvoice['paidAmount'] ?? 0.0).toDouble();
-      final oldNetDebt =
-          (oldInvoice['remainingAmount'] ?? (oldTotal - oldPaid)).toDouble();
-
       final newTotal = (newInvoice['totalAmount'] ?? 0.0).toDouble();
       final newPaid = (newInvoice['paidAmount'] ?? 0.0).toDouble();
-      final newNetDebt =
-          (newInvoice['remainingAmount'] ?? (newTotal - newPaid)).toDouble();
+      final newNetDebt = ClientBalance.invoiceChange(
+        totalAmount: newTotal,
+        paidAmount: newPaid,
+      );
 
       final oldClientId = oldInvoice['clientId']?.toString() ?? '';
       final newClientId = newInvoice['clientId']?.toString() ?? '';
@@ -116,13 +115,13 @@ class SalesInvoiceUpdateService {
           isClientChanged
               ? firestore.collection('clients').doc(newClientId)
               : null;
-      final debtDiff = newNetDebt - oldNetDebt;
       final sameClientRef =
           !isClientChanged && newClientId.isNotEmpty
               ? firestore.collection('clients').doc(newClientId)
               : null;
       final invoiceTimestamp = _asTimestamp(newInvoice['date']);
       final editTimestamp = Timestamp.now();
+      final rootInvoiceRef = firestore.collection('sales_invoices').doc(invoiceId);
 
       // Resolve the invoice's existing ledger rows before the transaction so
       // an edit can update those rows instead of appending a generic debt
@@ -148,6 +147,20 @@ class SalesInvoiceUpdateService {
 
       await firestore.runTransaction((transaction) async {
         // PHASE 1: read every document before issuing any write.
+        final invoiceSnapshot = await transaction.get(rootInvoiceRef);
+        if (!invoiceSnapshot.exists) {
+          throw StateError('Invoice no longer exists. Reload before editing.');
+        }
+        final currentInvoice = invoiceSnapshot.data()!;
+        if ((currentInvoice['clientId']?.toString() ?? '') != oldClientId) {
+          throw StateError('Invoice client changed. Reload before editing.');
+        }
+        // Use the live posting so saving a stale legacy invoice cannot restore
+        // the same previously clamped credit twice.
+        final oldNetDebt = ClientBalance.recordedInvoiceChange(currentInvoice);
+        final oldTotal = _asDouble(currentInvoice['totalAmount']);
+        final oldPaid = _asDouble(currentInvoice['paidAmount']);
+        final debtDiff = newNetDebt - oldNetDebt;
         final productSnapshots =
             <
               DocumentReference<Map<String, dynamic>>,
@@ -204,6 +217,7 @@ class SalesInvoiceUpdateService {
         final invoiceBalanceAfter = invoicePreviousBalance + newNetDebt;
         final persistedInvoice = <String, dynamic>{
           ...newInvoice,
+          'remainingAmount': newNetDebt,
           'previousBalance': invoicePreviousBalance,
           'clientPreviousBalance': invoicePreviousBalance,
           'balanceAfter': invoiceBalanceAfter,
@@ -435,9 +449,6 @@ class SalesInvoiceUpdateService {
           transaction.set(subDocRef, persistedInvoice, SetOptions(merge: true));
         }
 
-        final rootInvoiceRef = firestore
-            .collection('sales_invoices')
-            .doc(invoiceId);
         transaction.update(rootInvoiceRef, {
           'items': newInvoice['items'],
           'subtotal': newInvoice['subtotal'],

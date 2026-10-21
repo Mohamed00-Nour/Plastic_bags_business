@@ -11,6 +11,7 @@ import '../services/sales_invoice_actions_service.dart';
 import '../services/sales_invoice_update_service.dart';
 import '../core/theme/app_theme.dart';
 import '../core/utils/invoice_search.dart';
+import '../core/utils/client_balance.dart';
 import '../core/utils/quantity_formatter.dart';
 import '../core/widgets/common_widgets.dart';
 
@@ -353,10 +354,7 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
     return t < 0 ? 0.0 : t;
   }
 
-  double get _remainingAmount {
-    final rem = _totalAmount - _paidAmount;
-    return rem < 0 ? 0.0 : rem;
-  }
+  double get _remainingAmount => _totalAmount - _paidAmount;
 
   double get _clientPreviousBalance {
     if (_selectedClientId == null) return 0.0;
@@ -1520,10 +1518,11 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                 ),
                 const SizedBox(height: 12),
                 _buildCalcRow(
-                  isArabic
-                      ? 'المتبقي (يضاف لرصيد العميل)'
-                      : 'Remaining Balance',
-                  '\$${_remainingAmount.toStringAsFixed(2)}',
+                  ClientBalance.invoiceChangeLabel(
+                    _remainingAmount,
+                    isArabic: isArabic,
+                  ),
+                  '\$${_remainingAmount.abs().toStringAsFixed(2)}',
                   isBold: true,
                   color:
                       _remainingAmount > 0
@@ -1541,9 +1540,14 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                 ),
                 const SizedBox(height: 10),
                 _buildCalcRow(
-                  isArabic
-                      ? 'رصيد العميل بعد الفاتورة'
-                      : 'Client Balance After Invoice',
+                  _clientBalanceAfterInvoice < 0
+                      ? ClientBalance.label(
+                        _clientBalanceAfterInvoice,
+                        isArabic: isArabic,
+                      )
+                      : (isArabic
+                          ? 'رصيد العميل بعد الفاتورة'
+                          : 'Client Balance After Invoice'),
                   '\$${_clientBalanceAfterInvoice.toStringAsFixed(2)}',
                   isBold: true,
                   color:
@@ -2487,10 +2491,11 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                   );
 
                   final paidLabel = isArabic ? 'مدفوع: ' : 'Paid: ';
-                  final remLabel = isArabic ? 'متبقي: ' : 'Rem: ';
+                  final remLabel =
+                      '${ClientBalance.invoiceChangeLabel(remaining, isArabic: isArabic)}: ';
                   final subText =
                       '$paidLabel\$${paid.toStringAsFixed(2)} | '
-                      '$remLabel\$${remaining.toStringAsFixed(2)}';
+                      '$remLabel\$${remaining.abs().toStringAsFixed(2)}';
 
                   if (MediaQuery.sizeOf(context).width < 600) {
                     return Card(
@@ -2810,14 +2815,18 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+            ),
           ),
         ),
+        const SizedBox(width: 12),
         Text(
           value,
+          textDirection: ui.TextDirection.ltr,
           style: TextStyle(
             fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
             fontSize: isBold ? 16 : 14,

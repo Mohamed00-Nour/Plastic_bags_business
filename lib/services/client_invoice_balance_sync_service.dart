@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../core/services/current_user_service.dart';
+import '../core/utils/client_balance.dart';
 
 class SalesInvoiceCreationResult {
   final String invoiceId;
@@ -209,6 +210,11 @@ class ClientInvoiceBalanceSyncService {
     DateTime? invoiceDate,
     String? notes,
   }) async {
+    // Derive the signed posting here; callers may still send a clamped value.
+    final invoiceChange = ClientBalance.invoiceChange(
+      totalAmount: totalAmount,
+      paidAmount: paidAmount,
+    );
     final invoiceRef = _firestore.collection('sales_invoices').doc();
     final invoiceId = invoiceRef.id;
     final timestamp =
@@ -241,7 +247,7 @@ class ClientInvoiceBalanceSyncService {
           rawBalance is num
               ? rawBalance.toDouble()
               : double.tryParse(rawBalance.toString()) ?? 0.0;
-      final balanceAfter = previousBalance + remainingAmount;
+      final balanceAfter = previousBalance + invoiceChange;
 
       transaction.set(invoiceRef, {
         'invoiceNumber': invoiceNumber,
@@ -257,7 +263,7 @@ class ClientInvoiceBalanceSyncService {
         'additionalFeeAmount': additionalFeeAmount,
         'totalAmount': totalAmount,
         'paidAmount': paidAmount,
-        'remainingAmount': remainingAmount,
+        'remainingAmount': invoiceChange,
         'previousBalance': previousBalance,
         'clientPreviousBalance': previousBalance,
         'balanceAfter': balanceAfter,

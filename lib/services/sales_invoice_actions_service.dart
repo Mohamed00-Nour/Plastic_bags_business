@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../core/services/current_user_service.dart';
+import '../core/utils/client_balance.dart';
 
 /// Service handling Sales Invoice Actions (Deletion, Confirmation, Inventory Restoration, Balance Reversal).
 class SalesInvoiceActionsService {
@@ -11,6 +12,7 @@ class SalesInvoiceActionsService {
   static Future<bool> deleteSalesInvoice({
     required BuildContext context,
     required Map<String, dynamic> invoiceData,
+    FirebaseFirestore? database,
     VoidCallback? onSuccess,
   }) async {
     final invoiceNumber = invoiceData['invoiceNumber']?.toString() ?? 'INV-000';
@@ -104,15 +106,9 @@ class SalesInvoiceActionsService {
     }
 
     try {
-      final firestore = FirebaseFirestore.instance;
+      final firestore = database ?? FirebaseFirestore.instance;
       final items =
           (invoiceData['items'] as List?)?.cast<Map<String, dynamic>>() ?? [];
-      final totalAmount = (invoiceData['totalAmount'] ?? 0.0).toDouble();
-      final paidAmount = (invoiceData['paidAmount'] ?? 0.0).toDouble();
-      final remainingOwed =
-          (invoiceData['remainingAmount'] ?? (totalAmount - paidAmount))
-              .toDouble();
-
       String clientId = invoiceData['clientId']?.toString() ?? '';
       final clientName = invoiceData['clientName']?.toString() ?? '';
 
@@ -171,17 +167,26 @@ class SalesInvoiceActionsService {
           clientId.isNotEmpty
               ? firestore.collection('clients').doc(clientId)
               : null;
+      final rootInvoiceRef = firestore.collection('sales_invoices').doc(invoiceId);
 
       // Execute Atomic Transaction: ALL READS FIRST, THEN ALL WRITES
       await firestore.runTransaction((transaction) async {
         // --- PHASE 1: ALL READS ---
+        final invoiceSnapshot = await transaction.get(rootInvoiceRef);
+        if (!invoiceSnapshot.exists) return;
+        final currentInvoice = invoiceSnapshot.data()!;
+        final currentClientId = currentInvoice['clientId']?.toString() ?? '';
+        if (currentClientId.isNotEmpty && currentClientId != clientId) {
+          throw StateError('Invoice client changed. Reload before deleting.');
+        }
+        final remainingOwed = ClientBalance.recordedInvoiceChange(currentInvoice);
         final productSnapshots = <DocumentReference, DocumentSnapshot>{};
         for (final pRef in productRefs.keys) {
           productSnapshots[pRef] = await transaction.get(pRef);
         }
 
         DocumentSnapshot? cSnap;
-        if (clientRef != null && remainingOwed > 0) {
+        if (clientRef != null && remainingOwed != 0) {
           cSnap = await transaction.get(clientRef);
         }
 
@@ -240,7 +245,7 @@ class SalesInvoiceActionsService {
         if (clientRef != null &&
             cSnap != null &&
             cSnap.exists &&
-            remainingOwed > 0) {
+            remainingOwed != 0) {
           final data = cSnap.data() as Map<String, dynamic>;
           final currentBal = (data['balance'] ?? 0.0).toDouble();
           final newBal = currentBal - remainingOwed;
@@ -262,9 +267,6 @@ class SalesInvoiceActionsService {
         }
 
         // C. Delete Root Invoice Document
-        final rootInvoiceRef = firestore
-            .collection('sales_invoices')
-            .doc(invoiceId);
         transaction.delete(rootInvoiceRef);
 
         // D. Delete Client Sub-document Invoice (if exists)

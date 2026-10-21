@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:printing/printing.dart';
 import 'package:screenshot/screenshot.dart';
 import '../core/utils/quantity_formatter.dart';
+import '../core/utils/client_balance.dart';
 
 /// Offstage Image Generator for paged Invoice Receipts using ScreenshotController.
 class SalesInvoiceImageService {
@@ -210,8 +211,10 @@ class InvoiceReceiptCard extends StatelessWidget {
           const SizedBox(height: 8),
 
           // Party & Date Details
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            spacing: 12,
+            runSpacing: 4,
             children: [
               Text(
                 '${isSalesInvoice ? "العميل" : "المورد"}: $partyName',
@@ -440,9 +443,13 @@ class InvoiceReceiptCard extends StatelessWidget {
               color: const Color(0xFF4ADE80),
             ),
             _buildSummaryRow(
-              'المتبقي من الفاتورة:',
-              '\$${remainingAmount.toStringAsFixed(2)}',
-              color: const Color(0xFFF87171),
+              isSalesInvoice
+                  ? '${ClientBalance.invoiceChangeLabel(remainingAmount, isArabic: true)}:'
+                  : 'المتبقي من الفاتورة:',
+              '\$${remainingAmount.abs().toStringAsFixed(2)}',
+              color: remainingAmount < 0
+                  ? const Color(0xFF4ADE80)
+                  : const Color(0xFFF87171),
             ),
             _buildSummaryRow(
               isSalesInvoice ? 'رصيد العميل السابق:' : 'رصيد المورد السابق:',
@@ -451,7 +458,9 @@ class InvoiceReceiptCard extends StatelessWidget {
             ),
             _buildSummaryRow(
               isSalesInvoice
-                  ? 'رصيد العميل بعد الفاتورة:'
+                  ? (totalDueBalance < 0
+                      ? '${ClientBalance.label(totalDueBalance, isArabic: true)}:'
+                      : 'رصيد العميل بعد الفاتورة:')
                   : 'الرصيد الحالي للمورد:',
               '\$${totalDueBalance.toStringAsFixed(2)}',
               isBold: true,
@@ -497,16 +506,20 @@ class InvoiceReceiptCard extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-              color: Colors.white,
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+                color: Colors.white,
+              ),
             ),
           ),
+          const SizedBox(width: 12),
           Text(
             value,
+            textDirection: TextDirection.ltr,
             style: TextStyle(
               fontSize: 13,
               fontWeight: isBold ? FontWeight.bold : FontWeight.bold,

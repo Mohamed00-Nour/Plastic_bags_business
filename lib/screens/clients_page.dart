@@ -5,6 +5,7 @@ import '../services/client_invoice_balance_sync_service.dart';
 import '../services/client_statement_pdf_service.dart';
 import 'client_details_page.dart';
 import '../core/theme/app_theme.dart';
+import '../core/utils/client_balance.dart';
 
 class ClientsPage extends StatefulWidget {
   const ClientsPage({super.key});
@@ -939,9 +940,7 @@ class _ClientsPageState extends State<ClientsPage> {
                                                                   CrossAxisAlignment.end,
                                                               children: [
                                                                 Text(
-                                                                  isArabic
-                                                                      ? 'الرصيد'
-                                                                      : 'Balance',
+                                                                  ClientBalance.label(balance, isArabic: isArabic),
                                                                   style: TextStyle(
                                                                     fontSize: 9,
                                                                     color: balance > 0
@@ -951,6 +950,7 @@ class _ClientsPageState extends State<ClientsPage> {
                                                                 ),
                                                                 Text(
                                                                   '\$${balance.toStringAsFixed(2)}',
+                                                                  textDirection: ui.TextDirection.ltr,
                                                                   style: TextStyle(
                                                                     fontSize: 13,
                                                                     fontWeight:
@@ -1125,15 +1125,14 @@ class _ClientsPageState extends State<ClientsPage> {
                                                           CrossAxisAlignment.end,
                                                       children: [
                                                         Text(
-                                                          isArabic
-                                                              ? 'الرصيد المستحق'
-                                                              : 'Due Balance',
+                                                          ClientBalance.label(balance, isArabic: isArabic),
                                                           style: const TextStyle(
                                                               fontSize: 11,
                                                               color: Colors.grey),
                                                         ),
                                                         Text(
                                                           '\$${balance.toStringAsFixed(2)}',
+                                                          textDirection: ui.TextDirection.ltr,
                                                           style: TextStyle(
                                                             fontSize: 15,
                                                             fontWeight:
@@ -1363,7 +1362,7 @@ class _ClientBalanceHistoryDialogContentState
                   ),
                   const Spacer(),
                   Text(
-                    '${isArabic ? "الرصيد المستحق: " : "Due Balance: "}\$${(widget.clientData['balance'] ?? 0.0).toStringAsFixed(2)}',
+                    '${ClientBalance.label((widget.clientData['balance'] ?? 0.0).toDouble(), isArabic: isArabic)}: \$${(widget.clientData['balance'] ?? 0.0).toStringAsFixed(2)}',
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       color: AppTheme.primaryColor,
