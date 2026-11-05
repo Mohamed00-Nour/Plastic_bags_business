@@ -2811,7 +2811,7 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                         '${DateFormat('yyyy/MM/dd HH:mm').format(date)} • Payment: ${data['paymentMethod']}',
                       ),
                       trailing: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 260),
+                        constraints: const BoxConstraints(maxWidth: 380),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -2829,6 +2829,9 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                                   ),
                                   Text(
                                     subText,
+                                    maxLines: 1,
+                                    softWrap: false,
+                                    overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(
                                       fontSize: 10,
                                       color: Colors.grey,
