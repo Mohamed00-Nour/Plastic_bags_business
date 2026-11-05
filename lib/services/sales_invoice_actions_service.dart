@@ -29,82 +29,18 @@ class SalesInvoiceActionsService {
       return false;
     }
 
-    // 1. Confirmation Dialog
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dCtx) {
-        return AlertDialog(
-          title: const Text(
-            'تأكيد حذف الفاتورة',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          content: Text(
-            'هل أنت تأكد من حذف هذه الفاتورة رقم (#$invoiceNumber)؟\n(سيتم استرجاع كميات المنتجات إلى المخزن وتعديل رصيد العميل تلقائياً)',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dCtx).pop(false),
-              child: const Text('إلغاء'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-              ),
-              onPressed: () => Navigator.of(dCtx).pop(true),
-              child: const Text('تأكيد الحذف'),
-            ),
-          ],
-        );
-      },
+    final confirmed = await _confirmDeletion(
+      context,
+      title: 'تأكيد حذف الفاتورة',
+      message:
+          'هل أنت تأكد من حذف هذه الفاتورة رقم (#$invoiceNumber)؟\n(سيتم استرجاع كميات المنتجات إلى المخزن وتعديل رصيد العميل تلقائياً)',
     );
+    if (!confirmed || !context.mounted) return false;
 
-    if (confirmed != true) return false;
-
-    // 2. Loading Overlay Dialog
-    BuildContext? loadingDialogContext;
-    if (context.mounted) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (loadingCtx) {
-          loadingDialogContext = loadingCtx;
-          return const Center(
-            child: Card(
-              color: Color(0xFF1E293B),
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircularProgressIndicator(color: Colors.red),
-                    SizedBox(width: 16),
-                    Text(
-                      'جاري حذف الفاتورة وتعديل الرصيد والمخزون...',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      );
-    }
-
-    void closeLoading() {
-      if (loadingDialogContext != null && loadingDialogContext!.mounted) {
-        Navigator.of(loadingDialogContext!).pop();
-        loadingDialogContext = null;
-      } else if (context.mounted) {
-        try {
-          Navigator.of(context, rootNavigator: true).pop();
-        } catch (_) {}
-      }
-    }
+    final closeLoading = _showProgress(
+      context,
+      'جاري حذف الفاتورة وتعديل الرصيد والمخزون...',
+    );
 
     try {
       final firestore = database ?? FirebaseFirestore.instance;
@@ -350,6 +286,291 @@ class SalesInvoiceActionsService {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('حدث خطأ أثناء حذف الفاتورة: $e')),
+        );
+      }
+      return false;
+    }
+  }
+
+  static Future<bool> _confirmDeletion(
+    BuildContext context, {
+    required String title,
+    required String message,
+  }) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dCtx) {
+        return AlertDialog(
+          title: Text(
+            title,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dCtx).pop(false),
+              child: const Text('إلغاء'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () => Navigator.of(dCtx).pop(true),
+              child: const Text('تأكيد الحذف'),
+            ),
+          ],
+        );
+      },
+    );
+    return confirmed == true;
+  }
+
+  /// Shows a blocking progress dialog and returns a function that closes it.
+  static VoidCallback _showProgress(BuildContext context, String message) {
+    BuildContext? dialogContext;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (loadingCtx) {
+        dialogContext = loadingCtx;
+        return Center(
+          child: Card(
+            color: const Color(0xFF1E293B),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CircularProgressIndicator(color: Colors.red),
+                  const SizedBox(width: 16),
+                  Text(
+                    message,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+    return () {
+      if (dialogContext != null && dialogContext!.mounted) {
+        Navigator.of(dialogContext!).pop();
+        dialogContext = null;
+      } else if (context.mounted) {
+        try {
+          Navigator.of(context, rootNavigator: true).pop();
+        } catch (_) {}
+      }
+    };
+  }
+
+  static double _toDouble(Object? value) {
+    if (value is num) return value.toDouble();
+    return double.tryParse(value?.toString() ?? '') ?? 0.0;
+  }
+
+  /// Deletes a sales return and undoes everything saving it did: takes the
+  /// returned quantities out of stock again, cancels its effect on the client
+  /// balance, removes its balance-history rows and frees its serial number.
+  static Future<bool> deleteSalesReturn({
+    required BuildContext context,
+    required Map<String, dynamic> returnData,
+    FirebaseFirestore? database,
+  }) async {
+    final returnNumber =
+        (returnData['returnNumber'] ?? returnData['invoiceNumber'])
+            ?.toString() ??
+        '';
+    final returnId = returnData['id']?.toString() ?? '';
+    if (returnId.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('تعذر تحديد معرف المرتجع')));
+      return false;
+    }
+
+    final confirmed = await _confirmDeletion(
+      context,
+      title: 'تأكيد حذف المرتجع',
+      message:
+          'هل أنت متأكد من حذف المرتجع رقم (#$returnNumber)؟\n(سيتم خصم الكميات المرتجعة من المخزن مرة أخرى وإلغاء أثر المرتجع على رصيد العميل)',
+    );
+    if (!confirmed || !context.mounted) return false;
+
+    final closeLoading = _showProgress(
+      context,
+      'جاري حذف المرتجع وتعديل الرصيد والمخزون...',
+    );
+
+    try {
+      final firestore = database ?? FirebaseFirestore.instance;
+      final returnRef = firestore.collection('return_invoices').doc(returnId);
+      final mirrorRef = firestore.collection('sales_returns').doc(returnId);
+
+      // Work from the saved return, not the (possibly stale) card data.
+      final saved = await returnRef.get();
+      if (!saved.exists) {
+        throw StateError('المرتجع غير موجود أو تم حذفه بالفعل');
+      }
+      final data = saved.data()!;
+
+      var clientId = data['clientId']?.toString() ?? '';
+      final clientName = data['clientName']?.toString() ?? '';
+      if (clientId.isEmpty && clientName.isNotEmpty) {
+        final clientQuery =
+            await firestore
+                .collection('clients')
+                .where('name', isEqualTo: clientName)
+                .limit(1)
+                .get();
+        if (clientQuery.docs.isNotEmpty) clientId = clientQuery.docs.first.id;
+      }
+      final clientRef =
+          clientId.isEmpty
+              ? null
+              : firestore.collection('clients').doc(clientId);
+
+      // Same rule as saving: only items with a product id and a quantity
+      // above zero were added to stock.
+      final returnedQty = <String, double>{};
+      final productNames = <String, String>{};
+      for (final item in (data['items'] as List?) ?? const []) {
+        if (item is! Map) continue;
+        final productId = item['productId']?.toString() ?? '';
+        final qty = _toDouble(item['quantity']);
+        if (productId.isEmpty || qty <= 0) continue;
+        returnedQty.update(productId, (q) => q + qty, ifAbsent: () => qty);
+        productNames[productId] = item['productName']?.toString() ?? '';
+      }
+
+      final historyRows =
+          clientRef == null
+              ? const <QueryDocumentSnapshot<Map<String, dynamic>>>[]
+              : (await clientRef
+                      .collection('balanceHistory')
+                      .where('invoiceId', isEqualTo: returnId)
+                      .get())
+                  .docs;
+
+      final returnTotal = _toDouble(
+        data['returnTotalAmount'] ?? data['totalAmount'],
+      );
+      final refund = _toDouble(data['paidAmount']);
+      // Saving lowered the balance by this amount; deleting adds it back.
+      final netCredit = returnTotal - refund;
+
+      final serialNumber = InvoiceNumberService.parse(returnNumber);
+      final reservationRef =
+          serialNumber == null
+              ? null
+              : InvoiceNumberService(
+                firestore: firestore,
+              ).reservationRef(InvoiceSequence.salesReturn, serialNumber);
+
+      await firestore.runTransaction((transaction) async {
+        // --- ALL READS ---
+        final current = await transaction.get(returnRef);
+        if (!current.exists) {
+          throw StateError('المرتجع غير موجود أو تم حذفه بالفعل');
+        }
+        final productSnaps = <String, DocumentSnapshot<Map<String, dynamic>>>{};
+        for (final productId in returnedQty.keys) {
+          productSnaps[productId] = await transaction.get(
+            firestore.collection('products').doc(productId),
+          );
+        }
+        final clientSnap =
+            clientRef == null ? null : await transaction.get(clientRef);
+        final reservationSnap =
+            reservationRef == null
+                ? null
+                : await transaction.get(reservationRef);
+
+        // --- ALL WRITES ---
+        // A. Take the returned quantities out of stock again.
+        for (final entry in returnedQty.entries) {
+          final snap = productSnaps[entry.key]!;
+          if (!snap.exists) continue;
+          final productData = snap.data()!;
+          final before = _toDouble(
+            productData['stockQuantity'] ?? productData['quantity'],
+          );
+          final after = before - entry.value;
+          transaction.update(snap.reference, {
+            'stockQuantity': after,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+          transaction.set(snap.reference.collection('changes').doc(), {
+            'timestamp': FieldValue.serverTimestamp(),
+            'quantityChange': -entry.value,
+            'operationType': 'sales_return_deleted',
+            'invoiceId': returnId,
+            'invoiceNumber': returnNumber,
+            'productName': productNames[entry.key] ?? '',
+          });
+          transaction.set(firestore.collection('stock_logs').doc(), {
+            'productId': entry.key,
+            'productName':
+                productData['name']?.toString() ??
+                productNames[entry.key] ??
+                '',
+            'type': 'outgoing',
+            'quantity': entry.value,
+            'stockBefore': before,
+            'stockAfter': after,
+            'referenceId': returnId,
+            'note': 'Sales return deletion #$returnNumber',
+            'createdBy': CurrentUserService.instance.userName,
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+        }
+
+        // B. Cancel the return's effect on the client balance.
+        if (clientSnap != null && clientSnap.exists && netCredit != 0) {
+          final balance = _toDouble(clientSnap.data()?['balance']);
+          transaction.update(clientRef!, {
+            'balance': balance + netCredit,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+        }
+
+        // C. Remove its balance-history rows (return total and cash refund).
+        for (final row in historyRows) {
+          transaction.delete(row.reference);
+        }
+
+        // D. Delete the return and free its number if it owns it.
+        transaction.delete(returnRef);
+        transaction.delete(mirrorRef);
+        if (reservationSnap != null &&
+            reservationSnap.exists &&
+            reservationSnap.data()?['documentId'] == returnId) {
+          transaction.delete(reservationRef!);
+        }
+      });
+
+      closeLoading();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'تم حذف المرتجع رقم (#$returnNumber) وتعديل المخزون ورصيد العميل بنجاح',
+            ),
+          ),
+        );
+      }
+      return true;
+    } catch (e) {
+      closeLoading();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('حدث خطأ أثناء حذف المرتجع: $e')),
         );
       }
       return false;

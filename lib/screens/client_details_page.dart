@@ -790,9 +790,14 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
                           context,
                           MaterialPageRoute(
                             builder:
-                                (context) => SalesInvoicePage(
-                                  initialInvoiceData: invoice,
-                                ),
+                                (context) =>
+                                    isSales
+                                        ? SalesInvoicePage(
+                                          initialInvoiceData: invoice,
+                                        )
+                                        : SalesInvoicePage(
+                                          initialReturnData: invoice,
+                                        ),
                           ),
                         );
                       },
@@ -802,10 +807,19 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
                       icon: const Icon(Icons.delete_forever_rounded, size: 18),
                       label: const Text('حذف'),
                       onPressed: () async {
-                        await SalesInvoiceActionsService.deleteSalesInvoice(
-                          context: context,
-                          invoiceData: invoice,
-                        );
+                        if (isSales) {
+                          await SalesInvoiceActionsService.deleteSalesInvoice(
+                            context: context,
+                            invoiceData: invoice,
+                            database: _firestore,
+                          );
+                        } else {
+                          await SalesInvoiceActionsService.deleteSalesReturn(
+                            context: context,
+                            returnData: invoice,
+                            database: _firestore,
+                          );
+                        }
                       },
                     ),
                     const SizedBox(width: 8),

@@ -537,9 +537,32 @@ class ClientInvoiceBalanceSyncService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      // Record 1: Return Invoice Total (Reduces debt by returnTotalAmount)
-      final historyRef1 = clientRef.collection('balanceHistory').doc();
-      batch.set(historyRef1, {
+      for (final row in _salesReturnHistoryRows(
+        returnId: returnId,
+        returnNumber: returnNumber,
+        returnTotalAmount: returnTotalAmount,
+        refundAmount: refundAmount,
+        timestamp: timestamp,
+      )) {
+        batch.set(clientRef.collection('balanceHistory').doc(), row);
+      }
+    }
+
+    await batch.commit();
+    return returnId;
+  }
+
+  /// Balance-history rows of a sales return: the return total (reduces the
+  /// debt) and, when cash was paid back, the refund (adds it back).
+  static List<Map<String, dynamic>> _salesReturnHistoryRows({
+    required String returnId,
+    required String returnNumber,
+    required double returnTotalAmount,
+    required double refundAmount,
+    required Object timestamp,
+  }) {
+    return [
+      {
         'type': 'sales_return',
         'invoiceId': returnId,
         'invoiceNumber': returnNumber,
@@ -549,12 +572,9 @@ class ClientInvoiceBalanceSyncService {
         'timestamp': timestamp,
         'entryOrder': 0,
         'createdAt': FieldValue.serverTimestamp(),
-      });
-
-      // Record 2: Refunded Cash Amount (if refundAmount > 0)
-      if (refundAmount > 0) {
-        final historyRef2 = clientRef.collection('balanceHistory').doc();
-        batch.set(historyRef2, {
+      },
+      if (refundAmount > 0)
+        {
           'type': 'manual_debt',
           'invoiceId': returnId,
           'invoiceNumber': returnNumber,
@@ -565,12 +585,184 @@ class ClientInvoiceBalanceSyncService {
           'timestamp': timestamp,
           'entryOrder': 1,
           'createdAt': FieldValue.serverTimestamp(),
+        },
+    ];
+  }
+
+  static double _asDouble(Object? value) {
+    if (value is num) return value.toDouble();
+    return double.tryParse(value?.toString() ?? '') ?? 0.0;
+  }
+
+  /// Quantities a return added to stock, per product. Same rule as saving:
+  /// only items with a product id and a quantity above zero count.
+  static Map<String, double> _returnedQuantities(List<dynamic>? items) {
+    final result = <String, double>{};
+    for (final item in items ?? const []) {
+      if (item is! Map) continue;
+      final productId = item['productId']?.toString() ?? '';
+      final qty = _asDouble(item['quantity']);
+      if (productId.isEmpty || qty <= 0) continue;
+      result.update(productId, (q) => q + qty, ifAbsent: () => qty);
+    }
+    return result;
+  }
+
+  /// Saves changes to an existing sales return. Only the difference from the
+  /// saved return is applied: stock moves by the change in returned
+  /// quantities, the client balance by the change in net credit, and the
+  /// return's balance-history rows are rewritten. The number and client stay
+  /// the same.
+  Future<void> updateSalesReturn({
+    required String returnId,
+    required List<Map<String, dynamic>> returnedItems,
+    required double subtotal,
+    required double discount,
+    required double returnTotalAmount,
+    required double refundAmount,
+    required DateTime returnDate,
+    String? reason,
+  }) async {
+    final returnRef = _firestore.collection('return_invoices').doc(returnId);
+    final mirrorRef = _firestore.collection('sales_returns').doc(returnId);
+
+    final saved = await returnRef.get();
+    if (!saved.exists) {
+      throw StateError('Sales return $returnId no longer exists.');
+    }
+    final clientId = saved.data()?['clientId']?.toString() ?? '';
+    final clientRef =
+        clientId.isEmpty
+            ? null
+            : _firestore.collection('clients').doc(clientId);
+    // Queries can't run inside a transaction, so the rows are found first.
+    final historyRows =
+        clientRef == null
+            ? const <QueryDocumentSnapshot<Map<String, dynamic>>>[]
+            : (await clientRef
+                    .collection('balanceHistory')
+                    .where('invoiceId', isEqualTo: returnId)
+                    .get())
+                .docs;
+
+    final newQty = _returnedQuantities(returnedItems);
+    final newNames = <String, String>{
+      for (final item in returnedItems)
+        if ((item['productId']?.toString() ?? '').isNotEmpty)
+          item['productId'].toString(): item['productName']?.toString() ?? '',
+    };
+
+    await _firestore.runTransaction((transaction) async {
+      // --- ALL READS ---
+      final current = await transaction.get(returnRef);
+      if (!current.exists) {
+        throw StateError('Sales return $returnId no longer exists.');
+      }
+      final old = current.data()!;
+      if ((old['clientId']?.toString() ?? '') != clientId) {
+        throw StateError('Return client changed. Reload before editing.');
+      }
+      final returnNumber =
+          (old['returnNumber'] ?? old['invoiceNumber'])?.toString() ?? '';
+      final oldQty = _returnedQuantities(old['items'] as List?);
+
+      final deltas = <String, double>{};
+      for (final id in {...oldQty.keys, ...newQty.keys}) {
+        final delta = (newQty[id] ?? 0) - (oldQty[id] ?? 0);
+        if (delta != 0) deltas[id] = delta;
+      }
+      final productSnaps = <String, DocumentSnapshot<Map<String, dynamic>>>{};
+      for (final id in deltas.keys) {
+        productSnaps[id] = await transaction.get(
+          _firestore.collection('products').doc(id),
+        );
+      }
+      final clientSnap =
+          clientRef == null ? null : await transaction.get(clientRef);
+
+      // --- ALL WRITES ---
+      // A. Stock: a bigger return adds stock, a smaller one takes it back.
+      for (final entry in deltas.entries) {
+        final snap = productSnaps[entry.key]!;
+        if (!snap.exists) continue;
+        final before = _stockFromSnapshot(snap);
+        final after = before + entry.value;
+        final name =
+            newNames[entry.key] ?? snap.data()?['name']?.toString() ?? '';
+        transaction.update(snap.reference, {
+          'stockQuantity': after,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+        transaction.set(snap.reference.collection('changes').doc(), {
+          'timestamp': FieldValue.serverTimestamp(),
+          'quantityChange': entry.value,
+          'operationType': 'sales_return_edit',
+          'invoiceId': returnId,
+          'invoiceNumber': returnNumber,
+          'productName': name,
+        });
+        _setStockLog(
+          transaction,
+          productId: entry.key,
+          productName: name,
+          type: entry.value > 0 ? 'incoming' : 'outgoing',
+          quantity: entry.value.abs(),
+          stockBefore: before,
+          stockAfter: after,
+          referenceId: returnId,
+          note: 'Sales return edit #$returnNumber',
+        );
+      }
+
+      // B. Balance: the return lowers it by its net credit (total - refund).
+      final oldNet =
+          _asDouble(old['returnTotalAmount'] ?? old['totalAmount']) -
+          _asDouble(old['paidAmount']);
+      final newNet = returnTotalAmount - refundAmount;
+      final balanceChange = oldNet - newNet;
+      if (clientSnap != null && clientSnap.exists && balanceChange != 0) {
+        transaction.update(clientRef!, {
+          'balance': _asDouble(clientSnap.data()?['balance']) + balanceChange,
+          'updatedAt': FieldValue.serverTimestamp(),
         });
       }
-    }
 
-    await batch.commit();
-    return returnId;
+      // C. Rewrite the balance-history rows with the new amounts and date.
+      for (final row in historyRows) {
+        transaction.delete(row.reference);
+      }
+      if (clientRef != null) {
+        for (final row in _salesReturnHistoryRows(
+          returnId: returnId,
+          returnNumber: returnNumber,
+          returnTotalAmount: returnTotalAmount,
+          refundAmount: refundAmount,
+          timestamp: Timestamp.fromDate(returnDate),
+        )) {
+          transaction.set(clientRef.collection('balanceHistory').doc(), row);
+        }
+      }
+
+      // D. Update the return itself (both copies).
+      final changes = {
+        'items': returnedItems,
+        'subtotal': subtotal,
+        'discount': discount,
+        'returnTotalAmount': returnTotalAmount,
+        'totalAmount': returnTotalAmount,
+        'paidAmount': refundAmount,
+        'remainingAmount':
+            returnTotalAmount - refundAmount < 0
+                ? 0.0
+                : returnTotalAmount - refundAmount,
+        'reason': reason ?? '',
+        'notes': reason ?? '',
+        'date': Timestamp.fromDate(returnDate),
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+      transaction.update(returnRef, changes);
+      transaction.set(mirrorRef, changes, SetOptions(merge: true));
+    });
   }
 
   /// Get Client Stream from Firestore
@@ -805,7 +997,7 @@ class ClientInvoiceBalanceSyncService {
         : double.tryParse(rawStock.toString()) ?? 0.0;
   }
 
-  static void _setStockLog(
+  void _setStockLog(
     Transaction transaction, {
     required String productId,
     required String productName,
@@ -816,7 +1008,7 @@ class ClientInvoiceBalanceSyncService {
     required String referenceId,
     required String note,
   }) {
-    final logRef = FirebaseFirestore.instance.collection('stock_logs').doc();
+    final logRef = _firestore.collection('stock_logs').doc();
     transaction.set(
       logRef,
       _stockLogData(
@@ -832,7 +1024,7 @@ class ClientInvoiceBalanceSyncService {
     );
   }
 
-  static void _setStockLogInBatch(
+  void _setStockLogInBatch(
     WriteBatch batch, {
     required String productId,
     required String productName,
@@ -843,7 +1035,7 @@ class ClientInvoiceBalanceSyncService {
     required String referenceId,
     required String note,
   }) {
-    final logRef = FirebaseFirestore.instance.collection('stock_logs').doc();
+    final logRef = _firestore.collection('stock_logs').doc();
     batch.set(
       logRef,
       _stockLogData(

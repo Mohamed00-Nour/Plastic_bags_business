@@ -20,7 +20,15 @@ import '../core/widgets/common_widgets.dart';
 class SalesInvoicePage extends StatefulWidget {
   final Map<String, dynamic>? initialInvoiceData;
 
-  const SalesInvoicePage({super.key, this.initialInvoiceData});
+  /// When set, the page only shows the return form, filled in with this
+  /// saved return, and saving updates it.
+  final Map<String, dynamic>? initialReturnData;
+
+  const SalesInvoicePage({
+    super.key,
+    this.initialInvoiceData,
+    this.initialReturnData,
+  });
 
   @override
   State<SalesInvoicePage> createState() => _SalesInvoicePageState();
@@ -147,11 +155,17 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
   String _invoiceHistorySearchQuery = '';
 
   bool get _isEditMode => widget.initialInvoiceData != null;
+  bool get _isReturnEditMode => widget.initialReturnData != null;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    if (_isReturnEditMode) {
+      _invoiceNumber = '';
+      _loadReturnForEditing(widget.initialReturnData!);
+      return;
+    }
     _generateReturnNumber();
     if (widget.initialInvoiceData != null) {
       _loadInvoiceForEditing(widget.initialInvoiceData!);
@@ -227,6 +241,39 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
     if (clientId != null && clientId.isNotEmpty) {
       _refreshSelectedClientBalance(clientId);
     }
+  }
+
+  void _loadReturnForEditing(Map<String, dynamic> ret) {
+    _returnNumber =
+        (ret['returnNumber'] ?? ret['invoiceNumber'])?.toString() ?? '';
+    _returnNumberController.text = _returnNumber;
+    _returnClientId = ret['clientId']?.toString();
+    _returnClientName = ret['clientName']?.toString();
+    _returnClientPhone =
+        ret['clientPhone']?.toString() ?? ret['phone']?.toString();
+    _returnClientSearchController.text = _returnClientName ?? '';
+
+    // The return's own date, not when it was typed in.
+    final rawDate = ret['date'] ?? ret['createdAt'];
+    if (rawDate is Timestamp) {
+      _returnDate = rawDate.toDate();
+    } else if (rawDate is DateTime) {
+      _returnDate = rawDate;
+    }
+
+    _returnLineItems
+      ..clear()
+      ..addAll([
+        for (final item in (ret['items'] as List?) ?? const [])
+          if (item is Map) Map<String, dynamic>.from(item),
+      ]);
+
+    _returnDiscount = _asDouble(ret['discount']);
+    _returnRefundAmount = _asDouble(ret['paidAmount']);
+    _returnNotes = (ret['reason'] ?? ret['notes'])?.toString() ?? '';
+    _returnDiscountController.text = _returnDiscount.toStringAsFixed(2);
+    _returnRefundController.text = _returnRefundAmount.toStringAsFixed(2);
+    _returnNotesController.text = _returnNotes;
   }
 
   static double _asDouble(dynamic value) {
@@ -733,7 +780,69 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
     }
   }
 
+  Future<void> _submitSalesReturnEdit(bool isArabic) async {
+    if (_returnLineItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isArabic
+                ? 'برجاء إضافة منتج واحد على الأقل للمرتجع'
+                : 'Please add at least one item to return',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    final returnId = widget.initialReturnData!['id']?.toString() ?? '';
+    if (returnId.isEmpty) return;
+
+    setState(() => _isReturnSubmitting = true);
+    try {
+      await _syncService.updateSalesReturn(
+        returnId: returnId,
+        returnedItems: _returnLineItems,
+        subtotal: _returnSubtotal,
+        discount: _returnDiscount,
+        returnTotalAmount: _returnTotalAmount,
+        refundAmount: _returnRefundAmount,
+        returnDate: _returnDate,
+        reason: _returnNotes,
+      );
+      if (!mounted) return;
+      try {
+        context.read<ProductBloc>().add(ProductLoadRequested());
+      } catch (_) {}
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isArabic
+                ? 'تم حفظ تعديلات المرتجع وتحديث المخزون والرصيد بنجاح'
+                : 'Return updated, stock and balance adjusted',
+          ),
+          backgroundColor: AppTheme.successColor,
+        ),
+      );
+      Navigator.of(context).pop(true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isReturnSubmitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isArabic ? 'حدث خطأ أثناء تعديل المرتجع: $e' : 'Error updating return: $e',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   void _submitSalesReturn(bool isArabic) async {
+    if (_isReturnEditMode) {
+      await _submitSalesReturnEdit(isArabic);
+      return;
+    }
     if (_returnClientId == null || _returnClientId!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -861,6 +970,28 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
   @override
   Widget build(BuildContext context) {
     final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+
+    if (_isReturnEditMode) {
+      return Directionality(
+        textDirection: isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
+        child: Scaffold(
+          appBar: AppBar(
+            title: Text(
+              isArabic
+                  ? 'تعديل مرتجع مبيعات #$_returnNumber'
+                  : 'Edit Sales Return #$_returnNumber',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_rounded),
+              tooltip: isArabic ? 'رجوع' : 'Back',
+              onPressed: () => Navigator.maybePop(context),
+            ),
+          ),
+          body: _buildReturnsTab(context, isArabic),
+        ),
+      );
+    }
 
     return Directionality(
       textDirection: isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
@@ -1770,12 +1901,23 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                   children: [
                     Row(
                       children: [
-                        _buildSerialNumberField(
-                          key: const Key('returnNumberField'),
-                          controller: _returnNumberController,
-                          label: isArabic ? 'رقم المرتجع' : 'Return #',
-                          color: AppTheme.dangerColor,
-                        ),
+                        // The number can only be chosen when creating.
+                        if (_isReturnEditMode)
+                          Text(
+                            '${isArabic ? "رقم المرتجع: " : "Return #: "}$_returnNumber',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: AppTheme.dangerColor,
+                            ),
+                          )
+                        else
+                          _buildSerialNumberField(
+                            key: const Key('returnNumberField'),
+                            controller: _returnNumberController,
+                            label: isArabic ? 'رقم المرتجع' : 'Return #',
+                            color: AppTheme.dangerColor,
+                          ),
                         const Spacer(),
                         TextButton.icon(
                           icon: const Icon(
@@ -1814,6 +1956,8 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                           focusNode: _returnClientSearchFocusNode,
                           displayStringForOption: (c) => c['name'] ?? '',
                           optionsBuilder: (TextEditingValue textEditingValue) {
+                            // The client of a saved return can't be changed.
+                            if (_isReturnEditMode) return const [];
                             if (textEditingValue.text.isEmpty) return clients;
                             final q = textEditingValue.text.toLowerCase();
                             return clients.where((c) {
@@ -1840,9 +1984,12 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                             return TextFormField(
                               controller: controller,
                               focusNode: focusNode,
+                              readOnly: _isReturnEditMode,
                               decoration: InputDecoration(
                                 labelText:
-                                    isArabic
+                                    _isReturnEditMode
+                                        ? (isArabic ? 'العميل' : 'Client')
+                                        : isArabic
                                         ? 'ابحث عن العميل للمرتجع *'
                                         : 'Search Client for Return *',
                                 prefixIcon: const Icon(
@@ -1850,8 +1997,9 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                                   color: AppTheme.dangerColor,
                                 ),
                                 suffixIcon:
-                                    _returnClientId != null ||
-                                            controller.text.isNotEmpty
+                                    !_isReturnEditMode &&
+                                            (_returnClientId != null ||
+                                                controller.text.isNotEmpty)
                                         ? IconButton(
                                           icon: const Icon(Icons.clear),
                                           onPressed: () {
@@ -2341,7 +2489,11 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                     ),
                     icon: const Icon(Icons.check_circle),
                     label: Text(
-                      isArabic
+                      _isReturnEditMode
+                          ? (isArabic
+                              ? 'حفظ تعديلات المرتجع'
+                              : 'Save Return Changes')
+                          : isArabic
                           ? 'حفظ وتصدير مرتجع المبيعات (PDF)'
                           : 'Save & Export Sales Return (PDF)',
                       style: const TextStyle(fontWeight: FontWeight.bold),
