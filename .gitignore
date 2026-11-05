@@ -56,3 +56,14 @@ assets/plastic-service-account.json
 *.rar
 *.zip
 
+
+# graphify knowledge-graph output (local tool cache)
+graphify-out/
+**/graphify-out/
+
+# Local environment / secrets
+.env
+.env.*
+*.keystore
+*.jks
+key.properties

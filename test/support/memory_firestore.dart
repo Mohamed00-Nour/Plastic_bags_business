@@ -1,6 +1,8 @@
 // SDK interface fakes are limited to tests; production uses the real plugin.
 // ignore_for_file: subtype_of_sealed_class
 
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -9,6 +11,26 @@ import 'package:flutter_test/flutter_test.dart';
 class MemoryFirestore extends Fake implements FirebaseFirestore {
   final documents = <String, Map<String, dynamic>>{};
   int _nextId = 0;
+  final _changes = StreamController<void>.broadcast();
+
+  /// Re-emits every live `snapshots()` stream after a committed write.
+  void notifyChanged() => _changes.add(null);
+
+  Stream<T> _watch<T>(Future<T> Function() read) {
+    late final StreamController<T> controller;
+    StreamSubscription<void>? changes;
+    void emit() => read().then((value) {
+      if (!controller.isClosed) controller.add(value);
+    });
+    controller = StreamController<T>(
+      onListen: () {
+        changes = _changes.stream.listen((_) => emit());
+        emit();
+      },
+      onCancel: () => changes?.cancel(),
+    );
+    return controller.stream;
+  }
 
   @override
   CollectionReference<Map<String, dynamic>> collection(String path) =>
@@ -25,6 +47,7 @@ class MemoryFirestore extends Fake implements FirebaseFirestore {
     for (final write in transaction.writes) {
       write();
     }
+    if (transaction.writes.isNotEmpty) notifyChanged();
     return result;
   }
 
@@ -75,6 +98,12 @@ class _Collection extends Fake
         _Snapshot(_Document(store, entry.key), Map.of(entry.value)),
     ]);
   }
+
+  @override
+  Stream<QuerySnapshot<Map<String, dynamic>>> snapshots({
+    bool includeMetadataChanges = false,
+    ListenSource source = ListenSource.defaultSource,
+  }) => store._watch(get);
 }
 
 class _Document extends Fake
@@ -99,6 +128,12 @@ class _Document extends Fake
     this,
     store.documents[path] == null ? null : Map.of(store.documents[path]!),
   );
+
+  @override
+  Stream<DocumentSnapshot<Map<String, dynamic>>> snapshots({
+    bool includeMetadataChanges = false,
+    ListenSource source = ListenSource.defaultSource,
+  }) => store._watch(get);
 
   @override
   bool operator ==(Object other) => other is _Document && other.path == path;
@@ -179,17 +214,54 @@ class _Transaction extends Fake implements Transaction {
 
 class _Batch extends Fake implements WriteBatch {
   final MemoryFirestore store;
-  final paths = <String>[];
+  final writes = <void Function()>[];
 
   _Batch(this.store);
 
   @override
-  void delete(DocumentReference document) => paths.add(document.path);
+  void delete(DocumentReference document) =>
+      writes.add(() => store.documents.remove(document.path));
+
+  @override
+  void set<T>(DocumentReference<T> document, T data, [SetOptions? options]) {
+    writes.add(() {
+      store.documents[document.path] = {
+        if (options?.merge == true) ...?store.documents[document.path],
+        ...data as Map<String, dynamic>,
+      };
+    });
+  }
+
+  @override
+  void update(DocumentReference document, Map<Object, Object?> data) {
+    writes.add(() {
+      final existing = store.documents[document.path];
+      if (existing == null) {
+        throw StateError('Missing document ${document.path}');
+      }
+      existing.addAll(
+        data.map((key, value) => MapEntry(key.toString(), value)),
+      );
+    });
+  }
 
   @override
   Future<void> commit() async {
-    for (final path in paths) {
-      store.documents.remove(path);
+    // Like Firestore, apply all writes or none of them.
+    final before = {
+      for (final entry in store.documents.entries)
+        entry.key: Map<String, dynamic>.of(entry.value),
+    };
+    try {
+      for (final write in writes) {
+        write();
+      }
+    } catch (_) {
+      store.documents
+        ..clear()
+        ..addAll(before);
+      rethrow;
     }
+    if (writes.isNotEmpty) store.notifyChanged();
   }
 }

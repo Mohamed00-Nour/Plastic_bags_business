@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../core/services/current_user_service.dart';
 import '../core/utils/client_balance.dart';
+import 'invoice_number_service.dart';
 
 /// Service handling Sales Invoice Actions (Deletion, Confirmation, Inventory Restoration, Balance Reversal).
 class SalesInvoiceActionsService {
@@ -167,7 +168,16 @@ class SalesInvoiceActionsService {
           clientId.isNotEmpty
               ? firestore.collection('clients').doc(clientId)
               : null;
-      final rootInvoiceRef = firestore.collection('sales_invoices').doc(invoiceId);
+      final rootInvoiceRef = firestore
+          .collection('sales_invoices')
+          .doc(invoiceId);
+      final serialNumber = InvoiceNumberService.parse(invoiceNumber);
+      final numberReservationRef =
+          serialNumber == null
+              ? null
+              : InvoiceNumberService(
+                firestore: firestore,
+              ).reservationRef(InvoiceSequence.salesInvoice, serialNumber);
 
       // Execute Atomic Transaction: ALL READS FIRST, THEN ALL WRITES
       await firestore.runTransaction((transaction) async {
@@ -179,7 +189,9 @@ class SalesInvoiceActionsService {
         if (currentClientId.isNotEmpty && currentClientId != clientId) {
           throw StateError('Invoice client changed. Reload before deleting.');
         }
-        final remainingOwed = ClientBalance.recordedInvoiceChange(currentInvoice);
+        final remainingOwed = ClientBalance.recordedInvoiceChange(
+          currentInvoice,
+        );
         final productSnapshots = <DocumentReference, DocumentSnapshot>{};
         for (final pRef in productRefs.keys) {
           productSnapshots[pRef] = await transaction.get(pRef);
@@ -189,6 +201,12 @@ class SalesInvoiceActionsService {
         if (clientRef != null && remainingOwed != 0) {
           cSnap = await transaction.get(clientRef);
         }
+
+        // The serial number is freed only if it belongs to this invoice.
+        final reservationSnap =
+            numberReservationRef == null
+                ? null
+                : await transaction.get(numberReservationRef);
 
         // --- PHASE 2: ALL WRITES ---
         // A. Restore Stock Quantities
@@ -269,6 +287,13 @@ class SalesInvoiceActionsService {
         // C. Delete Root Invoice Document
         transaction.delete(rootInvoiceRef);
 
+        // Free the serial number so it can be typed in again.
+        if (reservationSnap != null &&
+            reservationSnap.exists &&
+            reservationSnap.data()?['documentId'] == invoiceId) {
+          transaction.delete(numberReservationRef!);
+        }
+
         // D. Delete Client Sub-document Invoice (if exists)
         if (clientId.isNotEmpty) {
           final subInvoiceRef = firestore
@@ -292,6 +317,11 @@ class SalesInvoiceActionsService {
                   .get();
           final cleanupBatch = firestore.batch();
           for (final doc in bhQuery.docs) {
+            // Returns have their own numbers, so a return can share this
+            // number. Only remove rows of this invoice (or legacy rows
+            // saved without an invoice id).
+            final rowInvoiceId = doc.data()['invoiceId']?.toString() ?? '';
+            if (rowInvoiceId.isNotEmpty && rowInvoiceId != invoiceId) continue;
             cleanupBatch.delete(doc.reference);
           }
           await cleanupBatch.commit();

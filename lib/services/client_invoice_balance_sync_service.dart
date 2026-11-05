@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../core/services/current_user_service.dart';
 import '../core/utils/client_balance.dart';
+import 'invoice_number_service.dart';
 
 class SalesInvoiceCreationResult {
   final String invoiceId;
@@ -224,9 +225,20 @@ class ClientInvoiceBalanceSyncService {
 
     final clientRef = _firestore.collection('clients').doc(clientId);
     final productRefs = _productRefsById(items);
+    // Serial numbers (#1, #2…) are reserved so they can never repeat.
+    final serialNumber = InvoiceNumberService.parse(invoiceNumber);
+    final numberService = InvoiceNumberService(firestore: _firestore);
 
     return _firestore.runTransaction((transaction) async {
       // Firestore requires every read to happen before the first write.
+      final numberCheck =
+          serialNumber == null
+              ? null
+              : await numberService.check(
+                transaction,
+                InvoiceSequence.salesInvoice,
+                serialNumber,
+              );
       final clientSnapshot = await transaction.get(clientRef);
       final productSnapshots =
           <String, DocumentSnapshot<Map<String, dynamic>>>{};
@@ -248,6 +260,10 @@ class ClientInvoiceBalanceSyncService {
               ? rawBalance.toDouble()
               : double.tryParse(rawBalance.toString()) ?? 0.0;
       final balanceAfter = previousBalance + invoiceChange;
+
+      if (numberCheck != null) {
+        numberService.reserve(transaction, numberCheck, docId: invoiceId);
+      }
 
       transaction.set(invoiceRef, {
         'invoiceNumber': invoiceNumber,
@@ -378,6 +394,65 @@ class ClientInvoiceBalanceSyncService {
   }) async {
     final batch = _firestore.batch();
     final returnRef = _firestore.collection('return_invoices').doc();
+    final returnId = returnRef.id;
+
+    // Returns are saved with a batch, which cannot check for duplicates, so
+    // the serial number is reserved first and freed again if saving fails.
+    final numberService = InvoiceNumberService(firestore: _firestore);
+    final serialNumber = InvoiceNumberService.parse(returnNumber);
+    if (serialNumber != null) {
+      await numberService.reserveStandalone(
+        InvoiceSequence.salesReturn,
+        serialNumber,
+        docId: returnId,
+      );
+    }
+    try {
+      return await _writeSalesReturn(
+        batch: batch,
+        returnRef: returnRef,
+        clientId: clientId,
+        clientName: clientName,
+        returnNumber: returnNumber,
+        returnedItems: returnedItems,
+        subtotal: subtotal,
+        discount: discount,
+        returnTotalAmount: returnTotalAmount,
+        refundAmount: refundAmount,
+        returnDate: returnDate,
+        reason: reason,
+        originalInvoiceId: originalInvoiceId,
+        originalInvoiceNumber: originalInvoiceNumber,
+      );
+    } catch (_) {
+      if (serialNumber != null) {
+        try {
+          await numberService.release(
+            InvoiceSequence.salesReturn,
+            returnNumber,
+          );
+        } catch (_) {}
+      }
+      rethrow;
+    }
+  }
+
+  Future<String> _writeSalesReturn({
+    required WriteBatch batch,
+    required DocumentReference<Map<String, dynamic>> returnRef,
+    required String clientId,
+    required String clientName,
+    required String returnNumber,
+    required List<Map<String, dynamic>> returnedItems,
+    required double subtotal,
+    required double discount,
+    required double returnTotalAmount,
+    required double refundAmount,
+    DateTime? returnDate,
+    String? reason,
+    String? originalInvoiceId,
+    String? originalInvoiceNumber,
+  }) async {
     final returnId = returnRef.id;
     final timestamp =
         returnDate != null

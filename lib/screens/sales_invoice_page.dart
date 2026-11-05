@@ -1,12 +1,14 @@
 import 'dart:ui' as ui;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../features/products/bloc/product_bloc_new.dart';
 import '../features/products/bloc/product_event.dart';
 import '../services/client_invoice_balance_sync_service.dart';
 import '../services/client_statement_pdf_service.dart';
+import '../services/invoice_number_service.dart';
 import '../services/sales_invoice_actions_service.dart';
 import '../services/sales_invoice_update_service.dart';
 import '../core/theme/app_theme.dart';
@@ -30,9 +32,14 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
   final ClientInvoiceBalanceSyncService _syncService =
       ClientInvoiceBalanceSyncService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  late final InvoiceNumberService _numberService = InvoiceNumberService(
+    firestore: _firestore,
+  );
 
   // New Invoice State
   late String _invoiceNumber;
+  final TextEditingController _invoiceNumberController =
+      TextEditingController();
   DateTime _selectedDate = DateTime.now();
   String? _selectedClientId;
   String? _selectedClientName;
@@ -105,6 +112,7 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
 
   // Return Invoice State
   late String _returnNumber;
+  final TextEditingController _returnNumberController = TextEditingController();
   DateTime _returnDate = DateTime.now();
   String? _returnClientId;
   String? _returnClientName;
@@ -240,18 +248,109 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
   }
 
   void _generateInvoiceNumber() {
-    _invoiceNumber =
-        'INV-${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
+    _invoiceNumber = '';
+    _invoiceNumberController.clear();
+    _loadSuggestedNumber(
+      InvoiceSequence.salesInvoice,
+      _invoiceNumberController,
+    );
   }
 
   void _generateReturnNumber() {
-    _returnNumber =
-        'RET-${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
+    _returnNumber = '';
+    _returnNumberController.clear();
+    _loadSuggestedNumber(InvoiceSequence.salesReturn, _returnNumberController);
+  }
+
+  /// Pre-fills the next serial number (highest used + 1).
+  Future<void> _loadSuggestedNumber(
+    InvoiceSequence sequence,
+    TextEditingController controller,
+  ) async {
+    try {
+      final next = await _numberService.suggestNext(sequence);
+      // Never overwrite a number the user has already typed.
+      if (mounted && controller.text.trim().isEmpty) {
+        controller.text = '$next';
+      }
+    } catch (_) {
+      // If it can't be loaded (e.g. offline) the user can still type it.
+    }
+  }
+
+  /// Returns the typed serial number, or shows an error and returns null.
+  String? _readSerialNumber(TextEditingController controller, bool isArabic) {
+    final number = InvoiceNumberService.parse(controller.text);
+    if (number == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isArabic
+                ? 'برجاء إدخال رقم صحيح أكبر من صفر'
+                : 'Please enter a valid number (a whole number above 0)',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return null;
+    }
+    return '$number';
+  }
+
+  void _showDuplicateNumberError(
+    DuplicateInvoiceNumberException error,
+    TextEditingController controller,
+    bool isArabic, {
+    required bool isReturn,
+  }) {
+    controller.text = '${error.nextAvailable}';
+    final kindAr = isReturn ? 'المرتجع' : 'الفاتورة';
+    final kindEn = isReturn ? 'Return' : 'Invoice';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          isArabic
+              ? 'رقم $kindAr #${error.number} مستخدم بالفعل. تم وضع الرقم المتاح التالي #${error.nextAvailable}'
+              : '$kindEn #${error.number} already exists. The next available number #${error.nextAvailable} was filled in.',
+        ),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  Widget _buildSerialNumberField({
+    required TextEditingController controller,
+    required String label,
+    required Color color,
+    required Key key,
+  }) {
+    return SizedBox(
+      width: 170,
+      child: TextField(
+        key: key,
+        controller: controller,
+        keyboardType: TextInputType.number,
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 16,
+          color: color,
+        ),
+        decoration: InputDecoration(
+          labelText: label,
+          prefixText: '#',
+          isDense: true,
+          border: const OutlineInputBorder(),
+        ),
+      ),
+    );
   }
 
   @override
   void dispose() {
     _clearAdditionalFees();
+    _invoiceNumberController.dispose();
+    _returnNumberController.dispose();
     _tabController.dispose();
     _clientSearchController.dispose();
     _clientSearchFocusNode.dispose();
@@ -442,6 +541,12 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
       return;
     }
 
+    if (!_isEditMode) {
+      final number = _readSerialNumber(_invoiceNumberController, isArabic);
+      if (number == null) return;
+      _invoiceNumber = number;
+    }
+
     setState(() {
       _isSubmitting = true;
       _submitStatus = isArabic ? 'جاري حفظ الفاتورة...' : 'Saving invoice...';
@@ -599,6 +704,14 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
           }
         },
       );
+    } on DuplicateInvoiceNumberException catch (e) {
+      if (!mounted) return;
+      _showDuplicateNumberError(
+        e,
+        _invoiceNumberController,
+        isArabic,
+        isReturn: false,
+      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -647,6 +760,10 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
       );
       return;
     }
+
+    final returnNumber = _readSerialNumber(_returnNumberController, isArabic);
+    if (returnNumber == null) return;
+    _returnNumber = returnNumber;
 
     setState(() => _isReturnSubmitting = true);
 
@@ -719,6 +836,15 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
         context: context,
         invoiceData: returnDataToPrint,
         locale: isArabic ? 'ar' : 'en',
+      );
+    } on DuplicateInvoiceNumberException catch (e) {
+      if (!mounted) return;
+      setState(() => _isReturnSubmitting = false);
+      _showDuplicateNumberError(
+        e,
+        _returnNumberController,
+        isArabic,
+        isReturn: true,
       );
     } catch (e) {
       if (!mounted) return;
@@ -853,13 +979,21 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                   children: [
                     Row(
                       children: [
-                        Text(
-                          '${isArabic ? "رقم الفاتورة: " : "Invoice #: "}$_invoiceNumber',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                        if (_isEditMode)
+                          Text(
+                            '${isArabic ? "رقم الفاتورة: " : "Invoice #: "}$_invoiceNumber',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          )
+                        else
+                          _buildSerialNumberField(
+                            key: const Key('invoiceNumberField'),
+                            controller: _invoiceNumberController,
+                            label: isArabic ? 'رقم الفاتورة' : 'Invoice #',
+                            color: AppTheme.primaryColor,
                           ),
-                        ),
                         const Spacer(),
                         TextButton.icon(
                           icon: const Icon(Icons.calendar_today),
@@ -1636,13 +1770,11 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                   children: [
                     Row(
                       children: [
-                        Text(
-                          '${isArabic ? "رقم المرتجع: " : "Return #: "}$_returnNumber',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: AppTheme.dangerColor,
-                          ),
+                        _buildSerialNumberField(
+                          key: const Key('returnNumberField'),
+                          controller: _returnNumberController,
+                          label: isArabic ? 'رقم المرتجع' : 'Return #',
+                          color: AppTheme.dangerColor,
                         ),
                         const Spacer(),
                         TextButton.icon(

@@ -16,7 +16,15 @@ class ClientDetailsPage extends StatefulWidget {
   final Map<String, dynamic>? clientData;
   final String? clientId;
 
-  const ClientDetailsPage({super.key, this.clientData, this.clientId});
+  /// Defaults to [FirebaseFirestore.instance]; tests pass an in-memory store.
+  final FirebaseFirestore? firestore;
+
+  const ClientDetailsPage({
+    super.key,
+    this.clientData,
+    this.clientId,
+    this.firestore,
+  });
 
   @override
   State<ClientDetailsPage> createState() => _ClientDetailsPageState();
@@ -26,8 +34,10 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final DateFormat _dateFormat = DateFormat('yyyy/MM/dd HH:mm');
-  final ClientInvoiceBalanceSyncService _syncService =
-      ClientInvoiceBalanceSyncService();
+  late final FirebaseFirestore _firestore =
+      widget.firestore ?? FirebaseFirestore.instance;
+  late final ClientInvoiceBalanceSyncService _syncService =
+      ClientInvoiceBalanceSyncService(firestore: _firestore);
 
   @override
   void initState() {
@@ -61,7 +71,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
       body: StreamBuilder<DocumentSnapshot>(
         stream:
             _effectiveClientId.isNotEmpty
-                ? FirebaseFirestore.instance
+                ? _firestore
                     .collection('clients')
                     .doc(_effectiveClientId)
                     .snapshots()
@@ -316,9 +326,11 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
                     Icons.account_balance_wallet_rounded,
                     size: 18,
                   ),
-                  label: const Text(
-                    'تعديل الرصيد',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                  label: Text(
+                    Localizations.localeOf(context).languageCode == 'ar'
+                        ? 'إضافة أو خصم رصيد'
+                        : 'Add or Deduct Balance',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   onPressed: () => _showBalanceAdjustmentModal(context, client),
                 );
@@ -373,7 +385,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
 
     return StreamBuilder<QuerySnapshot>(
       stream:
-          FirebaseFirestore.instance
+          _firestore
               .collection(collectionName)
               .where('clientName', isEqualTo: clientName)
               .snapshots(),
@@ -664,10 +676,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
                     children: [
                       const Text(
                         'مصاريف إضافية',
-                        style: TextStyle(
-                          color: Colors.orange,
-                          fontSize: 13,
-                        ),
+                        style: TextStyle(color: Colors.orange, fontSize: 13),
                       ),
                       Text(
                         '+\$${additionalFeeAmount.toStringAsFixed(2)}',
@@ -718,9 +727,10 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
                       '${ClientBalance.invoiceChangeLabel(remainingAmount, isArabic: true)}: \$${remainingAmount.abs().toStringAsFixed(2)}',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: remainingAmount < 0
-                            ? AppTheme.successColor
-                            : AppTheme.dangerColor,
+                        color:
+                            remainingAmount < 0
+                                ? AppTheme.successColor
+                                : AppTheme.dangerColor,
                         fontSize: 13,
                       ),
                     ),
@@ -871,7 +881,9 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
           itemCount: records.length,
           itemBuilder: (context, index) {
             final rec = records[index];
-            final signedAmount = ClientInvoiceBalanceSyncService.signedAmount(rec);
+            final signedAmount = ClientInvoiceBalanceSyncService.signedAmount(
+              rec,
+            );
             final isReduction = signedAmount < 0;
             final isIncrease = signedAmount > 0;
 
@@ -1417,6 +1429,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
   ) {
     final amountController = TextEditingController();
     final notesController = TextEditingController();
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
     DateTime selectedDate = DateTime.now();
 
     showModalBottomSheet(
@@ -1426,134 +1439,206 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (bCtx) {
-        return DefaultTabController(
-          length: 2,
-          child: Padding(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(bCtx).viewInsets.bottom + 20,
-              top: 20,
-              left: 20,
-              right: 20,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'تعديل رصيد العميل',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+        return StatefulBuilder(
+          builder: (sheetContext, setSheetState) {
+            return DefaultTabController(
+              length: 2,
+              child: Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(bCtx).viewInsets.bottom + 20,
+                  top: 20,
+                  left: 20,
+                  right: 20,
                 ),
-                const SizedBox(height: 12),
-                TabBar(
-                  indicatorColor: AppTheme.primaryColor,
-                  labelColor: AppTheme.primaryColor,
-                  unselectedLabelColor: Colors.grey,
-                  tabs: const [
-                    Tab(text: 'إضافة دفعة (خصم رصيد)'),
-                    Tab(text: 'إضافة مديونية (زيادة رصيد)'),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      isArabic ? 'تعديل رصيد العميل' : 'Adjust Client Balance',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TabBar(
+                      indicatorColor: AppTheme.primaryColor,
+                      labelColor: AppTheme.primaryColor,
+                      unselectedLabelColor: Colors.grey,
+                      tabs: [
+                        Tab(
+                          text:
+                              isArabic
+                                  ? 'إضافة دفعة (خصم رصيد)'
+                                  : 'Add Payment (Deduct)',
+                        ),
+                        Tab(
+                          text:
+                              isArabic
+                                  ? 'إضافة مديونية (زيادة رصيد)'
+                                  : 'Add Debt (Increase)',
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: amountController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: isArabic ? 'المبلغ (\$)' : 'Amount (\$)',
+                        prefixIcon: const Icon(Icons.attach_money_rounded),
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: notesController,
+                      decoration: InputDecoration(
+                        labelText:
+                            isArabic
+                                ? 'ملاحظات / طريقة الدفع'
+                                : 'Notes / Payment Method',
+                        prefixIcon: const Icon(Icons.note_alt_rounded),
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Record date (defaults to now; can be backdated)
+                    InkWell(
+                      borderRadius: BorderRadius.circular(4),
+                      onTap: () async {
+                        final now = DateTime.now();
+                        final picked = await showDatePicker(
+                          context: sheetContext,
+                          initialDate: selectedDate,
+                          firstDate: DateTime(2020),
+                          lastDate: now,
+                        );
+                        if (picked == null) return;
+                        // Keep the current time of day so records on the same
+                        // day stay in the order they were entered.
+                        setSheetState(() {
+                          selectedDate = DateTime(
+                            picked.year,
+                            picked.month,
+                            picked.day,
+                            now.hour,
+                            now.minute,
+                            now.second,
+                          );
+                        });
+                      },
+                      child: InputDecorator(
+                        decoration: InputDecoration(
+                          labelText: isArabic ? 'تاريخ العملية' : 'Record Date',
+                          prefixIcon: const Icon(
+                            Icons.calendar_month_rounded,
+                            color: AppTheme.primaryColor,
+                          ),
+                          border: const OutlineInputBorder(),
+                        ),
+                        child: Text(
+                          DateFormat('yyyy/MM/dd').format(selectedDate),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: TabBarView(
+                        children: [
+                          // Mode 1: Add Payment (Reduce Balance)
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.successColor,
+                              foregroundColor: Colors.white,
+                            ),
+                            icon: const Icon(Icons.check_circle_rounded),
+                            label: Text(
+                              isArabic
+                                  ? 'تسجيل الدفعة وخصم المديونية'
+                                  : 'Record Payment & Reduce Debt',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            onPressed: () async {
+                              final amt =
+                                  double.tryParse(amountController.text) ?? 0.0;
+                              if (amt <= 0) return;
+                              Navigator.of(bCtx).pop();
+
+                              await _addManualPayment(
+                                amount: amt,
+                                notes: notesController.text.trim(),
+                                date: selectedDate,
+                              );
+
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      isArabic
+                                          ? 'تم تسجيل الدفعة وتحديث رصيد العميل بنجاح'
+                                          : 'Payment recorded and client balance updated',
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                          ),
+
+                          // Mode 2: Add Debt (Increase Balance)
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.dangerColor,
+                              foregroundColor: Colors.white,
+                            ),
+                            icon: const Icon(Icons.add_circle_rounded),
+                            label: Text(
+                              isArabic
+                                  ? 'إضافة مديونية جديدة على العميل'
+                                  : 'Add New Debt to Client',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            onPressed: () async {
+                              final amt =
+                                  double.tryParse(amountController.text) ?? 0.0;
+                              if (amt <= 0) return;
+                              Navigator.of(bCtx).pop();
+
+                              await _addManualDebt(
+                                amount: amt,
+                                notes: notesController.text.trim(),
+                                date: selectedDate,
+                              );
+
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      isArabic
+                                          ? 'تم إضافة المديونية وتحديث رصيد العميل بنجاح'
+                                          : 'Debt added and client balance updated',
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: amountController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  decoration: const InputDecoration(
-                    labelText: 'المبلغ (\$)',
-                    prefixIcon: Icon(Icons.attach_money_rounded),
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: notesController,
-                  decoration: const InputDecoration(
-                    labelText: 'ملاحظات / طريقة الدفع',
-                    prefixIcon: Icon(Icons.note_alt_rounded),
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: TabBarView(
-                    children: [
-                      // Mode 1: Add Payment (Reduce Balance)
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.successColor,
-                          foregroundColor: Colors.white,
-                        ),
-                        icon: const Icon(Icons.check_circle_rounded),
-                        label: const Text(
-                          'تسجيل الدفعة وخصم المديونية',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        onPressed: () async {
-                          final amt =
-                              double.tryParse(amountController.text) ?? 0.0;
-                          if (amt <= 0) return;
-                          Navigator.of(bCtx).pop();
-
-                          await _addManualPayment(
-                            amount: amt,
-                            notes: notesController.text.trim(),
-                            date: selectedDate,
-                          );
-
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'تم تسجيل الدفعة وتحديث رصيد العميل بنجاح',
-                                ),
-                              ),
-                            );
-                          }
-                        },
-                      ),
-
-                      // Mode 2: Add Debt (Increase Balance)
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.dangerColor,
-                          foregroundColor: Colors.white,
-                        ),
-                        icon: const Icon(Icons.add_circle_rounded),
-                        label: const Text(
-                          'إضافة مديونية جديدة على العميل',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        onPressed: () async {
-                          final amt =
-                              double.tryParse(amountController.text) ?? 0.0;
-                          if (amt <= 0) return;
-                          Navigator.of(bCtx).pop();
-
-                          await _addManualDebt(
-                            amount: amt,
-                            notes: notesController.text.trim(),
-                            date: selectedDate,
-                          );
-
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'تم إضافة المديونية وتحديث رصيد العميل بنجاح',
-                                ),
-                              ),
-                            );
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -1565,7 +1650,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
     required String notes,
     required DateTime date,
   }) async {
-    final firestore = FirebaseFirestore.instance;
+    final firestore = _firestore;
     final clientRef = firestore.collection('clients').doc(_effectiveClientId);
 
     await firestore.runTransaction((transaction) async {
@@ -1598,7 +1683,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
     required String notes,
     required DateTime date,
   }) async {
-    final firestore = FirebaseFirestore.instance;
+    final firestore = _firestore;
     final clientRef = firestore.collection('clients').doc(_effectiveClientId);
 
     await firestore.runTransaction((transaction) async {

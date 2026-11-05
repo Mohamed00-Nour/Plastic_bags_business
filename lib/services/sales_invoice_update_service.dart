@@ -121,7 +121,9 @@ class SalesInvoiceUpdateService {
               : null;
       final invoiceTimestamp = _asTimestamp(newInvoice['date']);
       final editTimestamp = Timestamp.now();
-      final rootInvoiceRef = firestore.collection('sales_invoices').doc(invoiceId);
+      final rootInvoiceRef = firestore
+          .collection('sales_invoices')
+          .doc(invoiceId);
 
       // Resolve the invoice's existing ledger rows before the transaction so
       // an edit can update those rows instead of appending a generic debt
@@ -140,8 +142,16 @@ class SalesInvoiceUpdateService {
                   .where('invoiceNumber', isEqualTo: invoiceNumber)
                   .get();
         }
+        // A return can share the same serial number, so skip rows that
+        // belong to another document.
         sameClientHistoryRefs.addAll(
-          historyQuery.docs.map((document) => document.reference),
+          historyQuery.docs
+              .where((document) {
+                final rowInvoiceId =
+                    document.data()['invoiceId']?.toString() ?? '';
+                return rowInvoiceId.isEmpty || rowInvoiceId == invoiceId;
+              })
+              .map((document) => document.reference),
         );
       }
 
