@@ -473,15 +473,20 @@ class _ProductsScreenState extends State<ProductsScreen> {
     final isArabic = Localizations.localeOf(context).languageCode == 'ar';
 
     return BlocConsumer<ProductBloc, ProductState>(
+      // Success/error states are transient (snackbars only); keep showing the
+      // current list so the table and its scroll position are not torn down.
+      buildWhen:
+          (previous, current) =>
+              current is! ProductOperationSuccess && current is! ProductError,
       listener: (context, state) {
         if (state is ProductOperationSuccess) {
+          // No reload needed: the bloc's Firestore stream pushes the change.
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.message),
               backgroundColor: AppTheme.successColor,
             ),
           );
-          context.read<ProductBloc>().add(ProductLoadRequested());
         } else if (state is ProductError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

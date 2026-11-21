@@ -14,6 +14,7 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
   final StockLogRepository _stockLogRepository;
   StreamSubscription? _subscription;
   List<ProductModel> _allProducts = [];
+  String _searchQuery = '';
 
   ProductBloc({
     required ProductRepository productRepository,
@@ -35,13 +36,16 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
     ProductLoadRequested event,
     Emitter<ProductState> emit,
   ) async {
-    emit(ProductLoading());
+    // Only show the spinner on the very first load; later reloads keep the
+    // current list on screen to avoid flicker and lost scroll position.
+    if (_allProducts.isEmpty) emit(ProductLoading());
+    _searchQuery = '';
     await _subscription?.cancel();
     _subscription = _productRepository.getProducts().listen(
       (products) {
         _allProducts = products;
         if (!isClosed) {
-          add(const ProductSearchRequested(query: ''));
+          add(ProductSearchRequested(query: _searchQuery));
         }
       },
       onError: (error) {
@@ -56,6 +60,7 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
     ProductSearchRequested event,
     Emitter<ProductState> emit,
   ) {
+    _searchQuery = event.query;
     final query = event.query.toLowerCase();
     final filtered = query.isEmpty
         ? _allProducts
@@ -207,7 +212,7 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
   ) async {
     try {
       _allProducts = List<ProductModel>.from(event.reorderedProducts);
-      add(const ProductSearchRequested(query: ''));
+      add(ProductSearchRequested(query: _searchQuery));
       await _productRepository.reorderProducts(event.reorderedProducts);
       emit(const ProductOperationSuccess(
           message: 'تم حفظ ترتيب المنتجات بنجاح'));
