@@ -611,10 +611,12 @@ class ClientInvoiceBalanceSyncService {
   /// Saves changes to an existing sales return. Only the difference from the
   /// saved return is applied: stock moves by the change in returned
   /// quantities, the client balance by the change in net credit, and the
-  /// return's balance-history rows are rewritten. The number and client stay
-  /// the same.
+  /// return's balance-history rows are rewritten. The client stays the same.
+  /// A new serial [returnNumber] renumbers the return; a duplicate throws
+  /// [DuplicateInvoiceNumberException] and nothing is saved.
   Future<void> updateSalesReturn({
     required String returnId,
+    String? returnNumber,
     required List<Map<String, dynamic>> returnedItems,
     required double subtotal,
     required double discount,
@@ -652,6 +654,9 @@ class ClientInvoiceBalanceSyncService {
           item['productId'].toString(): item['productName']?.toString() ?? '',
     };
 
+    final numberService = InvoiceNumberService(firestore: _firestore);
+    final newSerialNumber = InvoiceNumberService.parse(returnNumber);
+
     await _firestore.runTransaction((transaction) async {
       // --- ALL READS ---
       final current = await transaction.get(returnRef);
@@ -662,8 +667,20 @@ class ClientInvoiceBalanceSyncService {
       if ((old['clientId']?.toString() ?? '') != clientId) {
         throw StateError('Return client changed. Reload before editing.');
       }
-      final returnNumber =
+      final savedNumber =
           (old['returnNumber'] ?? old['invoiceNumber'])?.toString() ?? '';
+      // Throws before any write if the new number is already used.
+      final numberCheck =
+          newSerialNumber == null
+              ? null
+              : await numberService.checkRenumber(
+                transaction,
+                InvoiceSequence.salesReturn,
+                oldNumber: savedNumber,
+                newNumber: newSerialNumber,
+              );
+      final returnNumber =
+          numberCheck != null ? '$newSerialNumber' : savedNumber;
       final oldQty = _returnedQuantities(old['items'] as List?);
 
       final deltas = <String, double>{};
@@ -681,6 +698,15 @@ class ClientInvoiceBalanceSyncService {
           clientRef == null ? null : await transaction.get(clientRef);
 
       // --- ALL WRITES ---
+      if (numberCheck != null) {
+        numberService.renumber(
+          transaction,
+          numberCheck,
+          docId: returnId,
+          oldNumber: savedNumber,
+        );
+      }
+
       // A. Stock: a bigger return adds stock, a smaller one takes it back.
       for (final entry in deltas.entries) {
         final snap = productSnaps[entry.key]!;
@@ -745,6 +771,8 @@ class ClientInvoiceBalanceSyncService {
 
       // D. Update the return itself (both copies).
       final changes = {
+        'returnNumber': returnNumber,
+        'invoiceNumber': returnNumber,
         'items': returnedItems,
         'subtotal': subtotal,
         'discount': discount,

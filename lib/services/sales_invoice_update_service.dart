@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../core/services/current_user_service.dart';
 import '../core/utils/client_balance.dart';
+import 'invoice_number_service.dart';
 
 /// Service handling Sales Invoice Editing & Updating (Inventory Diffing, Client Debt Adjustments, Client Reassignments).
 class SalesInvoiceUpdateService {
@@ -20,10 +21,16 @@ class SalesInvoiceUpdateService {
         oldInvoice['id']?.toString() ??
         oldInvoice['invoiceId']?.toString() ??
         '';
-    final invoiceNumber =
+    final oldInvoiceNumber =
         oldInvoice['invoiceNumber']?.toString() ??
         newInvoice['invoiceNumber']?.toString() ??
         'INV-000';
+    // A new serial number typed while editing; otherwise the number stays.
+    final newSerialNumber = InvoiceNumberService.parse(
+      newInvoice['invoiceNumber']?.toString(),
+    );
+    final invoiceNumber =
+        newSerialNumber != null ? '$newSerialNumber' : oldInvoiceNumber;
 
     if (invoiceId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -135,11 +142,11 @@ class SalesInvoiceUpdateService {
                 .collection('balanceHistory')
                 .where('invoiceId', isEqualTo: invoiceId)
                 .get();
-        if (historyQuery.docs.isEmpty && invoiceNumber.isNotEmpty) {
+        if (historyQuery.docs.isEmpty && oldInvoiceNumber.isNotEmpty) {
           historyQuery =
               await sameClientRef
                   .collection('balanceHistory')
-                  .where('invoiceNumber', isEqualTo: invoiceNumber)
+                  .where('invoiceNumber', isEqualTo: oldInvoiceNumber)
                   .get();
         }
         // A return can share the same serial number, so skip rows that
@@ -155,6 +162,8 @@ class SalesInvoiceUpdateService {
         );
       }
 
+      final numberService = InvoiceNumberService(firestore: firestore);
+
       await firestore.runTransaction((transaction) async {
         // PHASE 1: read every document before issuing any write.
         final invoiceSnapshot = await transaction.get(rootInvoiceRef);
@@ -165,6 +174,17 @@ class SalesInvoiceUpdateService {
         if ((currentInvoice['clientId']?.toString() ?? '') != oldClientId) {
           throw StateError('Invoice client changed. Reload before editing.');
         }
+        final savedInvoiceNumber = currentInvoice['invoiceNumber']?.toString();
+        // Throws before any write if the new number is already used.
+        final numberCheck =
+            newSerialNumber == null
+                ? null
+                : await numberService.checkRenumber(
+                  transaction,
+                  InvoiceSequence.salesInvoice,
+                  oldNumber: savedInvoiceNumber,
+                  newNumber: newSerialNumber,
+                );
         // Use the live posting so saving a stale legacy invoice cannot restore
         // the same previously clamped credit twice.
         final oldNetDebt = ClientBalance.recordedInvoiceChange(currentInvoice);
@@ -227,12 +247,22 @@ class SalesInvoiceUpdateService {
         final invoiceBalanceAfter = invoicePreviousBalance + newNetDebt;
         final persistedInvoice = <String, dynamic>{
           ...newInvoice,
+          'invoiceNumber': invoiceNumber,
           'remainingAmount': newNetDebt,
           'previousBalance': invoicePreviousBalance,
           'clientPreviousBalance': invoicePreviousBalance,
           'balanceAfter': invoiceBalanceAfter,
           'clientBalance': invoiceBalanceAfter,
         };
+
+        if (numberCheck != null) {
+          numberService.renumber(
+            transaction,
+            numberCheck,
+            docId: invoiceId,
+            oldNumber: savedInvoiceNumber,
+          );
+        }
 
         // PHASE 2: apply inventory writes using the snapshots above.
         for (final entry in productDiffs.entries) {
@@ -460,6 +490,7 @@ class SalesInvoiceUpdateService {
         }
 
         transaction.update(rootInvoiceRef, {
+          'invoiceNumber': invoiceNumber,
           'items': newInvoice['items'],
           'subtotal': newInvoice['subtotal'],
           'discount': newInvoice['discount'],
@@ -497,6 +528,19 @@ class SalesInvoiceUpdateService {
 
       if (onSuccess != null) onSuccess();
       return true;
+    } on DuplicateInvoiceNumberException catch (e) {
+      if (context.mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'رقم الفاتورة #${e.number} مستخدم بالفعل. أول رقم متاح: #${e.nextAvailable}',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return false;
     } catch (e) {
       if (context.mounted) {
         Navigator.of(context, rootNavigator: true).pop();

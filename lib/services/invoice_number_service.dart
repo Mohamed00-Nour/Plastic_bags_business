@@ -120,6 +120,39 @@ class InvoiceNumberService {
     }
   }
 
+  /// For editing a saved document's number. Returns null when [newNumber]
+  /// is the same as [oldNumber] (nothing to move). Otherwise reads the new
+  /// number and throws [DuplicateInvoiceNumberException] if it is taken.
+  /// Call before any write in [t]; then pass the result to [renumber].
+  Future<InvoiceNumberCheck?> checkRenumber(
+    Transaction t,
+    InvoiceSequence s, {
+    required String? oldNumber,
+    required int newNumber,
+  }) async {
+    if (parse(oldNumber) == newNumber) return null;
+    final c = await check(t, s, newNumber);
+    if (c.taken) {
+      throw DuplicateInvoiceNumberException(c.number, c.lastNumber + 1);
+    }
+    return c;
+  }
+
+  /// Moves a document to its new number: reserves the new one and frees the
+  /// old one (if it was a serial number).
+  void renumber(
+    Transaction t,
+    InvoiceNumberCheck c, {
+    required String docId,
+    required String? oldNumber,
+  }) {
+    reserve(t, c, docId: docId);
+    final old = parse(oldNumber);
+    if (old != null && old != c.number) {
+      t.delete(reservationRef(c.sequence, old));
+    }
+  }
+
   /// Reserves a number in its own transaction (for batch-based saves).
   Future<void> reserveStandalone(
     InvoiceSequence s,

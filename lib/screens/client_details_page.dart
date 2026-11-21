@@ -4,6 +4,7 @@ import 'package:intl/intl.dart' hide TextDirection;
 import 'package:printing/printing.dart';
 import '../core/theme/app_theme.dart';
 import '../core/utils/client_balance.dart';
+import '../core/utils/invoice_search.dart';
 import '../core/utils/quantity_formatter.dart';
 import '../services/client_invoice_balance_sync_service.dart';
 import '../services/client_statement_pdf_service.dart';
@@ -425,15 +426,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage>
                 data['id'] = doc.id;
                 return data;
               }).toList()
-              ..sort((a, b) {
-                final da = a['createdAt'] ?? a['date'];
-                final db = b['createdAt'] ?? b['date'];
-                DateTime ta = DateTime.now();
-                DateTime tb = DateTime.now();
-                if (da is Timestamp) ta = da.toDate();
-                if (db is Timestamp) tb = db.toDate();
-                return tb.compareTo(ta);
-              });
+              ..sort(compareInvoicesByNumberDesc);
 
         return ListView.builder(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

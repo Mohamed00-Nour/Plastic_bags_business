@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:store_manager/services/client_invoice_balance_sync_service.dart';
 import 'package:store_manager/services/invoice_number_service.dart';
 import 'package:store_manager/services/sales_invoice_actions_service.dart';
+import 'package:store_manager/services/sales_invoice_update_service.dart';
 
 import 'support/memory_firestore.dart';
 
@@ -235,6 +236,119 @@ void main() {
       // The number can be used for the next attempt.
       await createReturn('3');
       expect(reserved('return_3'), isTrue);
+    });
+  });
+
+  group('editing the number', () {
+    Future<bool> renumberInvoice(
+      WidgetTester tester,
+      String id,
+      String newNumber,
+    ) async {
+      final context = await host(tester);
+      final old = {...store.documents['sales_invoices/$id']!, 'id': id};
+      final result = SalesInvoiceUpdateService.updateSalesInvoice(
+        context: context,
+        database: store,
+        oldInvoice: old,
+        newInvoice: {...old, 'invoiceNumber': newNumber},
+      );
+      await tester.pumpAndSettle();
+      return result;
+    }
+
+    List<Map<String, dynamic>> historyOf(String id) => [
+      for (final e in store.documents.entries)
+        if (e.key.startsWith('clients/client-1/balanceHistory/') &&
+            e.value['invoiceId'] == id)
+          e.value,
+    ];
+
+    testWidgets('an invoice moves to the new number and frees the old one', (
+      tester,
+    ) async {
+      final id = await createInvoice('11');
+
+      expect(await renumberInvoice(tester, id, '4'), isTrue);
+
+      expect(store.documents['sales_invoices/$id']!['invoiceNumber'], '4');
+      expect(
+        store.documents['clients/client-1/invoices/$id']!['invoiceNumber'],
+        '4',
+      );
+      expect(historyOf(id).map((r) => r['invoiceNumber']).toSet(), {'4'});
+      expect(store.documents['invoice_numbers/sales_4']!['documentId'], id);
+      expect(reserved('sales_11'), isFalse);
+      // #11 can be used again.
+      await createInvoice('11');
+    });
+
+    testWidgets('a number used by another invoice is rejected', (
+      tester,
+    ) async {
+      await createInvoice('1');
+      final id = await createInvoice('2');
+
+      expect(await renumberInvoice(tester, id, '1'), isFalse);
+
+      expect(store.documents['sales_invoices/$id']!['invoiceNumber'], '2');
+      expect(reserved('sales_2'), isTrue);
+      expect(store.documents['invoice_numbers/sales_1']!['documentId'], isNot(id));
+    });
+
+    testWidgets('an old-style number can be changed to a serial one', (
+      tester,
+    ) async {
+      final id = await createInvoice('INV-82551453');
+
+      expect(await renumberInvoice(tester, id, '9'), isTrue);
+
+      expect(store.documents['sales_invoices/$id']!['invoiceNumber'], '9');
+      expect(reserved('sales_9'), isTrue);
+    });
+
+    test('a return moves to the new number and frees the old one', () async {
+      final id = await createReturn('3');
+
+      await service.updateSalesReturn(
+        returnId: id,
+        returnNumber: '8',
+        returnedItems: [],
+        subtotal: 40,
+        discount: 0,
+        returnTotalAmount: 40,
+        refundAmount: 0,
+        returnDate: DateTime(2026, 11, 5),
+      );
+
+      for (final path in ['return_invoices/$id', 'sales_returns/$id']) {
+        expect(store.documents[path]!['returnNumber'], '8');
+        expect(store.documents[path]!['invoiceNumber'], '8');
+      }
+      expect(historyOf(id).map((r) => r['invoiceNumber']).toSet(), {'8'});
+      expect(reserved('return_8'), isTrue);
+      expect(reserved('return_3'), isFalse);
+    });
+
+    test('a duplicate return number is rejected and nothing changes', () async {
+      await createReturn('1');
+      final id = await createReturn('2');
+
+      await expectLater(
+        service.updateSalesReturn(
+          returnId: id,
+          returnNumber: '1',
+          returnedItems: [],
+          subtotal: 40,
+          discount: 0,
+          returnTotalAmount: 40,
+          refundAmount: 0,
+          returnDate: DateTime(2026, 11, 5),
+        ),
+        throwsA(isA<DuplicateInvoiceNumberException>()),
+      );
+      expect(store.documents['return_invoices/$id']!['returnNumber'], '2');
+      expect(reserved('return_2'), isTrue);
     });
   });
 

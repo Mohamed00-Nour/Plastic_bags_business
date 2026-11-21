@@ -176,6 +176,7 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
 
   void _loadInvoiceForEditing(Map<String, dynamic> inv) {
     _invoiceNumber = inv['invoiceNumber']?.toString() ?? 'INV-000';
+    _invoiceNumberController.text = _invoiceNumber;
     _selectedClientId = inv['clientId']?.toString();
     _selectedClientName = inv['clientName']?.toString();
     _selectedClientPhone =
@@ -588,10 +589,17 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
       return;
     }
 
+    // In edit mode the number may be changed too; an untouched old-style
+    // number (INV-…) is kept as it is.
+    var editedInvoiceNumber = _invoiceNumber;
     if (!_isEditMode) {
       final number = _readSerialNumber(_invoiceNumberController, isArabic);
       if (number == null) return;
       _invoiceNumber = number;
+    } else if (_invoiceNumberController.text.trim() != _invoiceNumber) {
+      final number = _readSerialNumber(_invoiceNumberController, isArabic);
+      if (number == null) return;
+      editedInvoiceNumber = number;
     }
 
     setState(() {
@@ -622,7 +630,7 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
         'id':
             widget.initialInvoiceData!['id'] ??
             widget.initialInvoiceData!['invoiceId'],
-        'invoiceNumber': _invoiceNumber,
+        'invoiceNumber': editedInvoiceNumber,
         'clientId': _selectedClientId,
         'clientName': _selectedClientName,
         'clientPhone': _selectedClientPhone,
@@ -797,10 +805,19 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
     final returnId = widget.initialReturnData!['id']?.toString() ?? '';
     if (returnId.isEmpty) return;
 
+    // An untouched old-style number is kept as it is.
+    var editedReturnNumber = _returnNumber;
+    if (_returnNumberController.text.trim() != _returnNumber) {
+      final number = _readSerialNumber(_returnNumberController, isArabic);
+      if (number == null) return;
+      editedReturnNumber = number;
+    }
+
     setState(() => _isReturnSubmitting = true);
     try {
       await _syncService.updateSalesReturn(
         returnId: returnId,
+        returnNumber: editedReturnNumber,
         returnedItems: _returnLineItems,
         subtotal: _returnSubtotal,
         discount: _returnDiscount,
@@ -824,6 +841,15 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
         ),
       );
       Navigator.of(context).pop(true);
+    } on DuplicateInvoiceNumberException catch (e) {
+      if (!mounted) return;
+      setState(() => _isReturnSubmitting = false);
+      _showDuplicateNumberError(
+        e,
+        _returnNumberController,
+        isArabic,
+        isReturn: true,
+      );
     } catch (e) {
       if (!mounted) return;
       setState(() => _isReturnSubmitting = false);
@@ -1110,16 +1136,7 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                   children: [
                     Row(
                       children: [
-                        if (_isEditMode)
-                          Text(
-                            '${isArabic ? "رقم الفاتورة: " : "Invoice #: "}$_invoiceNumber',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          )
-                        else
-                          _buildSerialNumberField(
+                        _buildSerialNumberField(
                             key: const Key('invoiceNumberField'),
                             controller: _invoiceNumberController,
                             label: isArabic ? 'رقم الفاتورة' : 'Invoice #',
@@ -1901,18 +1918,7 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                   children: [
                     Row(
                       children: [
-                        // The number can only be chosen when creating.
-                        if (_isReturnEditMode)
-                          Text(
-                            '${isArabic ? "رقم المرتجع: " : "Return #: "}$_returnNumber',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                              color: AppTheme.dangerColor,
-                            ),
-                          )
-                        else
-                          _buildSerialNumberField(
+                        _buildSerialNumberField(
                             key: const Key('returnNumberField'),
                             controller: _returnNumberController,
                             label: isArabic ? 'رقم المرتجع' : 'Return #',
@@ -2719,7 +2725,13 @@ class _SalesInvoicePageState extends State<SalesInvoicePage>
                       invoice,
                       _invoiceHistorySearchQuery,
                     );
-                  }).toList();
+                  }).toList()
+                  ..sort(
+                    (a, b) => compareInvoicesByNumberDesc(
+                      a.data() as Map<String, dynamic>,
+                      b.data() as Map<String, dynamic>,
+                    ),
+                  );
 
               if (filteredDocs.isEmpty) {
                 return Center(
